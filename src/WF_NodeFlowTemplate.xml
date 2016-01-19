@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<commandSetRoot>
+	<commandSet type="serial">
+		<name>#NODE</name>
+		<configMapId>#ID</configMapId>
+		<command>
+			<name>CValid1</name>
+			<configMapId>#ID.1</configMapId>
+		</command>
+		<command>
+			<name>CValid2</name>
+			<configMapId>#ID.2</configMapId>
+		</command>
+		<command>
+			<name>BLAST</name>
+			<configMapId>#ID.3</configMapId>
+		</command>
+		<command>
+			<name>RoughClusters</name>
+			<configMapId>#ID.4</configMapId>
+		</command>
+		<command>
+			<name>RefineClusters</name>
+			<configMapId>#ID.5</configMapId>
+		</command>
+		<command>
+			<name>MakeConsensusSequences</name>
+			<configMapId>#ID.6</configMapId>
+		</command>
+	</commandSet>
+</commandSetRoot>
+		
