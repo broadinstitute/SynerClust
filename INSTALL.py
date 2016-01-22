@@ -31,7 +31,8 @@ def main(argv):
 	#MUSCLE_PATH
 	muscle_path = raw_input("Enter the path to your MUSCLE executable:\n")
 	#BLAST_PATH
-	blast_path = raw_input("Enter the path to your blastall executable:\n")
+	# blast_path = raw_input("Enter the path to your blastall executable:\n")
+	blast_path = raw_input("Enter the path to your blast installation folder:\n")
 
 	#~ print "The following variables deal with grid submission via WorkFlow."
 	#~ grid_local_exec = raw_input("Will jobs be submitted to a grid or executed locally? (grid|local): \n")

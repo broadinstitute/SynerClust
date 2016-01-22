@@ -34,7 +34,7 @@ def main(argv):
 			formatDB_log = my_dir+"formatdb.log"
 			os.system("cp "+pfile+" "+c_fasta)
 			os.system("grep '>' "+c_fasta+"| cut -f2 -d '>' > "+c_head)
-			os.system("formatdb -i "+c_fasta+" -l "+formatDB_log)
+			os.system("#BLAST_PATHformatdb -i "+c_fasta+" -l "+formatDB_log)
 			
 			header_file = open(c_head,'r').readlines()
 			headers = {}
@@ -60,14 +60,14 @@ def main(argv):
 			
 			if len(strains) ==1:
 				self_blast_out = my_dir+c+"_self.blast.m8"
-				os.system("#BLAST_PATH -p blastp -b 6 -m8 -e "+eval+" -a "+cores+" -d "+c_fasta+" -i "+c_fasta+" -o "+self_blast_out)
+				os.system("#BLAST_PATHblastall -p blastp -b 6 -m8 -e "+eval+" -a "+cores+" -d "+c_fasta+" -i "+c_fasta+" -o "+self_blast_out)
 
 
 		cat_head_cmd = "cat "+heads[0]+" "+heads[1]+" > "+my_head
 		print cat_head_cmd
 		os.system(cat_head_cmd)
-		os.system("#BLAST_PATH -p blastp -m8 -e "+eval+" -a "+cores+" -d "+fastas[0]+" -i "+fastas[1]+" -o "+m8s[1])
-		os.system("#BLAST_PATH -p blastp -m8 -e "+eval+" -a "+cores+" -d "+fastas[1]+" -i "+fastas[0]+" -o "+m8s[0])
+		os.system("#BLAST_PATHblastall -p blastp -m8 -e "+eval+" -a "+cores+" -d "+fastas[0]+" -i "+fastas[1]+" -o "+m8s[1])
+		os.system("#BLAST_PATHblastall -p blastp -m8 -e "+eval+" -a "+cores+" -d "+fastas[1]+" -i "+fastas[0]+" -o "+m8s[0])
 
 		my_m8s = my_dir+"*m8"
 		os.system("cat "+my_m8s+" > "+m8)

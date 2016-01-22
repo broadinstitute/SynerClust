@@ -102,8 +102,8 @@ class NJTree:
 				for m in unadded_nodes:
 					if n==m:
 						continue
-					u+= matrix[n][m]/uan_denom
-					synu+= self.syntenyMatrix[n][m]/uan_denom
+					u+= matrix[n][m]#/uan_denom
+					synu+= self.syntenyMatrix[n][m]#/uan_denom
 				Udists[n]=u
 				synUdists[n]=synu
 			
@@ -113,16 +113,16 @@ class NJTree:
 				for m in unadded_nodes:
 					if n==m:
 						continue
-					nm = matrix[n][m]-Udists[n]-Udists[m]
+					nm = uan_denom*matrix[n][m]-Udists[n]-Udists[m]
 					if nm<min_nm:
 						min_nm = nm
 						minp = [n,m]
 			#~ print minp, min_nm
 			minp.sort()
-			mp0_mp_dist = 0.5*matrix[minp[0]][minp[1]] - 0.5*(Udists[minp[0]]-Udists[minp[1]])
-			syn_mp0_mp_dist = 0.5*self.syntenyMatrix[minp[0]][minp[1]] - 0.5*(synUdists[minp[0]]-synUdists[minp[1]])
-			mp1_mp_dist = 0.5*matrix[minp[0]][minp[1]] - 0.5*(Udists[minp[1]]-Udists[minp[0]])
-			syn_mp1_mp_dist = 0.5*self.syntenyMatrix[minp[0]][minp[1]] - 0.5*(synUdists[minp[1]]-synUdists[minp[0]])
+			mp0_mp_dist = 0.5*matrix[minp[0]][minp[1]] + 0.5*(Udists[minp[0]]-Udists[minp[1]])/uan_denom
+			syn_mp0_mp_dist = 0.5*self.syntenyMatrix[minp[0]][minp[1]] + 0.5*(synUdists[minp[0]]-synUdists[minp[1]])/uan_denom
+			mp1_mp_dist = 0.5*matrix[minp[0]][minp[1]] + 0.5*(Udists[minp[1]]-Udists[minp[0]])/uan_denom
+			syn_mp1_mp_dist = 0.5*self.syntenyMatrix[minp[0]][minp[1]] + 0.5*(synUdists[minp[1]]-synUdists[minp[0]])/uan_denom
 
 						
 			newNode = ";".join(minp)

@@ -133,7 +133,7 @@ class BlastParse:
 		MAX_HITS = numHits
 		print "len(best hits nodes)", len(bestHits.nodes()), len(bestHits.edges())
 		#~ print "len(all hits nodes)", len(allHits.nodes()), len(allHits.edges())
-		subs = nx.connected_component_subgraphs(bestHits)
+		subs = list(nx.connected_component_subgraphs(bestHits))
 		count = 1
 		orphan_file = tree_dir+"orphan_genes.txt"
 		orphans = open(orphan_file,'w')
@@ -165,7 +165,7 @@ class BlastParse:
 					
 			clusterID = "cluster_"+str(count)
 			while len(bd_sub.nodes())>0:
-				sccs = nx.strongly_connected_component_subgraphs(bd_sub)
+				sccs = list(nx.strongly_connected_component_subgraphs(bd_sub))
 				scc = sccs[0]
 				
 				#~ if drawn==0 and len(scc.nodes())>3:
