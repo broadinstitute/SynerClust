@@ -3,6 +3,7 @@
 import sys, numpy, math
 from scipy.stats import poisson
 import networkx as nx
+import NetworkX_Extension as nxe
 
 class NJTree:
 	def __init__(self,newick_file,syn_mat_file,mrca,alpha,beta,gamma,gain,loss):
@@ -450,9 +451,11 @@ class NJTree:
 			return (-1.0, e_pair,len(self.graph.nodes()))
 				
 		else:
-			self.hom_shortest_paths = nx.shortest_path_length(self.graph,None,None,'homology_weight')
+			# self.hom_shortest_paths = nx.shortest_path_length(self.graph,None,None,'homology_weight')
+			self.hom_shortest_paths = nxe.all_pairs_path_length(self.graph, 'homology_weight')
 			self.paths = nx.shortest_path(self.graph,None,None)
-			self.syn_shortest_paths = nx.shortest_path_length(self.graph,None,None,'synteny_weight')
+			# self.syn_shortest_paths = nx.shortest_path_length(self.graph,None,None,'synteny_weight')
+			self.syn_shortest_paths = nxe.all_pairs_path_length(self.graph, 'synteny_weight')
 			#~ self.syn_shortest_paths = nx.shortest_path(self.graph,None,None)
 			for e in self.graph.edges():
 				(score,tree,gl_sum,loss) = self.scoreEdge(e,min_gl)
@@ -889,7 +892,7 @@ class NJTree:
 				newicks.append(self.toNewick(n))
 
 		return newicks
-		
+
 class NJNode:
 	def __init__(self, geneID, iter, index, successors,row):
 		self.species = ""
