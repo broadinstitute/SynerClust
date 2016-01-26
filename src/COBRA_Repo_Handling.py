@@ -9,40 +9,43 @@ class RepoParse:
 		self.locusTags = set([])
 		
 	def parseRepoFile(self,repo_path):
-		lines = open(self.repo_file,'r').readlines()
-		curGenome = {}
-		for l in lines:
-			if l.find("#") > -1:
-				continue
-			if l.find("//") > -1:
-				#new genome
-				if len(curGenome) > 0:
-					myG = Genome(curGenome["Genome"], curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"])
-					self.genomes.append(myG)
-					curGenome = {}
-				continue
-			dat = l.split()
-			if len(dat) < 2:
-				continue
-			if dat[0].find("Genome") > -1:
-				curGenome["Peptide"] = "null"
-				curGenome[dat[0]] = dat[1]
-			elif dat[0].find("Annotation") > -1:
-				if not dat[1].find("/") > -1:
-					genome_path = repo_path+curGenome["Genome"]+"/"
-					myfiles = os.listdir(genome_path)
-					dat[1] = genome_path+dat[1]+".annotation.gff3"
-					curGenome["Sequence"] = genome_path+curGenome["Genome"]+".genome.fa"
-					if not curGenome["Genome"]+".genome.fa" in myfiles:
-						curGenome["Sequence"] = genome_path+curGenome["Genome"]+".genome"
-				curGenome[dat[0]] = dat[1]
-			elif dat[0].find("Sequence") > -1:
-				curGenome[dat[0]] = dat[1]
-			elif dat[0].find("Peptide")>-1:
-				curGenome[dat[0]] = dat[1]
-		if len(curGenome) > 0:
-			myG = Genome(curGenome["Genome"],  curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"])
-			self.genomes.append(myG)
+		with open(self.repo_file) as f:
+			lines = f.readline()
+			print lines
+		# lines = open(self.repo_file,'r').readlines()
+			curGenome = {}
+			for l in lines:
+				if l.find("#") > -1:
+					continue
+				if l.find("//") > -1:
+					#new genome
+					if len(curGenome) > 0:
+						myG = Genome(curGenome["Genome"], curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"])
+						self.genomes.append(myG)
+						curGenome = {}
+					continue
+				dat = l.split()
+				if len(dat) < 2:
+					continue
+				if dat[0].find("Genome") > -1:
+					curGenome["Peptide"] = "null"
+					curGenome["Genome"] = dat[1] # need to use the hardnamed key in case "Genome" matches in for example "Genomes"
+				elif dat[0].find("Annotation") > -1:
+					if not dat[1].find("/") > -1:
+						genome_path = repo_path+curGenome["Genome"]+"/"
+						myfiles = os.listdir(genome_path)
+						dat[1] = genome_path+dat[1]+".annotation.gff3"
+						curGenome["Sequence"] = genome_path+curGenome["Genome"]+".genome.fa"
+						if not curGenome["Genome"]+".genome.fa" in myfiles:
+							curGenome["Sequence"] = genome_path+curGenome["Genome"]+".genome"
+					curGenome["Annotation"] = dat[1]
+				elif dat[0].find("Sequence") > -1:
+					curGenome["Sequence"] = dat[1]
+				elif dat[0].find("Peptide")>-1:
+					curGenome["Peptide"] = dat[1]
+			if len(curGenome) > 0:
+				myG = Genome(curGenome["Genome"],  curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"])
+				self.genomes.append(myG)
 		
 	def assignLocusTags(self):
 		for g in self.genomes:

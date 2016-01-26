@@ -1,0 +1,4 @@
+bin/
+tests/data/nodes/
+tests/data/
+*.pyc

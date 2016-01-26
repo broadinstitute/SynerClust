@@ -16,15 +16,17 @@ class Tree:
 		self.genomes = []
 		
 	def readTree(self):
-		tree = open(self.tree_file,'r').read()
-		#~ print tree
-		trees = re.split('\)\d+[\.\d+]*:',tree)
-		jstring = "):"
-		tree = jstring.join(trees)
-		tree = tree.rstrip()
-		print tree
-		#~ sys.exit()
-		self.tree_string = tree
+		# tree = open(self.tree_file,'r').read()
+		with open(self.tree_file) as t:
+			tree = t.read()
+			#~ print tree
+			trees = re.split('\)\d+[\.\d+]*:',tree)
+			jstring = "):"
+			tree = jstring.join(trees)
+			tree = tree.rstrip()
+			print tree
+			#~ sys.exit()
+			self.tree_string = tree
 		
 	def readGenomeToLocusFile(self):
 		tags = open(self.genomeToLocusFile,'r').readlines()
