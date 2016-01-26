@@ -20,8 +20,9 @@ class RepoParse:
 				if l.find("//") > -1:
 					#new genome
 					if len(curGenome) > 0:
-						myG = Genome(curGenome["Genome"], curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"])
-						self.genomes.append(myG)
+						if "Genome" in curGenome and "Annotation" in curGenome and "Sequence" in curGenome: # verify that all 3 important fields have been filed
+							myG = Genome(curGenome["Genome"], curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"])
+							self.genomes.append(myG)
 						curGenome = {}
 					continue
 				dat = l.split()
@@ -29,22 +30,31 @@ class RepoParse:
 					continue
 				if dat[0].find("Genome") > -1:
 					curGenome["Peptide"] = "null"
-					curGenome["Genome"] = dat[1] # need to use the hardnamed key in case "Genome" matches in for example "Genomes"
+					curGenome["Genome"] = dat[1] # need to use the hardnamed key in case "Genome" found in for example "Genomes"
 				elif dat[0].find("Annotation") > -1:
-					if not dat[1].find("/") > -1:
-						genome_path = repo_path+curGenome["Genome"]+"/"
-						myfiles = os.listdir(genome_path)
-						dat[1] = genome_path+dat[1]+".annotation.gff3"
-						curGenome["Sequence"] = genome_path+curGenome["Genome"]+".genome.fa"
-						if not curGenome["Genome"]+".genome.fa" in myfiles:
-							curGenome["Sequence"] = genome_path+curGenome["Genome"]+".genome"
+					if not ".annotation.gff3" in dat[1]:
+						print "Are you sure \"%s\" is a gff3 annotation file?" %(dat[1])
+					if not dat[1][0] == "/": # if not an absolute path
+					# if not dat[1].find("/") > -1:
+						# genome_path = repo_path + curGenome["Genome"] + "/"
+						# genome_path = repo_path
+						# myfiles = os.listdir(genome_path)
+						dat[1] = repo_path + dat[1] # path relative to repo, "./" and "../" can be used
+						# curGenome["Sequence"] = genome_path + curGenome["Genome"] + ".genome.fa"
+						# if not curGenome["Genome"] + ".genome.fa" in myfiles:
+						# 	curGenome["Sequence"] = genome_path + curGenome["Genome"] +".genome"
 					curGenome["Annotation"] = dat[1]
 				elif dat[0].find("Sequence") > -1:
+					if not ".genome" in dat[1] or not ".fasta" in dat[1]: # .genome.fa is included by just .genome
+						print "Are you sure \"%s\" is a fasta file?" %(dat[1])
+					# if not dat[1].find("/") > -1:
+					if not dat[1][0] == "/":
+						dat[1] = repo_path + dat[1]
 					curGenome["Sequence"] = dat[1]
-				elif dat[0].find("Peptide")>-1:
+				elif dat[0].find("Peptide") > -1:
 					curGenome["Peptide"] = dat[1]
 			if len(curGenome) > 0:
-				myG = Genome(curGenome["Genome"],  curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"])
+				myG = Genome(curGenome["Genome"], curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"])
 				self.genomes.append(myG)
 		
 	def assignLocusTags(self):
