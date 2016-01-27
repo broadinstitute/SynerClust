@@ -166,134 +166,134 @@ class Tree:
 			myExcisableRegions = self.indexParens(myTreeString)
 		return myTreeString
 			
-	def parseTree2(self):
-		myTreeString = self.tree_string[0:-1]
-		myExcisableRegions = self.indexParens(myTreeString)
-		while len(myExcisableRegions) > 0:
-			myExcisableRegions = sorted(myExcisableRegions, key=lambda reg: reg[3], reverse=True)
-			#~ print "excisable", len(myExcisableRegions)
-			newSpeciesLocus = ""
-			for mer in myExcisableRegions:
-				region = mer[2][1:-1]
-				genomes = region.split(",")
-				child_nodes = []
-				#~ print "genomes", len(genomes)
-				#~ print genomes
-				for g in genomes:
-					#~ print g
-					nome = g.split(":")[0]
-					dist = float(g.split(":")[1])
-					locus = ""
-					if nome in self.locusToGenome:
-						locus = nome
-					else:
-						locus = self.codeGenomeID(nome)
+	# def parseTree2(self):
+	# 	myTreeString = self.tree_string[0:-1]
+	# 	myExcisableRegions = self.indexParens(myTreeString)
+	# 	while len(myExcisableRegions) > 0:
+	# 		myExcisableRegions = sorted(myExcisableRegions, key=lambda reg: reg[3], reverse=True)
+	# 		#~ print "excisable", len(myExcisableRegions)
+	# 		newSpeciesLocus = ""
+	# 		for mer in myExcisableRegions:
+	# 			region = mer[2][1:-1]
+	# 			genomes = region.split(",")
+	# 			child_nodes = []
+	# 			#~ print "genomes", len(genomes)
+	# 			#~ print genomes
+	# 			for g in genomes:
+	# 				#~ print g
+	# 				nome = g.split(":")[0]
+	# 				dist = float(g.split(":")[1])
+	# 				locus = ""
+	# 				if nome in self.locusToGenome:
+	# 					locus = nome
+	# 				else:
+	# 					locus = self.codeGenomeID(nome)
 
-					child_nodes.append((locus,dist))
-				if len(child_nodes) ==1:
-					print "child nodes ==1"
-					sys.exit()
-				if len(mer[2]) == len(myTreeString) and len(genomes)==2:
-					same_length =1
-					tnodes = []
-					for cn in child_nodes:
-						self.tree.add_node(cn[0])
-						tnodes.append(cn[0])
-					self.tree.add_edge(tnodes[0],tnodes[1],weight=child_nodes[0][1])
-					myTreeString = region
-					break
+	# 				child_nodes.append((locus,dist))
+	# 			if len(child_nodes) ==1:
+	# 				print "child nodes ==1"
+	# 				sys.exit()
+	# 			if len(mer[2]) == len(myTreeString) and len(genomes)==2:
+	# 				same_length =1
+	# 				tnodes = []
+	# 				for cn in child_nodes:
+	# 					self.tree.add_node(cn[0])
+	# 					tnodes.append(cn[0])
+	# 				self.tree.add_edge(tnodes[0],tnodes[1],weight=child_nodes[0][1])
+	# 				myTreeString = region
+	# 				break
 					
-				has_dist = 0
-				while len(child_nodes) > 1:
-					#~ print "WHILE", len(child_nodes)
-					if len(child_nodes)>2 and child_nodes[0][1]>0.0:
-						has_dist = 1
-						#~ print "has_dist", has_dist
-						break
-					tkids = []
-					#~ print len(child_nodes)
-					tkids.append(child_nodes.pop(0))
-					tkids.append(child_nodes.pop(0))
-					#~ print len(child_nodes)
-					tnodes = []
-					for tk in tkids:
-						if self.tree_string.find(self.locusToGenome[tk[0]])>-1:
-							self.genomes.append(self.locusToGenome[tk[0]])
-						self.tree.add_node(tk[0])
-						tnodes.append(tk[0])
-					tnodes.sort()
-					newSpeciesLocus = self.codeGenomeID(";".join(tnodes))
-					#~ print tkids,";".join(tnodes), newSpeciesLocus
-					self.tree.add_node(newSpeciesLocus)
-					weight = 0.0
-					for tk in tkids:
-						weight = tk[1]
-						self.tree.add_edge(newSpeciesLocus,tk[0],weight=tk[1])
-						#~ print tk[0],self.tree.edge[tk[0]]
-					#~ print newSpeciesLocus, self.tree.edge[newSpeciesLocus]
-					child_nodes.append((newSpeciesLocus,weight))
-				if has_dist ==1:
-					#~ print myTreeString
-					min_pair = (child_nodes[0], child_nodes[1])
-					min_dist = child_nodes[0][1]+child_nodes[1][1]
-					#~ print min_pair, min_dist
-					subPaths = {}
-					for c in child_nodes:
-						#~ print c
-						if self.tree_string.find(self.locusToGenome[c[0]])>-1:
-							self.genomes.append(self.locusToGenome[c[0]])
-							self.tree.add_node(c[0])
-						paths = nx.shortest_path_length(self.tree,c[0],None,'weight')
-						longest_path = 0.0
-						#~ print paths
-						for p in paths:
-							if p == c[0]:
-								continue
-							if paths[p] > longest_path:
-								longest_path = paths[p]
-								#~ print longest_path
-						longest_path += c[1]
-						subPaths[c[0]] = longest_path
-					for c in child_nodes:
-						for n in child_nodes:
-							if c==n:
-								continue
-							myDist = subPaths[c[0]]+subPaths[n[0]]
-							#~ print c[0], subPaths[c[0]], n[0], subPaths[n[0]], myDist
-							if myDist < min_dist:
-								min_dist = myDist
-								min_pair = (c, n)
-								#~ print min_pair, min_dist
-					tkids = []
-					#~ print len(child_nodes), child_nodes
-					tkids.append(child_nodes.pop(child_nodes.index(min_pair[0])))
-					tkids.append(child_nodes.pop(child_nodes.index(min_pair[1])))
-					#~ print len(child_nodes), child_nodes
-					tnodes = []
-					for tk in tkids:
-						tnodes.append(tk[0])
-					tnodes.sort()
-					newSpeciesLocus = self.codeGenomeID(";".join(tnodes))
-					#~ print tkids,";".join(tnodes), newSpeciesLocus
-					self.tree.add_node(newSpeciesLocus)
-					weight = child_nodes[0][1]
-					for tk in tkids:
-						self.tree.add_edge(newSpeciesLocus,tk[0],weight=tk[1])
-					self.tree.add_edge(newSpeciesLocus,child_nodes[0][0],weight=child_nodes[0][1])
+	# 			has_dist = 0
+	# 			while len(child_nodes) > 1:
+	# 				#~ print "WHILE", len(child_nodes)
+	# 				if len(child_nodes)>2 and child_nodes[0][1]>0.0:
+	# 					has_dist = 1
+	# 					#~ print "has_dist", has_dist
+	# 					break
+	# 				tkids = []
+	# 				#~ print len(child_nodes)
+	# 				tkids.append(child_nodes.pop(0))
+	# 				tkids.append(child_nodes.pop(0))
+	# 				#~ print len(child_nodes)
+	# 				tnodes = []
+	# 				for tk in tkids:
+	# 					if self.tree_string.find(self.locusToGenome[tk[0]])>-1:
+	# 						self.genomes.append(self.locusToGenome[tk[0]])
+	# 					self.tree.add_node(tk[0])
+	# 					tnodes.append(tk[0])
+	# 				tnodes.sort()
+	# 				newSpeciesLocus = self.codeGenomeID(";".join(tnodes))
+	# 				#~ print tkids,";".join(tnodes), newSpeciesLocus
+	# 				self.tree.add_node(newSpeciesLocus)
+	# 				weight = 0.0
+	# 				for tk in tkids:
+	# 					weight = tk[1]
+	# 					self.tree.add_edge(newSpeciesLocus,tk[0],weight=tk[1])
+	# 					#~ print tk[0],self.tree.edge[tk[0]]
+	# 				#~ print newSpeciesLocus, self.tree.edge[newSpeciesLocus]
+	# 				child_nodes.append((newSpeciesLocus,weight))
+	# 			if has_dist ==1:
+	# 				#~ print myTreeString
+	# 				min_pair = (child_nodes[0], child_nodes[1])
+	# 				min_dist = child_nodes[0][1]+child_nodes[1][1]
+	# 				#~ print min_pair, min_dist
+	# 				subPaths = {}
+	# 				for c in child_nodes:
+	# 					#~ print c
+	# 					if self.tree_string.find(self.locusToGenome[c[0]])>-1:
+	# 						self.genomes.append(self.locusToGenome[c[0]])
+	# 						self.tree.add_node(c[0])
+	# 					paths = nx.shortest_path_length(self.tree,c[0],None,'weight')
+	# 					longest_path = 0.0
+	# 					#~ print paths
+	# 					for p in paths:
+	# 						if p == c[0]:
+	# 							continue
+	# 						if paths[p] > longest_path:
+	# 							longest_path = paths[p]
+	# 							#~ print longest_path
+	# 					longest_path += c[1]
+	# 					subPaths[c[0]] = longest_path
+	# 				for c in child_nodes:
+	# 					for n in child_nodes:
+	# 						if c==n:
+	# 							continue
+	# 						myDist = subPaths[c[0]]+subPaths[n[0]]
+	# 						#~ print c[0], subPaths[c[0]], n[0], subPaths[n[0]], myDist
+	# 						if myDist < min_dist:
+	# 							min_dist = myDist
+	# 							min_pair = (c, n)
+	# 							#~ print min_pair, min_dist
+	# 				tkids = []
+	# 				#~ print len(child_nodes), child_nodes
+	# 				tkids.append(child_nodes.pop(child_nodes.index(min_pair[0])))
+	# 				tkids.append(child_nodes.pop(child_nodes.index(min_pair[1])))
+	# 				#~ print len(child_nodes), child_nodes
+	# 				tnodes = []
+	# 				for tk in tkids:
+	# 					tnodes.append(tk[0])
+	# 				tnodes.sort()
+	# 				newSpeciesLocus = self.codeGenomeID(";".join(tnodes))
+	# 				#~ print tkids,";".join(tnodes), newSpeciesLocus
+	# 				self.tree.add_node(newSpeciesLocus)
+	# 				weight = child_nodes[0][1]
+	# 				for tk in tkids:
+	# 					self.tree.add_edge(newSpeciesLocus,tk[0],weight=tk[1])
+	# 				self.tree.add_edge(newSpeciesLocus,child_nodes[0][0],weight=child_nodes[0][1])
 					
-					newSpeciesLocus = child_nodes[0][0]
-					#~ newSpeciesLocus = "("+",".join(forReplace)+")"
+	# 				newSpeciesLocus = child_nodes[0][0]
+	# 				#~ newSpeciesLocus = "("+",".join(forReplace)+")"
 
-				myTreeString = myTreeString.replace(mer[2],newSpeciesLocus)
-				#~ print myTreeString
-				child_nodes = []
-			myExcisableRegions = self.indexParens(myTreeString)
-		print myTreeString
-		if len(self.genomes) == 1:
-			return "child nodes == 1"
-		else:
-			print "GENOMES", len(self.genomes)
-			return "Good tree"
+	# 			myTreeString = myTreeString.replace(mer[2],newSpeciesLocus)
+	# 			#~ print myTreeString
+	# 			child_nodes = []
+	# 		myExcisableRegions = self.indexParens(myTreeString)
+	# 	print myTreeString
+	# 	if len(self.genomes) == 1:
+	# 		return "child nodes == 1"
+	# 	else:
+	# 		print "GENOMES", len(self.genomes)
+	# 		return "Good tree"
 			
 	def findCentroid(self):
 		minDist = -1.0

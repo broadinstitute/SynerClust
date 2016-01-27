@@ -1,17 +1,23 @@
-import sys, random, string, os
+import sys, random, string, os, logging, hashlib, base64
+
 
 class RepoParse:
+	logger = logging.getLogger("RepoParse")
+	
 	def __init__(self, repo_file):
 		self.repo_file = repo_file
 		self.genomeToLocus = {}
 		self.locusToGenome = {}
 		self.genomes = []
 		self.locusTags = set([])
+		RepoParse.logger.info("RepoParse initialized")
 		
 	def parseRepoFile(self,repo_path):
+		RepoParse.logger.debug("Parsing repo files")
+		RepoParse.logger.debug(self.repo_file)
 		with open(self.repo_file) as f:
-			lines = f.readline()
-			print lines
+			lines = f.readlines()
+			# print lines
 		# lines = open(self.repo_file,'r').readlines()
 			curGenome = {}
 			for l in lines:
@@ -21,6 +27,7 @@ class RepoParse:
 					#new genome
 					if len(curGenome) > 0:
 						if "Genome" in curGenome and "Annotation" in curGenome and "Sequence" in curGenome: # verify that all 3 important fields have been filed
+							RepoParse.logger.debug("Creating genome entry with %s %s %s %s" %(curGenome["Genome"], curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"]))
 							myG = Genome(curGenome["Genome"], curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"])
 							self.genomes.append(myG)
 						curGenome = {}
@@ -84,6 +91,10 @@ class RepoParse:
 		print "Wrote locus tags to locus_tag_file.txt"
 				
 	def assignGenomeLocus(self, genome):
+		base64.urlsafe_b64encode(hashlib.md5(genome).digest())
+
+
+
 		code = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
 		while code in self.locusTags:
 			code = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
@@ -108,6 +119,8 @@ class RepoParse:
 		return False
 		
 class Genome:
+	logger = logging.getLogger(__name__)
+
 	def __init__(self, genome, annotation, sequence,peptide):
 		self.genome = genome
 		self.locus = ""
@@ -115,6 +128,7 @@ class Genome:
 		self.sequence = sequence
 		self.peptide = peptide
 		self.directory = ""
+		Genome.logger.info("Genome Initialized")
 		
 	def setupDirectory(self, genomeDir,distribute,synteny_window):
 		#make a directory for this genome in the genomeDir

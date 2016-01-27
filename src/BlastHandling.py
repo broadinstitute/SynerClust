@@ -331,16 +331,16 @@ class BlastParse:
 		return (myHomDist,mySynDist)
 
 	#makes a neighbor joining tree using QuickTree from the distance matrix		
-	def makeTreeFromMatrix(self, matQ):
-		while(True):
-			try:
-				matFile = matQ.get(timeout=5)
-				treeFile = matFile.replace(".dist",".tree")
-				cmd = "#QUICKTREE_PATH -in m -out t " + matFile +" > "+treeFile
-				os.system(cmd)
-				#~ os.system("rm "+matFile)
-			except Empty:
-				break
+	# def makeTreeFromMatrix(self, matQ):
+	# 	while(True):
+	# 		try:
+	# 			matFile = matQ.get(timeout=5)
+	# 			treeFile = matFile.replace(".dist",".tree")
+	# 			cmd = "#QUICKTREE_PATH -in m -out t " + matFile +" > "+treeFile
+	# 			os.system(cmd)
+	# 			#~ os.system("rm "+matFile)
+	# 		except Empty:
+	# 			break
 		
 		
 	#reads in the m8 file and returns hits, which is a dict of BlastSegments	

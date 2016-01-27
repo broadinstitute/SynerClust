@@ -1,21 +1,21 @@
 //
 Genome	Esch_coli_H296
-Sequence	#SYNERGY2_PATHexample/Esch_coli_H296/Esch_coli_H296.genome
-Annotation	#SYNERGY2_PATHexample/Esch_coli_H296/Esch_coli_H296_PRODIGAL_2.annotation.gff3
+Sequence	Esch_coli_H296/Esch_coli_H296.genome
+Annotation	Esch_coli_H296/Esch_coli_H296_PRODIGAL_2.annotation.gff3
 //
 Genome	Esch_coli_H378_V1
-Sequence	#SYNERGY2_PATHexample/Esch_coli_H378_V1/Esch_coli_H378_V1.genome
-Annotation	#SYNERGY2_PATHexample/Esch_coli_H378_V1/Esch_coli_H378_V1_PRODIGAL_2.annotation.gff3
+Sequence	Esch_coli_H378_V1/Esch_coli_H378_V1.genome
+Annotation	Esch_coli_H378_V1/Esch_coli_H378_V1_PRODIGAL_2.annotation.gff3
 //
 Genome	Esch_coli_TA014_V1
-Sequence	#SYNERGY2_PATHexample/Esch_coli_TA014_V1/Esch_coli_TA014_V1.genome
-Annotation	#SYNERGY2_PATHexample/Esch_coli_TA014_V1/Esch_coli_TA014_V1_PRODIGAL_2.annotation.gff3
+Sequence	Esch_coli_TA014_V1/Esch_coli_TA014_V1.genome
+Annotation	Esch_coli_TA014_V1/Esch_coli_TA014_V1_PRODIGAL_2.annotation.gff3
 //
 Genome	Esch_coli_H461_V1
-Sequence	#SYNERGY2_PATHexample/Esch_coli_H461_V1/Esch_coli_H461_V1.genome
-Annotation	#SYNERGY2_PATHexample/Esch_coli_H461_V1/Esch_coli_H461_V1_PRODIGAL_5.annotation.gff3
+Sequence	Esch_coli_H461_V1/Esch_coli_H461_V1.genome
+Annotation	Esch_coli_H461_V1/Esch_coli_H461_V1_PRODIGAL_5.annotation.gff3
 //
 Genome	Esch_coli_R527_V1
-Sequence	#SYNERGY2_PATHexample/Esch_coli_R527_V1/Esch_coli_R527_V1.genome
-Annotation	#SYNERGY2_PATHexample/Esch_coli_R527_V1/Esch_coli_R527_V1_PRODIGAL_2.annotation.gff3
+Sequence	Esch_coli_R527_V1/Esch_coli_R527_V1.genome
+Annotation	Esch_coli_R527_V1/Esch_coli_R527_V1_PRODIGAL_2.annotation.gff3
 //

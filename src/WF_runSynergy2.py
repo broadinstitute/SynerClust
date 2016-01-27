@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os, getopt
+import sys, os, getopt, logging
 import COBRA_Repo_Handling, WF_Initialization, TreeLib
 import networkx as nx
 
@@ -56,6 +56,11 @@ def usage():
 	"""
 	
 def main(argv):
+	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s :\n\t%(message)s\n"
+	logger = logging.getLogger("main")
+	logging.basicConfig(filename='runSynergy2.log', format = FORMAT, filemode='w', level=logging.DEBUG)
+	logger.info('Started')
+
 	cobra_repo = ""
 	cobra_repo_path = ""
 	working_dir = ""
@@ -194,6 +199,8 @@ def main(argv):
 	print "dependicizing"
 	myInitTree.calculateNodeDependencies(working_dir)
 	myInitTree.writeLocusTagFile()
+    
+	logger.info('Finished')
 		
 if __name__ == "__main__":
 	if len(sys.argv) == 1:

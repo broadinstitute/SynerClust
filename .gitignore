@@ -1,4 +1,7 @@
 bin/
 tests/data/nodes/
 tests/data/
+tmp/
 *.pyc
+install.commands
+install.sh
