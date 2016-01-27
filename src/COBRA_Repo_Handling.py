@@ -1,4 +1,5 @@
 import sys, random, string, os, logging, hashlib, base64
+import traceback
 
 
 class RepoParse:
@@ -90,14 +91,16 @@ class RepoParse:
 		RepoParse.logger.info("Wrote locus tags to locus_tag_file.txt")
 				
 	def assignGenomeLocus(self, genome):
-		base64.urlsafe_b64encode(hashlib.md5(genome).digest())
+		RepoParse.logger.debug("".join(traceback.format_stack()))
+		# L for leaf
+		# 000000 because it is a leaf/basic level
+		# hash of the genome name, the [:-2] is to discard the "==" from the encoding
+		code = "L_0000000_" + base64.urlsafe_b64encode(hashlib.md5(genome).digest())[:-2]
 
-
-
-		code = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
-		while code in self.locusTags:
-			code = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
-		self.locusTags.add(code)
+		# code = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
+		# while code in self.locusTags:
+		# 	code = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
+		# self.locusTags.add(code)
 		return code
 			
 	def makeGenomeDirectories(self, genome_dir, distribute,synteny_window):

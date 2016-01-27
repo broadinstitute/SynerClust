@@ -3,6 +3,8 @@
 #Gets the filesystem set prepped to run the actual algorithm and writes the commands to do so
 import sys, string, random, os, numpy, pickle, re, logging, TreeLib
 import networkx as nx
+import traceback
+
 class Tree:
 	logger = logging.getLogger("Tree")
 
@@ -33,10 +35,14 @@ class Tree:
 		Tree.logger.debug("Tree initialized")
 		
 	def codeGenomeID(self, genome):
+		Tree.logger.debug("".join(traceback.format_stack()))
 		tag = ''
 		if genome in self.genomeToLocus:
 			tag = self.genomeToLocus[genome]
 		else:
+			# TODO CHECK IF THIS IS EVER CALLED
+			import pdb
+			pdb.set_trace()
 			tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
 			while tag in self.locusToGenome:
 				tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))

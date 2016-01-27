@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 
-import sys, math, getopt, random, string, os, re
+import sys, math, getopt, random, string, os, re, logging, hashlib, base64
 import networkx as nx
+import traceback
 
 class Tree:
+	logger = logging.getLogger("Tree")
+
 	def __init__(self, tree_file, genomeToLocusFile):
 		self.tree_file = tree_file
 		self.genomeToLocusFile = genomeToLocusFile
@@ -39,17 +42,23 @@ class Tree:
 			self.locusToGenome[l[1]] = l[0]
 		
 	def codeGenomeID(self, genome):
+		Tree.logger.debug("".join(traceback.format_stack()))
+		# Tree.logger.debug("\t"*len(traceback.format_stack()) + "codeGenomeID")
 		tag = ''
 		if genome in self.genomeToLocus:
 			tag = self.genomeToLocus[genome]
 			self.locusToGenome[tag] = genome
 		else:
-			tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
-			while tag in self.locusToGenome:
-				tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
+			children = genome.split(";")
+			# max node degree between children nodes
+			degree = max(int(children[0].split("_")[1]), int(children[1].split("_")[1])) + 1
+			tag = "N_%07d_%s" %(degree, base64.urlsafe_b64encode(hashlib.md5(genome).digest())[:-2])
+			# tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
+			# while tag in self.locusToGenome:
+			# 	tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
 			self.genomeToLocus[genome] = tag
 			self.locusToGenome[tag] = genome
-			print genome, tag
+			# print genome, tag
 		return tag
 		
 	def reregisterGenomeID(self, id, newChildren):
@@ -506,6 +515,7 @@ class Tree:
 		i = 1
 		while i<len(parens):
 			p = parens[i]
+			# might want to add a verification that the tree is correctly formated first
 			if p[1] == ")" and parens[i-1][1] == "(":
 				l = parens[i-1][0]
 				r = p[0]+1
