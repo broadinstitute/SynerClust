@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
 #Gets the filesystem set prepped to run the actual algorithm and writes the commands to do so
-import sys, string, random, os, numpy, pickle, re, TreeLib
+import sys, string, random, os, numpy, pickle, re, logging, TreeLib
 import networkx as nx
 class Tree:
+	logger = logging.getLogger("Tree")
+
 	def __init__(self, tree_obj, flow_name, blast_eval, num_cores, alpha, gamma, gain, loss, min_best_hit, cmds_per_job,syn_dist,homScale,synScale,numHits,minSynFrac,hamming):
 		self.tree_obj = tree_obj
 		self.genomeToLocusFile = tree_obj.genomeToLocusFile
@@ -28,6 +30,7 @@ class Tree:
 		self.min_syn_frac = minSynFrac
 		self.hamming = hamming
 		self.syn2_path = "#SYNERGY2_PATH"
+		Tree.logger.debug("Tree initialized")
 		
 	def codeGenomeID(self, genome):
 		tag = ''
@@ -54,7 +57,7 @@ class Tree:
 			line = "\t".join([g, self.genomeToLocus[g]])+"\n"
 			tag_out.write(line)
 		tag_out.close()
-		print "Wrote locus tags to locus_tag_file.txt"
+		Tree.logger.info("Wrote locus tags to locus_tag_file.txt")
 		
 	def makePicklesForSingleGenome(self, working_dir, genome, node):
 		gdat = open(working_dir+"genomes/"+genome+"/annotation.txt", 'r').readlines()
@@ -65,8 +68,8 @@ class Tree:
 		x = gdat[0].split()[1]
 		y = x.split("_")[0]
 		if not y==node:
-			print node, y
-			print gdat[0]
+			Tree.logger.warning("%s %s", (node, y))
+			Treee.logger.warning("%s" %(gdat[0]))
 			
 		#these hashes will be pickles
 		genes = {}
@@ -78,7 +81,7 @@ class Tree:
 			g= g.rstrip()
 			l = g.split()
 			if len(l) < 8:
-				print g
+				Tree.logger.warning(g)
 				continue
 			if not l[2] in neighbors:
 				neighbors[l[2]] = []
@@ -179,7 +182,8 @@ class Tree:
 					continue
 				#~ print subnodes[r]+subnodes[s], r, s
 				if (subnodes[r]+subnodes[s]) < minTotal:
-					print "min!", r, s
+					# print "min!", r, s
+					Tree.logger.info("min! %s %s" %(str(r), str(s)))
 					minTotal = subnodes[r]+subnodes[s]
 					minPair = (r,s)
 		minList = [minPair[0],minPair[1]]
@@ -210,7 +214,8 @@ class Tree:
 				pick_count+=1
 				if "PICKLES_COMPLETE" not in os.listdir(node_dir+"/"+n):
 					self.makePicklesForSingleGenome(working_dir, self.locusToGenome[n], n)
-					print pick_count, n, self.locusToGenome[n]
+					Tree.logger.info("%s %s %s" %(pick_count, n, self.locusToGenome[n]))
+					# print pick_count, n, self.locusToGenome[n]
 			
 		cmd_count = 0 #also tiers below
 		nodeTier = {}
@@ -225,7 +230,8 @@ class Tree:
 				if ready == 1:
 					#this section handles 3-way merges which, while legitimate, cause a ton of headaches for the rest of this code
 					if len(noGene_nodes[n]) > 2:
-						print "THREE-WAY MERGE", noGene_nodes[n]
+						# print "THREE-WAY MERGE", noGene_nodes[n]
+						Tree.logger.info("THREE-WAY MERGE %s" %(noGene_nodes[n]))
 						#calc number of sub tiers below each child node
 						subs= {}
 						for q in noGene_nodes[n]:
@@ -238,7 +244,8 @@ class Tree:
 								excluded = q
 						#make a new node using ready_pair
 						intermediate_node = self.codeGenomeID(";".join([ready_pair[0],ready_pair[1]]))
-						print "new intermediate node", intermediate_node, ready_pair
+						Tree.logger.info("new intermediate node %s %s" %(intermediate_node, ready_pair))
+						# print "new intermediate node", intermediate_node, ready_pair
 						os.system("mkdir "+node_dir+"/"+intermediate_node)
 						new_nodes.append((intermediate_node,ready_pair[0],ready_pair[1]))
 
@@ -294,7 +301,8 @@ class Tree:
 		serial_sets = {}
 		sets = 1
 		for n in nodeTier[1]: #tier 1 is the first tier above the leaf nodes
-			print "set number ", sets, n
+			Tree.logger.info("set number %s %s" %(sets, n))
+			# print "set number ", sets, n
 			local_proc_nodes = []
 			curNode = n
 			set_cmd_count=1
@@ -324,7 +332,8 @@ class Tree:
 			serial_sets[sets] = local_proc_nodes
 			sets+=1
 			set_cmd_count=1
-		print serial_sets
+		Tree.logger.info(serial_sets)
+		# print serial_sets
 		self.makeNodeFlowLauncher(working_dir, serial_sets)
 		
 	def makeSingleNodeFlow(self,working_dir,curNode,cmd_id,kids):

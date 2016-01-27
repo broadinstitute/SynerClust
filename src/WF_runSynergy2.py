@@ -56,9 +56,13 @@ def usage():
 	"""
 	
 def main(argv):
-	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s :\n\t%(message)s\n"
-	logger = logging.getLogger("main")
+	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
+	logger = logging.getLogger()
 	logging.basicConfig(filename='runSynergy2.log', format = FORMAT, filemode='w', level=logging.DEBUG)
+	# add a new Handler to print all INFO and above messages to stdout
+	ch = logging.StreamHandler(sys.stdout)
+	ch.setLevel(logging.INFO)
+	logger.addHandler(ch)
 	logger.info('Started')
 
 	cobra_repo = ""
@@ -171,15 +175,15 @@ def main(argv):
 		
 		
 	#read species tree
-	print "init tree lib"
+	logger.debug("init tree lib")
 	myTree = TreeLib.Tree(species_tree, genome_dir+"locus_tag_file.txt")
-	print "reading genome to locus"
+	logger.info("reading genome to locus")
 	myTree.readGenomeToLocusFile()
-	print "reading tree"
+	logger.info("reading tree")
 	myTree.readTree()
-	print "parsing tree"
+	logger.info("parsing tree")
 	myRootEdge = myTree.parseTree()
-	print myRootEdge
+	logger.info(myRootEdge)
 	rn = myRootEdge.split(",")
 	root_edge2 = (rn[0].split(":")[0],rn[1].split(":")[0])
 	my_re = []
@@ -190,13 +194,13 @@ def main(argv):
 			my_re.append(re)
 	root_edge = (my_re[0],my_re[1])
 	
-	print "rooting"
-	print root_edge
+	logger.info("rooting")
+	logger.info(root_edge)
 	myTree.rootTree(root_edge)
 	#~ myTree.rootByMidpoint()
-	print "initializing"
+	logger.info("initializing")
 	myInitTree = WF_Initialization.Tree(myTree, flow_name,blast_eval, num_cores, alpha, gamma, gain, loss, min_best_hit, cmds_per_job,synteny_window,homScale,synScale,numHits, minSynFrac,hamming)
-	print "dependicizing"
+	logger.info("dependicizing")
 	myInitTree.calculateNodeDependencies(working_dir)
 	myInitTree.writeLocusTagFile()
     

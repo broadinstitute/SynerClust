@@ -10,11 +10,10 @@ class RepoParse:
 		self.locusToGenome = {}
 		self.genomes = []
 		self.locusTags = set([])
-		RepoParse.logger.info("RepoParse initialized")
+		RepoParse.logger.debug("RepoParse initialized")
 		
 	def parseRepoFile(self,repo_path):
 		RepoParse.logger.debug("Parsing repo files")
-		RepoParse.logger.debug(self.repo_file)
 		with open(self.repo_file) as f:
 			lines = f.readlines()
 			# print lines
@@ -40,7 +39,7 @@ class RepoParse:
 					curGenome["Genome"] = dat[1] # need to use the hardnamed key in case "Genome" found in for example "Genomes"
 				elif dat[0].find("Annotation") > -1:
 					if not ".annotation.gff3" in dat[1]:
-						print "Are you sure \"%s\" is a gff3 annotation file?" %(dat[1])
+						RepoParse.logger.warning("Are you sure \"%s\" is a gff3 annotation file?" %(dat[1]))
 					if not dat[1][0] == "/": # if not an absolute path
 					# if not dat[1].find("/") > -1:
 						# genome_path = repo_path + curGenome["Genome"] + "/"
@@ -53,7 +52,7 @@ class RepoParse:
 					curGenome["Annotation"] = dat[1]
 				elif dat[0].find("Sequence") > -1:
 					if not ".genome" in dat[1] or not ".fasta" in dat[1]: # .genome.fa is included by just .genome
-						print "Are you sure \"%s\" is a fasta file?" %(dat[1])
+						RepoParse.logger.warning("Are you sure \"%s\" is a fasta file?" %(dat[1]))
 					# if not dat[1].find("/") > -1:
 					if not dat[1][0] == "/":
 						dat[1] = repo_path + dat[1]
@@ -88,7 +87,7 @@ class RepoParse:
 			line = "\t".join([g, self.genomeToLocus[g]])+"\n"
 			tag_out.write(line)
 		tag_out.close()
-		print "Wrote locus tags to locus_tag_file.txt"
+		RepoParse.logger.info("Wrote locus tags to locus_tag_file.txt")
 				
 	def assignGenomeLocus(self, genome):
 		base64.urlsafe_b64encode(hashlib.md5(genome).digest())
@@ -128,7 +127,7 @@ class Genome:
 		self.sequence = sequence
 		self.peptide = peptide
 		self.directory = ""
-		Genome.logger.info("Genome Initialized")
+		Genome.logger.debug("Genome Initialized")
 		
 	def setupDirectory(self, genomeDir,distribute,synteny_window):
 		#make a directory for this genome in the genomeDir
@@ -166,6 +165,6 @@ class Genome:
 			#~ cmd2 = "cp "+self.sequence+" "+myDir+"."
 			#~ cmd3 ="mv "+myDir+self.sequence+" "+myDir+self.genome+".genome"
 			
-			print "Wrote annotation information for "+self.genome
+			Genome.logger.info("Wrote annotation information for " + self.genome)
 		
 		return False
