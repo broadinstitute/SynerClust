@@ -41,6 +41,7 @@ class Tree:
 			tag = self.genomeToLocus[genome]
 		else:
 			# TODO CHECK IF THIS IS EVER CALLED
+			Tree.logger.error("If this is called, check when and why to modify the tag generated.")
 			import pdb
 			pdb.set_trace()
 			tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
@@ -497,8 +498,8 @@ class Tree:
 					path_to_node_dir = working_dir+"nodes/"+node+"/"
 					instance_cmd = "RunWorkflow -t "+path_to_node_dir+node+".xml -c "+path_to_node_dir+node+".ini -i "+path_to_node_dir+node+"_instance.xml\n"
 					#~ tier = int(ini_id.split(".")[-1])
-					dist_to_root = len(nx.shortest_path(self.rooted_tree,"root",node))
-					instance_commands.append((instance_cmd,dist_to_root))
+					dist_to_root = len(nx.shortest_path(self.rooted_tree, self.tree_obj.root, node))
+					instance_commands.append((instance_cmd, dist_to_root))
 					xml_file.write("\t\t\t<command>\n")
 					xml_file.write("\t\t\t\t<name>"+node+"</name>\n")
 					xml_file.write("\t\t\t\t<configMapId>"+ini_id+"</configMapId>\n")
