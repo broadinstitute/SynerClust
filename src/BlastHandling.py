@@ -53,7 +53,6 @@ class BlastParse:
 		NUM_HITS = numHits
 		bestHits = nx.Graph()
 		bestDirHits = nx.DiGraph()
-		#~ allHits = nx.DiGraph()
 		head = open(headers,'r').readlines()
 		myHead = set([])
 		for h in head:
@@ -65,20 +64,13 @@ class BlastParse:
 		bestDirHits.add_nodes_from(myHead)
 		
 		for q in hits:
-			#~ print q, len(hits[q])
 			q_node = "_".join(q.split("_")[:-1])
-			BlastParse.logger.debug("%s splitted to %s" %(q, q_node))
-
-			#~ last_t = ""
 			q_hits_species= {}
 			for t in hits[q]:
 				t_spec = "_".join(t.split("_")[:-1])
-				BlastParse.logger.debug("%s splitted to %s" %(t, t_spec))
 				if not t_spec in q_hits_species:
 					q_hits_species[t_spec] = []
 				q_hits_species[t_spec].append(hits[q][t])
-			#~ sys.exit()
-			
 			for species in q_hits_species:
 				q_hits = q_hits_species[species]
 				q_best = []
@@ -88,42 +80,24 @@ class BlastParse:
 				q_hits.sort(key=operator.attrgetter('bitScore'), reverse=True)
 				q_best_hash = {}
 				for ts in q_hits:	
-					#~ ts = hits[q][t]
-					#~ ts_score = ts.getAdjPID()
 					ts_score = ts.getScore()
 					t = ts.target.split(";")[0]
-					#~ t_species = t.split("_")[0]
-					#~ print q, t, ts_score, ts.adjPID, ts.evalue
-					status = "zero"
 					if best_evalue == 1.0 and ts.evalue < float(1e-3):
-					#~ if best_evalue == 1.0:
-						#~ print "best", ts_score,ts.evalue, q, t
 						bestAdjPID = ts.getAdjPID()
 						best_evalue = ts.evalue
 						qd_best.append((q,t,ts_score))
 						q_best.append((q,t,ts_score))
-						status = "1st"
-
 					elif (ts.getAdjPID() > bestAdjPID*min_best_hit) and best_evalue < 1.0:
+						# TODO find out why using these hard coded values, and maybe change them?
 						if (ts.evalue < float(1.0e-150)) or (best_evalue > 0.0 and (math.log10(best_evalue)+30.0 > math.log10(ts.evalue))):
-							#~ print "still ok", ts_score, ts.evalue
 							qd_best.append((q,t,ts_score))
 							q_best.append((q,t,ts_score))
-						status = "2nd"
-					#~ print q, t, ts_score, status, bestAdjPID, ts.getAdjPID(), best_evalue, ts.evalue
-				
-				#~ q_best = sorted(q_best, key=lambda tup: tup[2], reverse=True)
 				q_best = sorted(q_best, key=lambda tup: tup[2])
-				#~ qd_best = sorted(qd_best, key=lambda tup: tup[2], reverse=True)
 				qd_best = sorted(qd_best, key=lambda tup: tup[2])
-				#~ print q_best
-				#~ print qd_best
 				i=0
 				qbi=1
 				qdbi=1
-				#~ while i<NUM_HITS:
 				while i<len(q_best) or i<len(qd_best):
-					#~ if i < len(q_best):
 					if (i < len(q_best)) and q_node!=species:
 						if not bestHits.has_edge(q_best[i][0],q_best[i][1]):
 							bestHits.add_edge(q_best[i][0],q_best[i][1],weight=q_best[i][2],rank=qbi)
@@ -133,7 +107,6 @@ class BlastParse:
 						print qd_best[i]
 						qdbi+=1
 					i+=1
-			#~ sys.exit()
 		return (bestHits,bestDirHits)
 
 	def makePutativeClusters(self,bestHits,tree_dir,synData, homScale, synScale,bestDirHits,numHits):
@@ -372,66 +345,60 @@ class BlastParse:
 			t = line[1]
 			T = t.split(";")[0]
 			T_len = t.split(";")[1]
-			#~ if t==old_t:
-				#~ continue
 			if q == t: #self hit
 				continue
 			
-			#~ print q, Q, t, T, line[0], line[1]
 			mySeg = BlastSegment(q,t,line[2],line[3],line[11],line[10]) #query,target,pID,length,bitScore,evalue
 			mySeg.setAdjPID()
 			if not Q in hits:
 				hits[Q] = {}
 			if not T in hits[Q]:
 				hits[Q][T] = mySeg
-			elif mySeg.bitScore > hits[Q][T].bitScore:
+			elif mySeg.bitScore > hits[Q][T].bitScore: # Is this possible to find?
 				#~ print "better bits!", mySeg.bitScore, hits[Q][T].bitScore, Q, T
 				hits[Q][T] = mySeg
-			#~ print len(hits[Q][T])
-			#~ hits[Q][T].append(mySeg)
-			#~ old_t = t
 		return hits
 
-	def readBlat(self):
-		blat = open(self.m8_file,'r').readlines()
-		rhits = {}
-		for b in blat:
-			b = b.rstrip()
-			line = b.split()
-			q = line[0]
-			t=line[1]
-			if q==t:
-				continue
-			if float(line[10]) > 1e-2:
-				continue
-			if not q in rhits:
-				rhits[q] = {}
-			if not t in rhits[q]:
-				rhits[q][t] = {"length":0,"mismatches":0,"bitscore":0.0,"evalue":float(line[10])}
-			#~ print rhits[q][t]
-			rhits[q][t]["length"]+=int(line[3])
-			rhits[q][t]["mismatches"]+=int(line[4])
-			rhits[q][t]["bitscore"]+=float(line[11])
-			#~ print rhits[q][t]
-		hits = {}
-		for q in rhits:
-			Q = q.split(";")[0]
-			if not Q in hits:
-				hits[Q] = {}
-			for t in rhits[q]:
-				T = t.split(";")[0]
-				myLen = rhits[q][t]["length"]
-				myMis = rhits[q][t]["mismatches"]
-				myBit = rhits[q][t]["bitscore"]
-				myE = rhits[q][t]["evalue"]
-				myPID = float(myLen-myMis)/float(myLen)*100.0
-				#~ print q, t, myLen, myMis, myPID
-				mySeg = BlastSegment(q,t,myPID,myLen,myBit,myE)
-				mySeg.setAdjPID()
-				if not T in hits[Q]:
-					hits[Q][T] = mySeg
-				elif mySeg.bitScore>hits[Q][T].bitScore:
-					hits[Q][T] = mySeg
-		return hits
+	# def readBlat(self):
+	# 	blat = open(self.m8_file,'r').readlines()
+	# 	rhits = {}
+	# 	for b in blat:
+	# 		b = b.rstrip()
+	# 		line = b.split()
+	# 		q = line[0]
+	# 		t=line[1]
+	# 		if q==t:
+	# 			continue
+	# 		if float(line[10]) > 1e-2:
+	# 			continue
+	# 		if not q in rhits:
+	# 			rhits[q] = {}
+	# 		if not t in rhits[q]:
+	# 			rhits[q][t] = {"length":0,"mismatches":0,"bitscore":0.0,"evalue":float(line[10])}
+	# 		#~ print rhits[q][t]
+	# 		rhits[q][t]["length"]+=int(line[3])
+	# 		rhits[q][t]["mismatches"]+=int(line[4])
+	# 		rhits[q][t]["bitscore"]+=float(line[11])
+	# 		#~ print rhits[q][t]
+	# 	hits = {}
+	# 	for q in rhits:
+	# 		Q = q.split(";")[0]
+	# 		if not Q in hits:
+	# 			hits[Q] = {}
+	# 		for t in rhits[q]:
+	# 			T = t.split(";")[0]
+	# 			myLen = rhits[q][t]["length"]
+	# 			myMis = rhits[q][t]["mismatches"]
+	# 			myBit = rhits[q][t]["bitscore"]
+	# 			myE = rhits[q][t]["evalue"]
+	# 			myPID = float(myLen-myMis)/float(myLen)*100.0
+	# 			#~ print q, t, myLen, myMis, myPID
+	# 			mySeg = BlastSegment(q,t,myPID,myLen,myBit,myE)
+	# 			mySeg.setAdjPID()
+	# 			if not T in hits[Q]:
+	# 				hits[Q][T] = mySeg
+	# 			elif mySeg.bitScore>hits[Q][T].bitScore:
+	# 				hits[Q][T] = mySeg
+	# 	return hits
 					
 			

@@ -88,7 +88,7 @@ def main(argv):
 			if isOrphan.find("orphan") > -1:
 				for n in nodes:
 					o = n[1].split(":")[0]
-					o= o.replace("(","")
+					o = o.replace("(","")
 					orphans.append(o)
 					last_tree="orphan"
 				continue
@@ -99,7 +99,7 @@ def main(argv):
 				myleaves = bigNode.split(";")
 				mysources = set([]) #sources are the child species contributing to this tree
 				for m in myleaves:
-					logger.critical("m[0:3] = %s\n\t\tm = %s" %(m[0:3], m))
+					logger.debug("m[0:3] = %s\n\t\tm = %s" %(m[0:3], m))
 					mysources.add("_".join(m.split("_")[:-1]))
 					# mysources.add(m[0:3])
 				#a valid tree has genes from both children, single source trees are broken into individual genes and added to the orphan list
