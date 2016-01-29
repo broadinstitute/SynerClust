@@ -43,7 +43,7 @@ class Tree:
 			self.locusToGenome[l[1]] = l[0]
 		
 	def codeGenomeID(self, genome):
-		Tree.logger.debug("".join(traceback.format_stack()))
+		# Tree.logger.debug("".join(traceback.format_stack()))
 		# Tree.logger.debug("\t"*len(traceback.format_stack()) + "codeGenomeID")
 		tag = ''
 		if genome in self.genomeToLocus:

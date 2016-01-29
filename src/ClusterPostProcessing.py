@@ -1,10 +1,19 @@
 #!/usr/bin/env python
-import sys, os, pickle
+import sys, os, pickle, logging
 
 def usage():
 	print "USAGE: ClusterPostProcessing.py [path to genomes/ in synergy2 working dir] [path to locus_mapping.pkl of node to be processed] [number of leaf genomes descendent of node to be processed]"
 
 def main(argv):
+	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
+	logger = logging.getLogger()
+	logging.basicConfig(filename='ClusterPostProcessing.log', format = FORMAT, filemode='w', level=logging.DEBUG)
+	# add a new Handler to print all INFO and above messages to stdout
+	ch = logging.StreamHandler(sys.stdout)
+	ch.setLevel(logging.INFO)
+	logger.addHandler(ch)
+	logger.info('Started')
+
 	#~ node_path = argv[0]
 	locus_mapping = argv[1]
 	genome_path = argv[0]
@@ -44,7 +53,8 @@ def main(argv):
 			#~ myFile.write(">"+k+"\n"+l_s[k]+"\n")
 			clusters[counter]['transcripts'].append(l_t[k])
 			tIDs.add(l_t[k])
-			prefix = k.split("_")[0]
+			prefix = "_".join(k.split("_")[:-1])
+			logger.debug("%s splitted to %s" %(k, prefix))
 			if not prefix in clusters[counter]['leaves']:
 				clusters[counter]['leaves'][prefix] = 0
 			clusters[counter]['leaves'][prefix]+=1
@@ -63,7 +73,7 @@ def main(argv):
 				leafNums = []
 				for l in leafKids:
 					if l.find(d)>-1:
-						num = int(l.split("_")[1])
+						num = int(l.split("_")[-1])
 						leafNums.append(num)
 				leafNums.sort()
 				range = leafNums[-1] - leafNums[0] + 1

@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
-import sys, numpy, math
+import sys, numpy, math, logging
 from scipy.stats import poisson
 import networkx as nx
 import NetworkX_Extension as nxe
 
 class NJTree:
+	logger = logging.getLogger("NJTree")
+
 	def __init__(self,newick_file,syn_mat_file,mrca,alpha,beta,gamma,gain,loss):
 		self.newick_file = newick_file
 		self.distance_file = newick_file
@@ -84,7 +86,8 @@ class NJTree:
 			index[gene] = count
 			rindex[count]=gene
 			unadded_nodes.add(gene)
-			my_species = gene.split("_")[0]
+			my_species = "_".join(gene.split("_")[:-1])
+			NJTree.logger.debug("%s splitted to %s" %(gene, my_species))
 			self.graph.add_node(gene,species=my_species)
 			dists = dat[1:]
 			matrix[gene] = {}

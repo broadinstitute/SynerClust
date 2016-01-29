@@ -16,7 +16,7 @@ def makePicklesForSingleGenome(working_dir, genome, node, SYNTENIC_WINDOW):
 	ndat = open(working_dir+"nodes/"+node+"/"+node+".pep", 'w')
 	#~ print node
 	x = gdat[0].split()[1]
-	y = x.split("_")[0]
+	y = "_".join(x.split("_")[:-1])
 	if not y==node:
 		print node, y
 		print gdat[0]

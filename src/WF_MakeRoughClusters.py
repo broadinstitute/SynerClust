@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os, BlastHandling, pickle
+import sys, os, BlastHandling, pickle, logging
 import networkx as nx
 
 def usage():
@@ -34,6 +34,15 @@ def main(argv):
 	my_dir = node_dir+node+"/"
 	blast_out = my_dir+"blast.m8"
 	n_head = my_dir+"blast_headers.txt"
+
+	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
+	logger = logging.getLogger()
+	logging.basicConfig(filename = my_dir + 'MakeRoughClusters.log', format = FORMAT, filemode='w', level=logging.DEBUG)
+	# add a new Handler to print all INFO and above messages to stdout
+	ch = logging.StreamHandler(sys.stdout)
+	ch.setLevel(logging.INFO)
+	logger.addHandler(ch)
+	logger.info('Started')
 	
 	if "TREES_FINISHED" in os.listdir(my_dir):
 		sys.exit(0)

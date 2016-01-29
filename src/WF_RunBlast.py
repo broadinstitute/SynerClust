@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys, os, pickle
+import sys, os, pickle, logging
 def usage():
 	print """Launches BLAST after some brief pre-processing
 	
@@ -14,6 +14,15 @@ def main(argv):
 	eval = argv[2]
 	cores = argv[3]
 	my_dir = node_dir+node+"/"
+
+	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
+	logger = logging.getLogger()
+	logging.basicConfig(filename = my_dir + 'RunBlast.log', format = FORMAT, filemode='w', level=logging.DEBUG)
+	# add a new Handler to print all INFO and above messages to stdout
+	ch = logging.StreamHandler(sys.stdout)
+	ch.setLevel(logging.INFO)
+	logger.addHandler(ch)
+	logger.info('Started')
 
 	#run BLAST if BLAST_FINISHED doesn't exist in the node dir
 	if not "BLAST_FINISHED" in os.listdir(my_dir):
@@ -55,8 +64,9 @@ def main(argv):
 			strains.add(c)
 			for lm in locusMap:
 				for lmm in locusMap[lm]:
-					strains.add(lmm.split("_")[0])
-			print strains
+					strains.add("_".join(lmm.split("_")[:-1]))
+					logger.debug("%s splitted to %s" %(lmm, "_".join(lmm.split("_")[:-1])))
+			logger.info(strains)
 			
 			if len(strains) ==1:
 				self_blast_out = my_dir+c+"_self.blast.m8"
@@ -64,7 +74,7 @@ def main(argv):
 
 
 		cat_head_cmd = "cat "+heads[0]+" "+heads[1]+" > "+my_head
-		print cat_head_cmd
+		logger.info(cat_head_cmd)
 		os.system(cat_head_cmd)
 		os.system("#BLAST_PATHblastall -p blastp -m8 -e "+eval+" -a "+cores+" -d "+fastas[0]+" -i "+fastas[1]+" -o "+m8s[1])
 		os.system("#BLAST_PATHblastall -p blastp -m8 -e "+eval+" -a "+cores+" -d "+fastas[1]+" -i "+fastas[0]+" -o "+m8s[0])

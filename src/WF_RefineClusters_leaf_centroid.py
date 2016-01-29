@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os, NJ, pickle, numpy
+import sys, os, NJ, pickle, numpy, logging
 import scipy.spatial.distance as distance
 
 def usage():
@@ -28,6 +28,16 @@ def main(argv):
 	my_dir = node_dir+node+"/"
 	NO_BREAK_EW = 0.5
 	beta=0.01
+
+	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
+	logger = logging.getLogger()
+	logging.basicConfig(filename = my_dir + 'RefineClusters_leaf_centroid.log', format = FORMAT, filemode='w', level=logging.DEBUG)
+	# add a new Handler to print all INFO and above messages to stdout
+	ch = logging.StreamHandler(sys.stdout)
+	ch.setLevel(logging.INFO)
+	logger.addHandler(ch)
+	logger.info('Started')
+
 	
 	if "CLUSTERS_REFINED" in os.listdir(my_dir):
 		sys.exit(0)
@@ -89,7 +99,9 @@ def main(argv):
 				myleaves = bigNode.split(";")
 				mysources = set([]) #sources are the child species contributing to this tree
 				for m in myleaves:
-					mysources.add(m[0:3])
+					logger.critical("m[0:3] = %s\n\t\tm = %s" %(m[0:3], m))
+					mysources.add("_".join(m.split("_")[:-1]))
+					# mysources.add(m[0:3])
 				#a valid tree has genes from both children, single source trees are broken into individual genes and added to the orphan list
 				if len(mysources)==1:
 					for m in myleaves:
@@ -196,7 +208,8 @@ def main(argv):
 		taxa = set([])
 		taxa_map = {}
 		for g in ok:
-			child = g.split("_")[0]
+			child = "_".join(g.split("_")[:-1])
+			logger.debug("%s splitted to %s" %(g, child))
 			newSyntenyMap[clusterID]['children'].append(g)
 			childToCluster[g] = clusterID
 			leafKids = pickleMaps[child][g]
@@ -206,7 +219,8 @@ def main(argv):
 
 			for l in leafKids:
 				newPickleMap[clusterID].append(l)
-				lKid = l.split("_")[0]
+				lKid = "_".join(l.split("_")[:-1])
+				logger.debug("%s splitted to %s" %(l, lKid))
 				taxa.add(lKid)
 				if not lKid in taxa_map:
 					taxa_map[lKid] = 0
@@ -265,8 +279,10 @@ def main(argv):
 	#update synteny data
 	for clust in newSyntenyMap:
 		for child in newSyntenyMap[clust]['children']:
-			lc = child.split("_")[0]
+			lc = "_".join(child.split("_")[:-1])
+			logger.debug("%s splitted to %s" %(child, lc))
 			for neigh in synteny_data[lc][child]['neighbors']:
+				logger.debug("newSyntenyMap[%s]['neighbors'].append(childToCluster[%s]" %(clust, neigh))
 				newSyntenyMap[clust]['neighbors'].append(childToCluster[neigh])
 	#pickle synteny data
 	pklSyn = my_dir+"synteny_data.pkl"

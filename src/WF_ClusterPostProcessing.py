@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-import sys, os, pickle
+import sys, os, pickle, logging
 
 def usage():
 	print """Checks to make sure that all of the genes associated with the leaf genomes of this node are represented in a transcript.
@@ -10,6 +10,15 @@ def usage():
 	"""
 
 def main(argv):
+	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
+	logger = logging.getLogger()
+	logging.basicConfig(filename= "/".join(argv[1].split("/")[:-1]) + '/ClusterPostProcessing.log', format = FORMAT, filemode='w', level=logging.DEBUG)
+	# add a new Handler to print all INFO and above messages to stdout
+	ch = logging.StreamHandler(sys.stdout)
+	ch.setLevel(logging.INFO)
+	logger.addHandler(ch)
+	logger.info('Started')
+	
 	#~ node_path = argv[0]
 	locus_mapping = argv[1]
 	genome_path = argv[0]
@@ -44,7 +53,8 @@ def main(argv):
 			continue
 		dataFile = genome_path+g+"/annotation.txt"
 		data = open(dataFile, 'r').readlines()
-		prefix = (data[0].split()[1]).split("_")[0]
+		prefix = "_".join((data[0].split()[1]).split("_")[:-1])
+		logger.debug("%s splitted to %s" %(data[0].split()[1], prefix))
 		lp_t[prefix] = []
 		for d in data:
 			line = d.split()
@@ -59,14 +69,16 @@ def main(argv):
 	scc = 0
 	clusterDist = {}
 	prefixes = set([])
-	print len(locusMap)
+	logger.info(len(locusMap))
+	# print len(locusMap)
 	for l in locusMap:
 		clusters[counter] = {'leaves':{},'transcripts':[]}
 		leafKids = locusMap[l]
 		for k in leafKids:
 			clusters[counter]['transcripts'].append(l_t[k])
 			tIDs.add(l_t[k])
-			prefix = k.split("_")[0]
+			prefix = "_".join(k.split("_")[:-1])
+			logger.debug("%s splitted to %s" %(k, prefix))
 			prefixes.add(prefix)
 			if not prefix in clusters[counter]['leaves']:
 				clusters[counter]['leaves'][prefix] = 0
@@ -84,9 +96,11 @@ def main(argv):
 		lp_t_count+= len(lp_t[p])
 	print totalGenes, len(tIDs), lp_t_count
 	if totalGenes - len(tIDs) == 0 and totalGenes-lp_t_count == 0:
-		print "ok!"
+		logger.info("ok!")
+		# print "ok!"
 	else:
-		print "error!", totalGenes, len(tIDs), lp_t_count
+		logger.error("error! %s %d %s" %(totalGenes, len(tIDs), lp_t_count))
+		# print "error!", totalGenes, len(tIDs), lp_t_count
 		sys.exit(1)
 	
 				

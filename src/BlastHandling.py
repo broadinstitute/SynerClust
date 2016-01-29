@@ -1,11 +1,13 @@
 #!/usr/bin/env python
-import sys, operator, numpy, os, math
+import sys, operator, numpy, os, math, logging
 import networkx as nx
 from multiprocessing import Process, Queue
 from Queue import Empty
 #~ import matplotlib.pyplot as plt
 
 class BlastSegment:
+	# logger = logging.getLogger("BlastSegment")
+
 	def __init__(self,query,target,pID,align_length,bitScore,evalue):
 		self.query = query
 		self.target = target
@@ -31,13 +33,17 @@ class BlastSegment:
 		self.adjPID = self.pID*percent
 		self.score = (2.0-self.adjPID)*100000.0
 		#~ print self.adjPID
+
 	def getAdjPID(self):
 		return self.adjPID
+
 	def getScore(self):
 		return self.score
 		
 
 class BlastParse:
+	logger = logging.getLogger("BlastParse")
+
 	def __init__(self, m8_file):
 		self.m8_file = m8_file
 	
@@ -60,12 +66,14 @@ class BlastParse:
 		
 		for q in hits:
 			#~ print q, len(hits[q])
-			q_node = q.split("_")[0]
+			q_node = "_".join(q.split("_")[:-1])
+			BlastParse.logger.debug("%s splitted to %s" %(q, q_node))
 
 			#~ last_t = ""
 			q_hits_species= {}
 			for t in hits[q]:
-				t_spec = t.split("_")[0]
+				t_spec = "_".join(t.split("_")[:-1])
+				BlastParse.logger.debug("%s splitted to %s" %(t, t_spec))
 				if not t_spec in q_hits_species:
 					q_hits_species[t_spec] = []
 				q_hits_species[t_spec].append(hits[q][t])
@@ -131,13 +139,14 @@ class BlastParse:
 	def makePutativeClusters(self,bestHits,tree_dir,synData, homScale, synScale,bestDirHits,numHits):
 		#~ numThreads = 4
 		MAX_HITS = numHits
-		print "len(best hits nodes)", len(bestHits.nodes()), len(bestHits.edges())
+		BlastParse.logger.info("len(best hits nodes) %d %d" %(len(bestHits.nodes()), len(bestHits.edges())))
 		#~ print "len(all hits nodes)", len(allHits.nodes()), len(allHits.edges())
 		subs = list(nx.connected_component_subgraphs(bestHits))
 		count = 1
 		orphan_file = tree_dir+"orphan_genes.txt"
 		orphans = open(orphan_file,'w')
-		print "len(subs)",len(subs)
+		BlastParse.logger.info("len(subs) = %s" %(len(subs)))
+		# print "len(subs)",len(subs)
 		#map child genes to rough clusters and vice versa
 		geneToCluster = {}
 		clusterToGenes = {}
@@ -150,7 +159,8 @@ class BlastParse:
 			my_edges = [e for e in bd_sub.edges_iter()]
 			edges_to_remove = []
 			for med in my_edges:
-				if med[0][:3]==med[1][:3]:
+				BlastParse.logger.debug("med[0][:3] == med[1][:3]\n\t\tmed[0] = %s\n\t\tmed[1] = %s" %(med[0], med[1]))
+				if "_".join(med[0].split("_")[:-1]) == "_".join(med[1].split("_")[:-1]):
 					edges_to_remove.append(med)
 				elif not bd_sub[med[0]][med[1]]['rank'] <= MAX_HITS:
 					edges_to_remove.append(med)
@@ -207,8 +217,8 @@ class BlastParse:
 			drawn=1
 
 		orphans.close()
-		print "gene count", gene_count
-		print "count", count
+		BlastParse.logger.info("gene count = %d" %(gene_count))
+		BlastParse.logger.info("count = %d" %(count))
 
 		#~ matQueue = Queue(0)
 		#~ processes = [Process(target=self.makeTreeFromMatrix, args=(matQueue,)) for i in range(numThreads)]
@@ -284,7 +294,8 @@ class BlastParse:
 		for d in myHomDist:
 			#~ print "d", d
 			syn[d] = []
-			node = d.split("_")[0]
+			node = "_".join(d.split("_")[:-1])
+			BlastParse.logger.debug("%s splitted to %s" %(d, node))
 			for n in synData[node][d]['neighbors']:
 				syn[d].append(geneToCluster[n])
 		#pairwise compare for syntenic fraction
@@ -294,7 +305,8 @@ class BlastParse:
 		pairs = set([])
 		for m in graph.nodes():
 			mySynDist[m] = {}
-			mnode = m.split("_")[0]
+			mnode = "_".join(m.split("_")[:-1])
+			BlastParse.logger.debug("%s splitted to %s" %(m, mnode))
 			syn_m = set(syn[m])
 			mSeqs = len(syn[m])
 			for n in graph.nodes():
@@ -310,7 +322,8 @@ class BlastParse:
 				if n==m:
 					mySynDist[m][n]=0.0
 					continue#self comparisons should have identical neighbor sets anyway
-				nnode = n.split("_")[0]
+				nnode = "_".join(n.split("_")[:-1])
+				BlastParse.logger.debug("%s splitted to %s" %(n, nnode))
 				nSeqs = len(syn[n])
 				matches = 0
 				union = 0
@@ -378,6 +391,7 @@ class BlastParse:
 			#~ hits[Q][T].append(mySeg)
 			#~ old_t = t
 		return hits
+
 	def readBlat(self):
 		blat = open(self.m8_file,'r').readlines()
 		rhits = {}

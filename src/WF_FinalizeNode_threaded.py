@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os, time, pickle, TreeLib
+import sys, os, time, pickle, TreeLib, logging
 from multiprocessing import Process, Queue
 from Queue import Empty
 import scipy.spatial.distance as distance
@@ -88,6 +88,8 @@ def makeConsensus(tq,hamm_dist):
 				#######
 		except Empty:
 			break
+
+
 if __name__ == "__main__":
 	argv = []
 	if len(sys.argv) == 1:
@@ -105,6 +107,15 @@ if __name__ == "__main__":
 	if len(argv)>3:
 		h_dist = float(argv[3])
 	
+	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
+	logger = logging.getLogger()
+	logging.basicConfig(filename=node_dir + 'FinalizeNode_threaded.log', format = FORMAT, filemode='w', level=logging.DEBUG)
+	# add a new Handler to print all INFO and above messages to stdout
+	ch = logging.StreamHandler(sys.stdout)
+	ch.setLevel(logging.INFO)
+	logger.addHandler(ch)
+	logger.info('Started')
+
 	#CLEAN UP
 	manifest = {}
 	files = os.listdir(fileDir)
@@ -138,12 +149,15 @@ if __name__ == "__main__":
 
 	for p in processes:
 		p.start()
-		print "Starting",p.pid
+		logger.info("Starting %s" %(p.pid))
+		# print "Starting",p.pid
 	for p in processes:
-		print "Stopping",p.pid
+		logger.info("Starting %s" %(p.pid))
+		# print "Stopping",p.pid
 		p.join()
 
-	print "All consensus sequences accounted for."
+	logger.info("All consensus sequences accounted for.")
+	# print "All consensus sequences accounted for."
 	time.sleep(10) #allows all files to get synced up
 	
 	filePattern = "cons.pep"
@@ -169,7 +183,8 @@ if __name__ == "__main__":
 	os.system("cat "+node_dir+"clusters/*.tc.pep >"+node_dir+node+".pep")
 	os.system("rm "+node_dir+"clusters/*.tc.pep")
 	
-	print "Made pep file, sleeping 5 seconds"
+	logger.info("Made pep file, sleeping 5 seconds")
+	# print "Made pep file, sleeping 5 seconds"
 	time.sleep(5)
 	
 	node_done_file = node_dir+"NODE_COMPLETE"
