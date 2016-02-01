@@ -11,6 +11,7 @@ class BlastSegment:
 	def __init__(self,query,target,pID,align_length,bitScore,evalue):
 		self.query = query
 		self.target = target
+        # identity percentage
 		self.pID = float(pID)/100.0
 		self.length = int(align_length)
 		#~ self.qStart = int(qStart)
@@ -27,8 +28,11 @@ class BlastSegment:
 		self.score = 0.0
 		
 	#returns (pID/100)*qLength
+    # adjusted identity percentage, 100 000 < adjPID < 200 000
+    # lower means more identity
 	def setAdjPID(self):
 		#~ print self.pID,self.length,self.qLength, self.tLength
+        # percent of the shortest sequence that the blast result represents
 		percent = float(self.length)/float(min(self.qLength, self.tLength))		#mod for big BLAST
 		self.adjPID = self.pID*percent
 		self.score = (2.0-self.adjPID)*100000.0
@@ -48,6 +52,7 @@ class BlastParse:
 		self.m8_file = m8_file
 	
 	#hits are scored by cumulative percent identity
+	# synData is unused
 	def scoreHits(self,hits, headers, min_best_hit,synData, numHits, minSynFrac):
 		SYN_FRAC = minSynFrac
 		NUM_HITS = numHits
@@ -82,7 +87,7 @@ class BlastParse:
 				for ts in q_hits:	
 					ts_score = ts.getScore()
 					t = ts.target.split(";")[0]
-					if best_evalue == 1.0 and ts.evalue < float(1e-3):
+					if best_evalue == 1.0 and ts.evalue < float(1e-3): # TODO change hardcoded evalue threshold
 						bestAdjPID = ts.getAdjPID()
 						best_evalue = ts.evalue
 						qd_best.append((q,t,ts_score))
@@ -98,26 +103,26 @@ class BlastParse:
 				qbi=1
 				qdbi=1
 				while i<len(q_best) or i<len(qd_best):
-					if (i < len(q_best)) and q_node!=species:
-						if not bestHits.has_edge(q_best[i][0],q_best[i][1]):
+					if (i < len(q_best)) and q_node!=species: # query species != target species, but why only in the not directed graph?
+						if not bestHits.has_edge(q_best[i][0],q_best[i][1]): # why only verify in the not directed graph?
 							bestHits.add_edge(q_best[i][0],q_best[i][1],weight=q_best[i][2],rank=qbi)
 							qbi+=1
 					if i < len(qd_best):
 						bestDirHits.add_edge(qd_best[i][0],qd_best[i][1],weight=qd_best[i][2],rank=qdbi)
-						print qd_best[i]
+						#print qd_best[i]
 						qdbi+=1
 					i+=1
 		return (bestHits,bestDirHits)
 
-	def makePutativeClusters(self,bestHits,tree_dir,synData, homScale, synScale,bestDirHits,numHits):
+	def makePutativeClusters(self, bestHits, tree_dir, synData, homScale, synScale, bestDirHits, numHits):
 		#~ numThreads = 4
 		MAX_HITS = numHits
 		BlastParse.logger.info("len(best hits nodes) %d %d" %(len(bestHits.nodes()), len(bestHits.edges())))
 		#~ print "len(all hits nodes)", len(allHits.nodes()), len(allHits.edges())
 		subs = list(nx.connected_component_subgraphs(bestHits))
 		count = 1
-		orphan_file = tree_dir+"orphan_genes.txt"
-		orphans = open(orphan_file,'w')
+		orphan_file = tree_dir + "orphan_genes.txt"
+		orphans = open(orphan_file, 'w')
 		BlastParse.logger.info("len(subs) = %s" %(len(subs)))
 		# print "len(subs)",len(subs)
 		#map child genes to rough clusters and vice versa
@@ -127,12 +132,15 @@ class BlastParse:
 		gene_count = 0
 		drawn = 1
 		for s in subs: #each subgraph is an initial cluster
+			# why are the subgraphs defined from the undirected graph and then used on the directed graph? Isn't RBH used?
 			my_sub = bestDirHits.subgraph(s.nodes())
 			bd_sub = my_sub.copy()
-			my_edges = [e for e in bd_sub.edges_iter()]
+			#my_edges = [e for e in bd_sub.edges_iter()]
+			my_edges = bd_sub.edges()
 			edges_to_remove = []
 			for med in my_edges:
 				BlastParse.logger.debug("med[0][:3] == med[1][:3]\n\t\tmed[0] = %s\n\t\tmed[1] = %s" %(med[0], med[1]))
+				# remove self hits
 				if "_".join(med[0].split("_")[:-1]) == "_".join(med[1].split("_")[:-1]):
 					edges_to_remove.append(med)
 				elif not bd_sub[med[0]][med[1]]['rank'] <= MAX_HITS:
@@ -146,10 +154,10 @@ class BlastParse:
 			#~ print "edges to remove", len(edges_to_remove)
 			#~ bd_sub.remove_edges_from(edges_to_remove)
 					
-			clusterID = "cluster_"+str(count)
 			while len(bd_sub.nodes())>0:
+				clusterID = "cluster_"+str(count)
 				sccs = list(nx.strongly_connected_component_subgraphs(bd_sub))
-				scc = sccs[0]
+				scc = sccs[0] # TODO verify : always only 1 possible, even when clustering more than 2 genomes?
 				
 				#~ if drawn==0 and len(scc.nodes())>3:
 					#~ print "nodes", len(bd_sub.nodes()), len(scc.nodes())
@@ -165,19 +173,22 @@ class BlastParse:
 					#~ plt.close()
 					#~ drawn=1
 				if len(scc.nodes())==1:
-					no = scc.nodes()[0]
+					#no = scc.nodes()[0]
 					#~ locus = no.split(";")[0][-10:]		#mod for big BLAST
-					locus = no		#mod for big BLAST
+					#locus = no		#mod for big BLAST
+					locus = scc.nodes()[0]
 					orphans.write(locus+"\n")
 					geneToCluster[locus] = clusterID
-					clusterToGenes[clusterID] = []
+					if not clusterID in clusterToGenes:
+						clusterToGenes[clusterID] = []
 					clusterToGenes[clusterID].append(locus)
 				else:
 
 					clusterToSub[clusterID] = scc
-					for n in scc.nodes():
+					#for n in scc.nodes():
+					for locus in scc.nodes():
 						#~ locus = n.split(";")[0][-10:]		#mod for big BLAST
-						locus = n		#mod for big BLAST
+						#locus = n		#mod for big BLAST
 						geneToCluster[locus] = clusterID
 						if not clusterID in clusterToGenes:
 							clusterToGenes[clusterID] = []
@@ -186,7 +197,7 @@ class BlastParse:
 					bd_sub.remove_node(NO)
 				count+=1
 				gene_count+=len(scc.nodes())
-				clusterID = "cluster_"+str(count)
+				#clusterID = "cluster_"+str(count)
 			drawn=1
 
 		orphans.close()
@@ -201,6 +212,7 @@ class BlastParse:
 				#~ sys.exit()
 			s = clusterToSub[sub]
 			if len(s.nodes())== 1:
+				# is this possible???? If only 1 node it shoudn't be in clusterToSub
 				continue
 			#~ print sub, len(s.nodes())
 			(h_dist,s_dist) = self.makeDistanceMatrix(s, bestDirHits, geneToCluster, clusterToGenes, synData, homScale, synScale)
@@ -268,7 +280,7 @@ class BlastParse:
 			#~ print "d", d
 			syn[d] = []
 			node = "_".join(d.split("_")[:-1])
-			BlastParse.logger.debug("%s splitted to %s" %(d, node))
+			#BlastParse.logger.debug("%s splitted to %s" %(d, node))
 			for n in synData[node][d]['neighbors']:
 				syn[d].append(geneToCluster[n])
 		#pairwise compare for syntenic fraction
@@ -279,7 +291,7 @@ class BlastParse:
 		for m in graph.nodes():
 			mySynDist[m] = {}
 			mnode = "_".join(m.split("_")[:-1])
-			BlastParse.logger.debug("%s splitted to %s" %(m, mnode))
+			#BlastParse.logger.debug("%s splitted to %s" %(m, mnode))
 			syn_m = set(syn[m])
 			mSeqs = len(syn[m])
 			for n in graph.nodes():

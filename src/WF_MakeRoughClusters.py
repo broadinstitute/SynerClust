@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os, BlastHandling, pickle, logging
+import sys, os, BlastHandling, pickle, logging, shutil
 import networkx as nx
 
 def usage():
@@ -61,12 +61,16 @@ def main(argv):
 		
 	(bestHits,bestDirHits) = bp.scoreHits(hits,n_head,min_best_hit,pickleSyn,numHits,minSynFrac)
 	tree_dir = my_dir+"trees"
-	if "trees" in os.listdir(my_dir):
+	#if "trees" in os.listdir(my_dir):
+	if os.path.exists(tree_dir):
 		if not "old" in os.listdir(my_dir):
-			os.system("mkdir "+my_dir+"old")
-		os.system("mv -f "+tree_dir+"/ "+my_dir+"old/")
-	os.system("mkdir "+tree_dir)
-	tree_dir = tree_dir+"/"
+			os.mkdir(os.path.join(my_dir, "old"))
+			#os.system("mkdir "+my_dir+"old")
+		#os.system("mv -f "+tree_dir+"/ "+my_dir+"old/")
+		shutil.move(tree_dir, os.path.join(my_dir, "old"))
+	#os.system("mkdir "+tree_dir)
+	os.mkdir(tree_dir)
+	tree_dir = tree_dir + os.sep
 	retval = bp.makePutativeClusters(bestHits,tree_dir,pickleSyn, homScale, synScale,bestDirHits, numHits)
 	if retval > 0:
 		sys.exit(retval)

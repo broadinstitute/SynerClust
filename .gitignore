@@ -1,4 +1,7 @@
 bin/
+call_tests/
+call_tests_backup/
+call_tests_win/
 tests/data/nodes/
 tests/data/
 tmp/
