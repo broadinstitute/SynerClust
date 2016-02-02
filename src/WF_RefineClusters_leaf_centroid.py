@@ -128,7 +128,7 @@ def main(argv):
 					else:
 						#additional orphan exit
 						if myTree.OK == "orphan":
-							unchecked_trees.append((myTree.toNewick(myTree.graph).split("\n"),myTree.OK))
+							unchecked_trees.append((NJTree.toNewick(myTree.graph).split("\n"),myTree.OK))
 							last_tree="tree3"
 
 						else:
