@@ -8,8 +8,8 @@ import NetworkX_Extension as nxe
 class NJTree:
 	logger = logging.getLogger("NJTree")
 
-	def __init__(self,newick_file,syn_mat_file,mrca,alpha,beta,gamma,gain,loss):
-		self.newick_file = newick_file
+	def __init__(self, newick_file, syn_mat_file, mrca, alpha, beta, gamma, gain, loss):
+		#self.newick_file = newick_file
 		self.distance_file = newick_file
 		self.dMatrix = ""
 		self.newick = ""
@@ -36,7 +36,7 @@ class NJTree:
 		self.centroid = ""
 		self.gl_map = {} #node -> gain/loss tuple
 	
-	def readSyntenyMatrix(self,valid_nodes):
+	def readSyntenyMatrix(self, valid_nodes):
 		matrix_data = open(self.synteny_file,'r').readlines()
 		index = {}
 		rev_index = {}
@@ -69,10 +69,10 @@ class NJTree:
 		matrix_data=open(self.distance_file,'r').readlines()
 		return matrix_data
 	
-	def buildGraphFromDistanceMatrix(self,matrix_data):
-		index = {}
-		rindex = {}
-		count=0
+	def buildGraphFromDistanceMatrix(self, matrix_data):
+		#index = {}
+		#rindex = {}
+		#count=0
 		matrix={}
 		unadded_nodes = set([])
 		initial_indices = []
@@ -80,14 +80,16 @@ class NJTree:
 			g = m.split()[0]
 			initial_indices.append(g)
 		for m in matrix_data:
-			m=m.rstrip()
+			m = m.rstrip()
 			dat = m.split()
 			gene = dat[0]
-			index[gene] = count
-			rindex[count]=gene
+			#index[gene] = count
+			#rindex[count] = gene
+			# count is always at 0 during this loop
+			# actually, both index and rindex seem to never be used TODO check
 			unadded_nodes.add(gene)
 			my_species = "_".join(gene.split("_")[:-1])
-			NJTree.logger.debug("%s splitted to %s" %(gene, my_species))
+			#NJTree.logger.debug("%s splitted to %s" %(gene, my_species))
 			self.graph.add_node(gene,species=my_species)
 			dists = dat[1:]
 			matrix[gene] = {}
@@ -138,8 +140,8 @@ class NJTree:
 			else:
 				my_species = self.mrca
 			self.graph.add_node(newNode,species=my_species)
-			index[newNode]=count
-			rindex[count]=newNode
+			#index[newNode]=count
+			#rindex[count]=newNode
 			for m in minp:
 				unadded_nodes.remove(m)
 			new_hrow = []
@@ -163,15 +165,16 @@ class NJTree:
 			unadded_nodes.add(newNode)
 			self.graph.add_edge(minp[0],newNode,homology_weight=mp0_mp_dist,synteny_weight=syn_mp0_mp_dist)
 			self.graph.add_edge(minp[1],newNode,homology_weight=mp1_mp_dist,synteny_weight=syn_mp1_mp_dist)
-			count+=1
+			#count+=1
 			#~ print n,m
 			#~ print matrix[index[n]][index[m]]
 			#~ self.syntenyGraph.add_edge(n, m, weight=float(matrix[index[n]][index[m]]))
+		# TODO this if should be out of the while loop
 		if len(unadded_nodes)==2:
 			minp = []
 			for ua in unadded_nodes:
 				minp.append(ua)
-			self.graph.add_edge(minp[0],minp[1],homology_weight=matrix[minp[0]][minp[1]],synteny_weight=self.syntenyMatrix[minp[0]][minp[1]])
+			self.graph.add_edge(minp[0], minp[1], homology_weight = matrix[minp[0]][minp[1]], synteny_weight = self.syntenyMatrix[minp[0]][minp[1]])
 			unadded_nodes = set([])
 			minp.sort()
 			big_md = ";".join(minp)
@@ -183,9 +186,9 @@ class NJTree:
 		return bigNode
 	
 	
-	def getNewickLines(self):
-		list = open(self.newick_file,'r').readlines()
-		return list
+	#def getNewickLines(self):
+	#	list = open(self.newick_file,'r').readlines()
+	#	return list
 		
 	def parseNewick(self, list):
 		nodes = []
@@ -719,7 +722,11 @@ class NJTree:
 	
 	#checks if tree needs to be split
 	def checkTree(self, root,NO_BREAK_EW):
-		if len(self.graph.nodes())>100:
+		""" Returns "true" if they are 2 species in the tree and the mrca is not present.
+		Returns "false" if they are 2 species in the tree but one of them is the mrca.
+		Returns "orphan" if they is only 1 species in the tree
+		"""
+		if len(self.graph.nodes())>100: # TODO why this arbitrary limit on the size of the tree?
 			self.OK = "false"
 			return self.OK
 		#check species of root node neighbors
@@ -728,13 +735,14 @@ class NJTree:
 		set_species = set([])
 		species = []
 		edge_weight = self.graph[edge[0]][edge[1]]['homology_weight']
+		# TODO what is the point of having twice the results?
 		set_species.add(self.rootedTree.node[edge[0]]['species'])
 		set_species.add(self.rootedTree.node[edge[1]]['species'])
 		species.append(self.rootedTree.node[edge[0]]['species'])
 		species.append(self.rootedTree.node[edge[1]]['species'])
 		if len(species) == 1 or len(set_species) == 1 and (not self.mrca in set_species):
 			#all leaf nodes get added to orphan pile
-			self.OK = "orphans"
+			self.OK = "orphan"
 			return self.OK
 
 		if len(species) == 2:
@@ -752,6 +760,7 @@ class NJTree:
 		#~ if self.OK == "true":
 			#~ self.calcCentroid()
 			#~ return self.OK
+		# TODO nothing happens when they are more than 2 species in the tree?
 
 	#Centroid is based on distance. 
 	def calcCentroid(self):

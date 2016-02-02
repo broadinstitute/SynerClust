@@ -203,7 +203,7 @@ def main(argv):
 	logger.info("dependicizing")
 	myInitTree.calculateNodeDependencies(working_dir)
 	myInitTree.writeLocusTagFile()
-    
+
 	logger.info('Finished')
 		
 if __name__ == "__main__":
