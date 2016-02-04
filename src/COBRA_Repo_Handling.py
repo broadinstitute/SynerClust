@@ -41,7 +41,7 @@ class RepoParse:
 					curGenome["Peptide"] = "null"
 					curGenome["Genome"] = dat[1] # need to use the hardnamed key in case "Genome" found in for example "Genomes"
 				elif dat[0].find("Annotation") > -1:
-					if not is.path.isabs(dat[1]): # if not an absolute path
+					if not os.path.isabs(dat[1]): # if not an absolute path
 					#if not dat[1][0] == "/": # if not an absolute path
 					# if not dat[1].find("/") > -1:
 						# genome_path = repo_path + curGenome["Genome"] + "/"
@@ -74,7 +74,7 @@ class RepoParse:
 					if not "Sequence" in curGenome: # in case the Sequence is provided before the Annotation
 						curGenome["Sequence"] = seq
 				elif dat[0].find("Sequence") > -1:
-					if not is.path.isabs(dat[1]): # if not an absolute path
+					if not os.path.isabs(dat[1]): # if not an absolute path
 					#if not dat[1][0] == "/": # if not an absolute path
 						if os.path.isfile(repo_path + dat[1]):
 							dat[1] = repo_path + dat[1]
