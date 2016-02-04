@@ -44,29 +44,49 @@ class RepoParse:
 						# genome_path = repo_path + curGenome["Genome"] + "/"
 						# genome_path = repo_path
 						# myfiles = os.listdir(genome_path)
+						seq = None
 						if os.path.isfile(repo_path + dat[1]): # path relative to repo, "./" and "../" can be used
 							RepoParse.logger.warning("Are you sure \"%s\" is a gff3 annotation file?" %(dat[1]))
 							dat[1] = repo_path + dat[1]
+							seq = repo_path + dat[1] + ".genome"
 						elif os.path.isfile(repo_path + dat[1] + ".annotation.gff3"):
 							dat[1] = repo_path + dat[1] + ".annotation.gff3"
+							seq = repo_path + dat[1] + ".genome"
 						elif os.path.isfile(repo_path + curGenome["Genome"] + "/" + dat[1]):
 							RepoParse.logger.warning("Are you sure \"%s\" is a gff3 annotation file?" %(dat[1]))
 							dat[1] = repo_path + curGenome["Genome"] + "/" + dat[1]
+							seq = repo_path + curGenome["Genome"] + "/" + dat[1] + ".genome"
 						elif os.path.isfile(repo_path + curGenome["Genome"] + "/" + dat[1] + ".annotation.gff3"):
-							dat[1] = repo_path + curGenome["Genome"] + "/" + dat[1] + "annotation.gff3"
+							dat[1] = repo_path + curGenome["Genome"] + "/" + dat[1] + ".annotation.gff3"
+							seq = repo_path + curGenome["Genome"] + "/" + dat[1] + ".genome"
 						else:
 							RepoParse.logger.error("Specified annotation file not found for %s" %(curGenome["Genome"]))
 							sys.exit("Specified annotation file not found for %s" %(curGenome["Genome"]))
 						# curGenome["Sequence"] = genome_path + curGenome["Genome"] + ".genome.fa"
 						# if not curGenome["Genome"] + ".genome.fa" in myfiles:
 						# 	curGenome["Sequence"] = genome_path + curGenome["Genome"] +".genome"
+					else: 
+						sys.exit("Specified annotation file not found for : " %(dat[1]))
 					curGenome["Annotation"] = dat[1]
+					if not "Sequence" in curGenome: # in case the Sequence is provided before the Annotation
+						curGenome["Sequence"] = seq
 				elif dat[0].find("Sequence") > -1:
-					if not ".genome" in dat[1] or not ".fasta" in dat[1]: # .genome.fa is included by just .genome
-						RepoParse.logger.warning("Are you sure \"%s\" is a fasta file?" %(dat[1]))
-					# if not dat[1].find("/") > -1:
-					if not dat[1][0] == "/":
-						dat[1] = repo_path + dat[1]
+					if not dat[1][0] == "/": # if not an absolute path
+						if os.path.isfile(repo_path + dat[1]):
+							dat[1] = repo_path + dat[1]
+						elif os.path.isfile(repo_path + dat[1] + ".fasta"):
+							dat[1] = repo_path + dat[1] + ".fasta"
+						elif os.path.isfile(repo_path + dat[1] + ".genome"):
+							dat[1] = repo_path + dat[1] + ".genome"
+						elif os.path.isfile(repo_path + curGenome["Genome"] + "/" + dat[1]):
+							dat[1] = repo_path + curGenome["Genome"] + "/" + dat[1]
+						elif os.path.isfile(repo_path + curGenome["Genome"] + "/" + dat[1] + ".fasta"):
+							dat[1] = repo_path + curGenome["Genome"] + "/" + dat[1] + ".fasta"
+						elif os.path.isfile(repo_path + curGenome["Genome"] + "/" + dat[1] + ".genome"):
+							dat[1] = repo_path + curGenome["Genome"] + "/" + dat[1] + ".genome"
+					else:
+						if not os.path.isfile(dat[1]):
+							sys.exit("Specified sequence file not found : %s" %(dat[1]))
 					curGenome["Sequence"] = dat[1]
 				elif dat[0].find("Peptide") > -1:
 					curGenome["Peptide"] = dat[1]
