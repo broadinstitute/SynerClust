@@ -27,6 +27,8 @@ class RepoParse:
 					#new genome
 					if len(curGenome) > 0:
 						if "Genome" in curGenome and "Annotation" in curGenome and "Sequence" in curGenome: # verify that all 3 important fields have been filed
+							if not os.path.isfile(curGenome["Sequence"]):
+								sys.exit("No sequence file specified and not found at default location for %s" %(curGenome["Genome"]))
 							RepoParse.logger.debug("Creating genome entry with %s %s %s %s" %(curGenome["Genome"], curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"]))
 							myG = Genome(curGenome["Genome"], curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"])
 							self.genomes.append(myG)
@@ -39,7 +41,8 @@ class RepoParse:
 					curGenome["Peptide"] = "null"
 					curGenome["Genome"] = dat[1] # need to use the hardnamed key in case "Genome" found in for example "Genomes"
 				elif dat[0].find("Annotation") > -1:
-					if not dat[1][0] == "/": # if not an absolute path
+					if not is.path.isabs(dat[1]): # if not an absolute path
+					#if not dat[1][0] == "/": # if not an absolute path
 					# if not dat[1].find("/") > -1:
 						# genome_path = repo_path + curGenome["Genome"] + "/"
 						# genome_path = repo_path
@@ -47,17 +50,17 @@ class RepoParse:
 						seq = None
 						if os.path.isfile(repo_path + dat[1]): # path relative to repo, "./" and "../" can be used
 							RepoParse.logger.warning("Are you sure \"%s\" is a gff3 annotation file?" %(dat[1]))
-							seq = repo_path + dat[1] + ".genome"
+							seq = repo_path + dat[1] + ".genome.fa"
 							dat[1] = repo_path + dat[1]
 						elif os.path.isfile(repo_path + dat[1] + ".annotation.gff3"):
-							seq = repo_path + dat[1] + ".genome"
+							seq = repo_path + dat[1] + ".genome.fa"
 							dat[1] = repo_path + dat[1] + ".annotation.gff3"
 						elif os.path.isfile(repo_path + curGenome["Genome"] + "/" + dat[1]):
 							RepoParse.logger.warning("Are you sure \"%s\" is a gff3 annotation file?" %(dat[1]))
-							seq = repo_path + curGenome["Genome"] + "/" + dat[1] + ".genome"
+							seq = repo_path + curGenome["Genome"] + "/" + dat[1] + ".genome.fa"
 							dat[1] = repo_path + curGenome["Genome"] + "/" + dat[1]
 						elif os.path.isfile(repo_path + curGenome["Genome"] + "/" + dat[1] + ".annotation.gff3"):
-							seq = repo_path + curGenome["Genome"] + "/" + dat[1] + ".genome"
+							seq = repo_path + curGenome["Genome"] + "/" + dat[1] + ".genome.fa"
 							dat[1] = repo_path + curGenome["Genome"] + "/" + dat[1] + ".annotation.gff3"
 						else:
 							RepoParse.logger.error("Specified annotation file not found for %s" %(curGenome["Genome"]))
@@ -71,19 +74,24 @@ class RepoParse:
 					if not "Sequence" in curGenome: # in case the Sequence is provided before the Annotation
 						curGenome["Sequence"] = seq
 				elif dat[0].find("Sequence") > -1:
-					if not dat[1][0] == "/": # if not an absolute path
+					if not is.path.isabs(dat[1]): # if not an absolute path
+					#if not dat[1][0] == "/": # if not an absolute path
 						if os.path.isfile(repo_path + dat[1]):
 							dat[1] = repo_path + dat[1]
 						elif os.path.isfile(repo_path + dat[1] + ".fasta"):
 							dat[1] = repo_path + dat[1] + ".fasta"
 						elif os.path.isfile(repo_path + dat[1] + ".genome"):
 							dat[1] = repo_path + dat[1] + ".genome"
+						elif os.path.isfile(repo_path + dat[1] + ".genome.fa"):
+							dat[1] = repo_path + dat[1] + ".genome.fa"
 						elif os.path.isfile(repo_path + curGenome["Genome"] + "/" + dat[1]):
 							dat[1] = repo_path + curGenome["Genome"] + "/" + dat[1]
 						elif os.path.isfile(repo_path + curGenome["Genome"] + "/" + dat[1] + ".fasta"):
 							dat[1] = repo_path + curGenome["Genome"] + "/" + dat[1] + ".fasta"
 						elif os.path.isfile(repo_path + curGenome["Genome"] + "/" + dat[1] + ".genome"):
 							dat[1] = repo_path + curGenome["Genome"] + "/" + dat[1] + ".genome"
+						elif os.path.isfile(repo_path + curGenome["Genome"] + "/" + dat[1] + ".genome.fa"):
+							dat[1] = repo_path + curGenome["Genome"] + "/" + dat[1] + ".genome.fa"
 					else:
 						if not os.path.isfile(dat[1]):
 							sys.exit("Specified sequence file not found : %s" %(dat[1]))
