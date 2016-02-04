@@ -51,17 +51,17 @@ class RepoParse:
 						seq = None
 						if os.path.isfile(repo_path + dat[1]): # path relative to repo, "./" and "../" can be used
 							RepoParse.logger.warning("Are you sure \"%s\" is a gff3 annotation file?" %(dat[1]))
-							seq = repo_path + dat[1] + ".genome.fa"
+							seq = repo_path + curGenome["Genome"] + ".genome.fa"
 							dat[1] = repo_path + dat[1]
 						elif os.path.isfile(repo_path + dat[1] + ".annotation.gff3"):
-							seq = repo_path + dat[1] + ".genome.fa"
+							seq = repo_path + curGenome["Genome"] + ".genome.fa"
 							dat[1] = repo_path + dat[1] + ".annotation.gff3"
 						elif os.path.isfile(repo_path + curGenome["Genome"] + "/" + dat[1]):
 							RepoParse.logger.warning("Are you sure \"%s\" is a gff3 annotation file?" %(dat[1]))
-							seq = repo_path + curGenome["Genome"] + "/" + dat[1] + ".genome.fa"
+							seq = repo_path + curGenome["Genome"] + "/" + curGenome["Genome"] + ".genome.fa"
 							dat[1] = repo_path + curGenome["Genome"] + "/" + dat[1]
 						elif os.path.isfile(repo_path + curGenome["Genome"] + "/" + dat[1] + ".annotation.gff3"):
-							seq = repo_path + curGenome["Genome"] + "/" + dat[1] + ".genome.fa"
+							seq = repo_path + curGenome["Genome"] + "/" + curGenome["Genome"] + ".genome.fa"
 							dat[1] = repo_path + curGenome["Genome"] + "/" + dat[1] + ".annotation.gff3"
 						else:
 							RepoParse.logger.error("Specified annotation file not found for %s" %(curGenome["Genome"]))
