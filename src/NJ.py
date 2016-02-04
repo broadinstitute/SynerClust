@@ -92,19 +92,19 @@ class NJTree:
 				u = 0.0
 				synu = 0.0
 				for m in unadded_nodes:
-					if n==m:
+					if n == m:
 						continue
-					u+= matrix[n][m]#/uan_denom
-					synu+= self.syntenyMatrix[n][m]#/uan_denom
-				Udists[n]=u
-				synUdists[n]=synu
+					u += matrix[n][m]#/uan_denom
+					synu += self.syntenyMatrix[n][m]#/uan_denom
+				Udists[n] = u
+				synUdists[n] = synu
 			min_nm = 1000000000.0
 			minp = []
 			for n in unadded_nodes:
 				for m in unadded_nodes:
 					if n==m:
 						continue
-					nm = uan_denom*matrix[n][m]-Udists[n]-Udists[m]
+					nm = uan_denom*matrix[n][m] - Udists[n] - Udists[m]
 					if nm<min_nm:
 						min_nm = nm
 						minp = [n,m]
@@ -140,11 +140,11 @@ class NJTree:
 				djk = self.syntenyMatrix[minp[1]][k]
 				dij = self.syntenyMatrix[minp[0]][minp[1]]
 				new_dist = (dik+djk-dij)/2.0
-				self.syntenyMatrix[newNode][k]=new_dist
-				self.syntenyMatrix[k][newNode]=new_dist
+				self.syntenyMatrix[newNode][k] = new_dist
+				self.syntenyMatrix[k][newNode] = new_dist
 			unadded_nodes.add(newNode)
-			self.graph.add_edge(minp[0],newNode,homology_weight=mp0_mp_dist,synteny_weight=syn_mp0_mp_dist)
-			self.graph.add_edge(minp[1],newNode,homology_weight=mp1_mp_dist,synteny_weight=syn_mp1_mp_dist)
+			self.graph.add_edge(minp[0], newNode, homology_weight = mp0_mp_dist, synteny_weight = syn_mp0_mp_dist)
+			self.graph.add_edge(minp[1], newNode, homology_weight = mp1_mp_dist, synteny_weight = syn_mp1_mp_dist)
 		# TODO this if should be out of the while loop
 		if len(unadded_nodes)==2:
 			minp = []
@@ -398,6 +398,8 @@ class NJTree:
 		return max_rparen_pairs[0]
 		
 	def rootTree(self):
+		"""Return Score, root edges, number of losses
+		"""
 		#for each edge in 'tree' graph, score the tree
 		roots = []
 		min_gl = len(self.graph.nodes())*2
@@ -421,12 +423,12 @@ class NJTree:
 			self.paths = nx.shortest_path(self.graph,None,None)
 			self.syn_shortest_paths = nxe.all_pairs_path_length(self.graph, 'synteny_weight')
 			for e in self.graph.edges():
-				(score,tree,gl_sum,loss) = self.scoreEdge(e,min_gl)
+				(score, tree, gl_sum, loss) = self.scoreEdge(e, min_gl)
 				if gl_sum<min_gl:
 					#~ print "gl_sum", gl_sum
 					min_gl = gl_sum
 				self.graph[e[0]][e[1]]['root_score'] = score
-				roots.append((score, e, tree,loss))
+				roots.append((score, e, tree, loss))
 		roots = sorted(roots, key=lambda tup: tup[0], reverse=True)
 		if len(roots) == 1 or roots[0][0] == roots[1][0]:
 			self.OK = "true"
@@ -483,31 +485,34 @@ class NJTree:
 		gain = 0
 		loss = 0
 		if len(self.graph.nodes())>100:
-			(gain,loss,tree) = self.getGainLossCount(e,-1)
+			(gain, loss, tree) = self.getGainLossCount(e, -1)
+			# why not keep the results from getGainLossCount?
 			gain = min_gl/2
 			loss = min_gl/2
 		else:
-			(gain,loss,tree) = self.getGainLossCount(e,min_gl)
-			my_gl = gain+loss
+			(gain, loss, tree) = self.getGainLossCount(e, min_gl)
+			my_gl = gain + loss
 		#score root
-		my_poisson=0.0
+		my_poisson = 0.0
 		my_gain_poisson = 0.0
-		my_gain_poisson = poisson.pmf((gain),self.gain)
+		my_gain_poisson = poisson.pmf((gain), self.gain)
 		if my_gain_poisson>0:
 			my_poisson += math.log10(my_gain_poisson)
 		my_loss_poisson = 0.0
-		my_loss_poisson = poisson.pmf((loss),self.loss)
-		if my_loss_poisson>0:
+		my_loss_poisson = poisson.pmf((loss), self.loss)
+		if my_loss_poisson > 0:
 			my_poisson += math.log10(my_loss_poisson)
-		gl_factor = self.gamma*my_poisson
-		dist_factor = (-self.beta)*h_var
-		if h_var>0:
-			dist_factor = (-self.beta)*math.log10(h_var)
-		syn_factor = (-self.alpha)*s_var
-		if s_var>0:
-			syn_factor = (-self.alpha)*math.log10(s_var)
-		score = math.exp(gl_factor)*math.exp(dist_factor)*math.exp(syn_factor)
-		return (score,tree,my_gl,loss)
+		gl_factor = self.gamma * my_poisson
+		dist_factor = (-self.beta) * h_var
+		if h_var > 0:
+			dist_factor = (-self.beta) * math.log10(h_var)
+		syn_factor = (-self.alpha) * s_var
+		if s_var > 0:
+			syn_factor = (-self.alpha) * math.log10(s_var)
+		score = math.exp(gl_factor) * math.exp(dist_factor) * math.exp(syn_factor)
+		# score = math.exp(gl_factor + dist_factor + syn_factor) should be the same
+		# and since exp is a strictly increasing function, the ranking would remain the same without applying it
+		return (score,tree, my_gl,loss)
 				
 	#returns a list of distances from the root edge midpoint to all leaf nodes
 	def getHomologyDistances(self, e):
@@ -560,7 +565,9 @@ class NJTree:
 		dist = raw_len + mid_edge
 		return dist
 		
-	def getGainLossCount(self,e,min_gl):
+	def getGainLossCount(self, e, min_gl):
+		# TODO verify how the species of a node is set to MRCA
+		# returns 0 gain when there needs to be a duplication event for the tree to exist (the loss after is found)
 		gain = 0
 		loss = 0
 		gl_total = 0
@@ -572,7 +579,7 @@ class NJTree:
 		tGraph.add_node(newID, species=self.mrca)
 		tGraph.add_edge(e[0], newID, homology_weight=newWeight)
 		tGraph.add_edge(e[1], newID, homology_weight=newWeight)
-		
+		# TODO no modification to synteny weights??
 		up = [] #up = unprocessed, length is number of edges
 		leaf = [] #leaf nodes
 		for n in tGraph.nodes():
@@ -583,7 +590,7 @@ class NJTree:
 		#get node with most edges to leaves to process
 		#note: species of a node can change during this process based on rooting, the e_leaf situation is for handling that
 		while len(up) > 0:
-			curNode = (NJTree.calcMostEdgesToLeaves(up, leaf, tGraph))[0]
+			curNode = (NJTree.calcMostEdgesToLeaves(up, leaf, tGraph))[0] # curNode = AA node instead of root?
 			curNodeSpecies = ""
 			if curNode in self.gl_map:
 				gain += self.gl_map[curNode]['gain']
@@ -606,7 +613,7 @@ class NJTree:
 				if len(childSpecies) == 1:
 					if self.mrca in childSpecies:
 						curNodeSpecies = self.mrca
-						pass
+						pass # useless?
 					else:
 						curNodeSpecies = child[0][1]
 						gain+=1
@@ -649,9 +656,9 @@ class NJTree:
 		return (retNode,mostLeaves)
 
 	#checks if tree needs to be split
-	def checkTree(self, root,NO_BREAK_EW):
+	def checkTree(self, root, NO_BREAK_EW):
 		""" Returns "true" if they are 2 species in the tree and the mrca is not present.
-		Returns "false" if they are 2 species in the tree but one of them is the mrca.
+		Returns "false" if they are 2 species in the tree but one of them is the mrca, or if more than 100 nodes in the graph.
 		Returns "orphan" if they is only 1 species in the tree
 		"""
 		if len(self.graph.nodes())>100: # TODO why this arbitrary limit on the size of the tree?
@@ -679,7 +686,8 @@ class NJTree:
 			else:
 				self.OK = "true"
 				return self.OK
-		# TODO nothing happens when they are more than 2 species in the tree?
+		# How can the MRCA be one of the species??
+		# should add a verification that there are no more than 2 species
 
 	#Centroid is based on distance. 
 	def calcCentroid(self):
@@ -768,7 +776,6 @@ class NJTree:
 			ok = 1
 			while len(unchecked_new_graphs) > 0:
 				ng = unchecked_new_graphs.pop()
-				#~ print len(ng.nodes())
 				if len(ng.nodes())>50:
 					ok=0
 					g_edges = ng.edges(data=True)
@@ -790,7 +797,6 @@ class NJTree:
 				too_big=0
 		newicks = []
 		for n in new_graphs:
-			#~ newicks.append(self.toNewick(n))
 			#remove "root" node, put an edge in its place... these trees shouldn't be rooted! 
 			#then get the newick format of the unrooted tree
 			myRoot = None
@@ -806,10 +812,5 @@ class NJTree:
 					print n[myRoot]
 					sys.exit("splitTree: not 2 edges from temp root!:  "+str(len(n[myRoot])))
 			else:
-				#~ for e in n[myRoot]:
-					#~ ew = n[myRoot][e]['weight']
-					#~ children.append((e,ew))
-				#~ n.remove_node(myRoot)
-				#~ n.add_edge(children[0][0],children[1][0],weight=(children[0][1]+children[1][1]))
 				newicks.append(NJTree.toNewick(n))
 		return newicks

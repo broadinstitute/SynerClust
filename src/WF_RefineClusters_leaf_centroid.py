@@ -114,7 +114,7 @@ def main(argv):
 				#if the tree has >1 source, it is rooted and evaluated
 				else:
 					root = myTree.rootTree()
-					myTree.checkTree(root,NO_BREAK_EW)
+					myTree.checkTree(root, NO_BREAK_EW)
 					#tree is valid, added to resolved clusters
 					if myTree.OK == "true":
 						format_nodes = []
@@ -128,7 +128,7 @@ def main(argv):
 					else:
 						#additional orphan exit
 						if myTree.OK == "orphan":
-							unchecked_trees.append((NJTree.toNewick(myTree.graph).split("\n"),myTree.OK))
+							unchecked_trees.append((NJ.NJTree.toNewick(myTree.graph).split("\n"),myTree.OK))
 							last_tree="tree3"
 
 						else:
@@ -144,7 +144,7 @@ def main(argv):
 	synteny_data = {}
 	pickleSeqs = {}
 	pickleMaps = {}
-	print "last_tree", last_tree
+	#print "last_tree", last_tree
 	#load locus_mapping files from children
 	for c in children:
 		mapFile = node_dir+c+"/locus_mappings.pkl"
@@ -213,7 +213,7 @@ def main(argv):
 		taxa_map = {}
 		for g in ok:
 			child = "_".join(g.split("_")[:-1])
-			logger.debug("%s splitted to %s" %(g, child))
+			#logger.debug("%s splitted to %s" %(g, child))
 			newSyntenyMap[clusterID]['children'].append(g)
 			childToCluster[g] = clusterID
 			leafKids = pickleMaps[child][g]
@@ -224,7 +224,7 @@ def main(argv):
 			for l in leafKids:
 				newPickleMap[clusterID].append(l)
 				lKid = "_".join(l.split("_")[:-1])
-				logger.debug("%s splitted to %s" %(l, lKid))
+				#logger.debug("%s splitted to %s" %(l, lKid))
 				taxa.add(lKid)
 				if not lKid in taxa_map:
 					taxa_map[lKid] = 0

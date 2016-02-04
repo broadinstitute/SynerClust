@@ -50,9 +50,12 @@ class Tree:
 			tag = self.genomeToLocus[genome]
 			self.locusToGenome[tag] = genome
 		else:
-			children = genome.split(";")
-			# max node degree between children nodes
-			degree = max(int(children[0].split("_")[1]), int(children[1].split("_")[1])) + 1
+			if genome.count(";") > 0:
+				children = genome.split(";")
+				# max node degree between children nodes
+				degree = max(int(children[0].split("_")[1]), int(children[1].split("_")[1])) + 1
+			else:
+				degree = 0
 			tag = "N_%07d_%s" %(degree, base64.urlsafe_b64encode(hashlib.md5(genome).digest())[:-2])
 			Tree.logger.debug("Created new tag %s for %s" %(tag, genome))
 			# tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))

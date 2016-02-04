@@ -39,14 +39,24 @@ class RepoParse:
 					curGenome["Peptide"] = "null"
 					curGenome["Genome"] = dat[1] # need to use the hardnamed key in case "Genome" found in for example "Genomes"
 				elif dat[0].find("Annotation") > -1:
-					if not ".annotation.gff3" in dat[1]:
-						RepoParse.logger.warning("Are you sure \"%s\" is a gff3 annotation file?" %(dat[1]))
 					if not dat[1][0] == "/": # if not an absolute path
 					# if not dat[1].find("/") > -1:
 						# genome_path = repo_path + curGenome["Genome"] + "/"
 						# genome_path = repo_path
 						# myfiles = os.listdir(genome_path)
-						dat[1] = repo_path + dat[1] # path relative to repo, "./" and "../" can be used
+						if os.path.isfile(repo_path + dat[1]): # path relative to repo, "./" and "../" can be used
+							RepoParse.logger.warning("Are you sure \"%s\" is a gff3 annotation file?" %(dat[1]))
+							dat[1] = repo_path + dat[1]
+						elif os.path.isfile(repo_path + dat[1] + ".annotation.gff3"):
+							dat[1] = repo_path + dat[1] + ".annotation.gff3"
+						elif os.path.isfile(repo_path + curGenome["Genome"] + dat[1]):
+							RepoParse.logger.warning("Are you sure \"%s\" is a gff3 annotation file?" %(dat[1]))
+							dat[1] = repo_path + curGenome["Genome"] + dat[1]
+						elif os.path.isfile(repo_path + curGenome["Genome"] + dat[1] + ".annotation.gff3"):
+							dat[1] = repo_path + curGenome["Genome"] + dat[1]  + "annotation.gff3"
+						else:
+							RepoParse.logger.error("Specified annotation file not found for %s" %(curGenome["Genome"]))
+							sys.exit("Specified annotation file not found for %s" %(curGenome["Genome"]))
 						# curGenome["Sequence"] = genome_path + curGenome["Genome"] + ".genome.fa"
 						# if not curGenome["Genome"] + ".genome.fa" in myfiles:
 						# 	curGenome["Sequence"] = genome_path + curGenome["Genome"] +".genome"
