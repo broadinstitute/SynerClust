@@ -60,12 +60,12 @@ class Tree:
 		self.locusToGenome[tag] = genome
 		return tag
 
-	def reregisterGenomeID(self, id, newChildren):
-		oldGenome = self.locusToGenome[id]
+	def reregisterGenomeID(self, identifier, newChildren):
+		oldGenome = self.locusToGenome[identifier]
 		newGenome = ";".join(newChildren)
 		del self.genomeToLocus[oldGenome]
-		self.genomeToLocus[newGenome] = id
-		self.locusToGenome[id] = newGenome
+		self.genomeToLocus[newGenome] = identifier
+		self.locusToGenome[identifier] = newGenome
 
 	def writeLocusTagFile(self):
 		tag_out = open(self.genomeToLocusFile, 'w')
@@ -356,6 +356,7 @@ class Tree:
 
 		syn2_path = self.syn2_path
 		config_file = syn2_path+"WF_NodeFlowTemplate.ini"
+		# config_file = syn2_path+"WF_NewNodeFlowTemplate.ini"
 		template_file = syn2_path+"WF_NodeFlowTemplate.xml"
 
 		my_config_file = my_dir+curNode+".ini"

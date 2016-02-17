@@ -49,7 +49,8 @@ def main(argv):
 			formatDB_log = my_dir + "formatdb.log"
 			os.system("cp " + pfile + " " + c_fasta)
 			os.system("grep '>' " + c_fasta + "| cut -f2 -d '>' > " + c_head)
-			os.system("#BLAST_PATHformatdb -i " + c_fasta + " -l " + formatDB_log)
+			# os.system("#BLAST_PATHformatdb -i " + c_fasta + " -l " + formatDB_log)
+			os.system("#BLAST_PATHmakeblastdb -in " + c_fasta + " -dbtype prot -logfile " + formatDB_log)
 
 			header_file = open(c_head, 'r').readlines()
 			headers = {}
@@ -76,13 +77,16 @@ def main(argv):
 
 			if len(strains) == 1:
 				self_blast_out = my_dir + c + "_self.blast.m8"
-				os.system("#BLAST_PATHblastall -p blastp -b 6 -m8 -e " + evalue + " -a " + cores + " -d " + c_fasta + " -i " + c_fasta + " -o " + self_blast_out)
+				# os.system("#BLAST_PATHblastall -p blastp -b 6 -m8 -e " + evalue + " -a " + cores + " -d " + c_fasta + " -i " + c_fasta + " -o " + self_blast_out)
+				os.system("#BLAST_PATHblastp -num_alignments 6 -outfmt 6 -evalue " + evalue + " -num_threads " + cores + " -db " + c_fasta + " -query " + c_fasta + " -out " + self_blast_out)
 
 		cat_head_cmd = "cat " + heads[0] + " " + heads[1] + " > " + my_head
 		logger.info(cat_head_cmd)
 		os.system(cat_head_cmd)
-		os.system("#BLAST_PATHblastall -p blastp -m8 -e " + evalue + " -a " + cores + " -d " + fastas[0] + " -i " + fastas[1] + " -o " + m8s[1])
-		os.system("#BLAST_PATHblastall -p blastp -m8 -e " + evalue + " -a " + cores + " -d " + fastas[1] + " -i " + fastas[0] + " -o " + m8s[0])
+		# os.system("#BLAST_PATHblastall -p blastp -m8 -e " + evalue + " -a " + cores + " -d " + fastas[0] + " -i " + fastas[1] + " -o " + m8s[1])
+		os.system("#BLAST_PATHblastp -outfmt 6 -evalue " + evalue + " -num_threads " + cores + " -db " + fastas[0] + " -query " + fastas[1] + " -out " + m8s[1])
+		# os.system("#BLAST_PATHblastall -p blastp -m8 -e " + evalue + " -a " + cores + " -d " + fastas[1] + " -i " + fastas[0] + " -o " + m8s[0])
+		os.system("#BLAST_PATHblastp -outfmt 6 -evalue " + evalue + " -num_threads " + cores + " -db " + fastas[1] + " -query " + fastas[0] + " -out " + m8s[0])
 
 		my_m8s = my_dir + "*m8"
 		os.system("cat " + my_m8s + " > " + m8)

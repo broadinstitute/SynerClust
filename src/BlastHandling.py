@@ -59,7 +59,8 @@ class BlastParse:
 
 	# hits are scored by cumulative percent identity
 	# synData is unused
-	def scoreHits(self, hits, headers, min_best_hit, synData, numHits, minSynFrac):
+	@staticmethod
+	def scoreHits(hits, headers, min_best_hit, synData, numHits, minSynFrac):
 		# SYN_FRAC = minSynFrac
 		# NUM_HITS = numHits
 		bestHits = nx.Graph()
@@ -120,7 +121,8 @@ class BlastParse:
 					i += 1
 		return (bestHits, bestDirHits)
 
-	def makePutativeClusters(self, bestHits, tree_dir, synData, homScale, synScale, bestDirHits, numHits):
+	@staticmethod
+	def makePutativeClusters(bestHits, tree_dir, synData, homScale, synScale, bestDirHits, numHits):
 		# numThreads = 4
 		MAX_HITS = numHits
 		BlastParse.logger.info("len(best hits nodes) %d %d" % (len(bestHits.nodes()), len(bestHits.edges())))
@@ -190,7 +192,7 @@ class BlastParse:
 					clusterToGenes[clusterID].append(locus)
 				else:
 
-					clusterToSub[clusterID] = scc
+					clusterToSub[clusterID] = scc  # scc is a graph object
 					# for n in scc.nodes():
 					for locus in scc.nodes():
 						# locus = n.split(";")[0][-10:]		#mod for big BLAST
@@ -216,12 +218,12 @@ class BlastParse:
 		for sub in clusterToSub:
 			# if sub_count>10:
 				# sys.exit()
-			s = clusterToSub[sub]
+			s = clusterToSub[sub]  # s is a graph object
 			if len(s.nodes()) == 1:
 				# is this possible???? If only 1 node it shoudn't be in clusterToSub
 				continue
 			# print sub, len(s.nodes())
-			(h_dist, s_dist) = self.makeDistanceMatrix(s, bestDirHits, geneToCluster, clusterToGenes, synData, homScale, synScale)
+			(h_dist, s_dist) = BlastParse.makeDistanceMatrix(s, bestDirHits, geneToCluster, clusterToGenes, synData, homScale, synScale)
 			# homology distance matrix
 			# h_string = str(len(h_dist))+"\n"
 			h_string = ""
@@ -261,7 +263,8 @@ class BlastParse:
 		return 0
 
 	# creates a distance matrix based on blast hits, augment distances with syntenic fractions
-	def makeDistanceMatrix(self, graph, bestDirHits, geneToCluster, clusterToGenes, synData, homScale, synScale):
+	@staticmethod
+	def makeDistanceMatrix(graph, bestDirHits, geneToCluster, clusterToGenes, synData, homScale, synScale):
 
 		# big_dist = homScale*200000.0+synScale*200000.0
 		big_dist = 200000.0

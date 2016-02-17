@@ -66,12 +66,12 @@ class Tree:
 			# print genome, tag
 		return tag
 		
-	def reregisterGenomeID(self, id, newChildren):
-		oldGenome = self.locusToGenome[id]
+	def reregisterGenomeID(self, identifier, newChildren):
+		oldGenome = self.locusToGenome[identifier]
 		newGenome = ";".join(newChildren)
 		del self.genomeToLocus[oldGenome]
-		self.genomeToLocus[newGenome] = id
-		self.locusToGenome[id] = newGenome
+		self.genomeToLocus[newGenome] = identifier
+		self.locusToGenome[identifier] = newGenome
 		
 	def parseTree(self):
 		myTreeString = self.tree_string[0:-1]

@@ -92,13 +92,14 @@ def main(argv):
 			uTree = new_tree[0]
 			isOrphan = new_tree[1]
 			myTree = NJ.NJTree("filler", syn_file, mrca, alpha, beta, gamma, gain, loss)
-			(nodes, extinct) = myTree.parseNewick(uTree)
+			# (nodes, extinct) = myTree.parseNewick(uTree)
 			# single node tree genes are added to orphans
 			if isOrphan == "orphan":
-				for n in nodes:  # can there be more than one node if it's an orphan? If not, can use nodes[0] and assert len(nodes) == 0
-					o = n[1].split(":")[0]
-					o = o.replace("(", "")
-					orphans.append(o)
+				logger.critical("Need to handle orphan case")
+# 				for n in nodes:  # can there be more than one node if it's an orphan? If not, can use nodes[0] and assert len(nodes) == 0
+# 					o = n[1].split(":")[0]
+# 					o = o.replace("(", "")
+# 					orphans.append(o)
 					# last_tree = "orphan"
 				continue
 			# multiple node trees continue
@@ -263,24 +264,26 @@ def main(argv):
 		std = numpy.std(my_lengths)
 		std_avg = std / avg
 		out_dat = [clusterID, str(len(my_lengths)), str(len(taxa)), str(min_taxa), str(max_taxa), str(min(my_lengths)), str(max(my_lengths)), str(avg), str(std), str(std_avg)]
+		
+# 		sys.exit()
 		sstats.write("\t".join(out_dat) + "\n")
 
 		if tree_seq_count == 1:
 			for seq in treeSeqs:
 				seqlen = str(len(seq))
-				singles.write(">"+clusterID+";"+seqlen+"\n"+seq+"\n")
+				singles.write(">" + clusterID + ";" + seqlen + "\n" + seq + "\n")
 		elif len(ok) == 1:
 			for bseq in blast_pep[ok[0]]:
 				seqlen = str(len(bseq))
-				singles.write(">"+clusterID+";"+seqlen+"\n"+bseq+"\n")
+				singles.write(">" + clusterID + ";" + seqlen + "\n" + bseq + "\n")
 		else:
-			temp_pep = cluster_dir+clusterID+".pep"
+			temp_pep = cluster_dir + clusterID + ".pep"
 			pepOut = open(temp_pep, 'w')
 			# print clusterID, len(treeSeqs), len(ok), tree_seq_count
 			for seq in treeSeqs:
 				seqlen = str(len(seq))
 				id = treeSeqs[seq][0]  # TODO output ALL IDs from seq because there might be more than a single ID, and this is NOT a .cons.pep file, just a .pep file
-				pepOut.write(">"+id+";"+seqlen+"\n"+seq+"\n")
+				pepOut.write(">" + id + ";" + seqlen + "\n" + seq + "\n")
 			pepOut.close()
 		cluster_counter += 1
 	singles.close()
@@ -295,19 +298,19 @@ def main(argv):
 				logger.debug("newSyntenyMap[%s]['neighbors'].append(childToCluster[%s]" % (clust, neigh))
 				newSyntenyMap[clust]['neighbors'].append(childToCluster[neigh])
 	# pickle synteny data
-	pklSyn = my_dir+"synteny_data.pkl"
+	pklSyn = my_dir + "synteny_data.pkl"
 	sdat = open(pklSyn, 'wb')
 	pickle.dump(newSyntenyMap, sdat)
 	sdat.close()
 
 	# pickle the locus mappings
-	pklMap = my_dir+"locus_mappings.pkl"
+	pklMap = my_dir + "locus_mappings.pkl"
 	pdat = open(pklMap, 'wb')
 	pickle.dump(newPickleMap, pdat)
 	pdat.close()
 
 	# script complete call
-	clusters_done_file = my_dir+"CLUSTERS_REFINED"
+	clusters_done_file = my_dir + "CLUSTERS_REFINED"
 	cr = open(clusters_done_file, 'w')
 	cr.write("Way to go!\n")
 	cr.close()
