@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 # import sys
 import operator
 # import numpy
@@ -151,8 +152,8 @@ class BlastParse:
 				# remove self hits
 				if "_".join(med[0].split("_")[:-1]) == "_".join(med[1].split("_")[:-1]):
 					edges_to_remove.append(med)
-				elif not bd_sub[med[0]][med[1]]['rank'] <= MAX_HITS:
-					edges_to_remove.append(med)
+# 				elif not bd_sub[med[0]][med[1]]['rank'] <= MAX_HITS:
+# 					edges_to_remove.append(med)
 			bd_sub.remove_edges_from(edges_to_remove)
 			# edges_to_remove = []
 			# my_edges = [e for e in bd_sub.edges_iter()]
