@@ -264,7 +264,7 @@ def main(argv):
 		std = numpy.std(my_lengths)
 		std_avg = std / avg
 		out_dat = [clusterID, str(len(my_lengths)), str(len(taxa)), str(min_taxa), str(max_taxa), str(min(my_lengths)), str(max(my_lengths)), str(avg), str(std), str(std_avg)]
-		
+
 # 		sys.exit()
 		sstats.write("\t".join(out_dat) + "\n")
 
@@ -282,8 +282,8 @@ def main(argv):
 			# print clusterID, len(treeSeqs), len(ok), tree_seq_count
 			for seq in treeSeqs:
 				seqlen = str(len(seq))
-				id = treeSeqs[seq][0]  # TODO output ALL IDs from seq because there might be more than a single ID, and this is NOT a .cons.pep file, just a .pep file
-				pepOut.write(">" + id + ";" + seqlen + "\n" + seq + "\n")
+				identifier = treeSeqs[seq][0]  # TODO output ALL IDs from seq because there might be more than a single ID, and this is NOT a .cons.pep file, just a .pep file
+				pepOut.write(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
 			pepOut.close()
 		cluster_counter += 1
 	singles.close()

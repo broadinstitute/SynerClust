@@ -92,14 +92,15 @@ def main(argv):
 			uTree = new_tree[0]
 			isOrphan = new_tree[1]
 			myTree = NJ.NJTree("filler", syn_file, mrca, alpha, beta, gamma, gain, loss)
-			(nodes, extinct) = myTree.parseNewick(uTree)
+			# (nodes, extinct) = myTree.parseNewick(uTree)
 			# single node tree genes are added to orphans
 			if isOrphan == "orphan":
-				for n in nodes:  # can there be more than one node if it's an orphan? If not, can use nodes[0] and assert len(nodes) == 0
-					o = n[1].split(":")[0]
-					o = o.replace("(", "")
-					orphans.append(o)
-					# last_tree = "orphan"
+				logger.critical("Need to handle orphan case")
+				# for n in nodes:  # can there be more than one node if it's an orphan? If not, can use nodes[0] and assert len(nodes) == 0
+				# 	o = n[1].split(":")[0]
+				# 	o = o.replace("(", "")
+				# 	orphans.append(o)
+				# 	last_tree = "orphan"
 				continue
 			# multiple node trees continue
 			else:
@@ -279,8 +280,8 @@ def main(argv):
 			# print clusterID, len(treeSeqs), len(ok), tree_seq_count
 			for seq in treeSeqs:
 				seqlen = str(len(seq))
-				id = treeSeqs[seq][0]
-				pepOut.write(">" + id + ";" + seqlen + "\n" + seq + "\n")
+				identifier = treeSeqs[seq][0]
+				pepOut.write(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
 			pepOut.close()
 		cluster_counter += 1
 	singles.close()

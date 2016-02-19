@@ -79,6 +79,7 @@ def main(argv):
 	os.mkdir(tree_dir)
 	tree_dir = tree_dir + os.sep
 	retval = bp.makePutativeClusters(bestHits, tree_dir, pickleSyn, homScale, synScale, bestDirHits, numHits)
+# 	sys.exit()
 	if retval > 0:
 		sys.exit(retval)
 
