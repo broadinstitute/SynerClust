@@ -8,16 +8,18 @@ import NetworkX_Extension as nxe
 class NJTree:
 	logger = logging.getLogger("NJTree")
 
-	def __init__(self, newick_file, syn_mat_file, mrca, alpha, beta, gamma, gain, loss):
+	def __init__(self, hom_mat, syn_mat, mrca, alpha, beta, gamma, gain, loss):
 		#self.newick_file = newick_file
-		self.distance_file = newick_file
+		self.distance_matrix = hom_mat
+# 		self.distance_file = newick_file
 		self.dMatrix = ""
 		self.newick = ""
 		self.graph = nx.Graph()
 		self.syntenyGraph = nx.Graph()
 		self.syntenyMatrix = {}
 		self.syntenyIndex = None
-		self.synteny_file = syn_mat_file
+		self.synteny_data= syn_mat
+# 		self.synteny_file = syn_mat_file
 		self.mrca = mrca
 		self.bigNode = ""
 		self.alpha = 10.0 # TODO take into account the actual value given
@@ -35,7 +37,8 @@ class NJTree:
 		self.gl_map = {} #node -> gain/loss tuple
 	
 	def readSyntenyMatrix(self, valid_nodes):
-		matrix_data = open(self.synteny_file,'r').readlines()
+# 		matrix_data = open(self.synteny_file,'r').readlines()
+		matrix_data = self.synteny_data
 		index = {}
 		rev_index = {}
 # 		count = 0
@@ -61,8 +64,10 @@ class NJTree:
 		self.syntenyIndex = index
 			
 	def readDistanceMatrix(self):
-		matrix_data=open(self.distance_file,'r').readlines()
-		return matrix_data
+# 		matrix_data=open(self.distance_file,'r').readlines()
+# 		matrix_data = self.distance_matrix
+		return self.distance_matrix
+# 		return matrix_data
 	
 	def buildGraphFromDistanceMatrix(self, matrix_data):
 		matrix={}

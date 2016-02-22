@@ -65,87 +65,107 @@ def main(argv):
 
 	# Root, evaluate and split every tree until all trees are OK
 	# last_tree = ""
-	for t in os.listdir(tree_dir):
-		unchecked_trees = []
-		# read in orphan file from tree dir
-		if t.find("orphan") > -1:
-			old_orphans = open(tree_dir + t, 'r').readlines()
-			continue
-		elif t.find("syn.dist") > -1:
-			continue
-		tree_file = tree_dir + t
-		syn_file = tree_file.replace("hom.dist", "syn.dist")
-		# print t
-		# mrca = node #this node is the most recent common ancestor
-		# myTree.readSyntenyMatrix()
-		# newick_lines = myTree.getNewickLines()
-		# unchecked_trees.append((newick_lines,"false")) #False refers to orphan status
-
-		# Could probably replace these lines by directly reading the distance matrix file into the list without needing to create a NJ.NJTree
-		myTree = NJ.NJTree(tree_file, syn_file, mrca, alpha, beta, gamma, gain, loss)
-		d_lines = myTree.readDistanceMatrix()
-		unchecked_trees.append((d_lines, "false"))  # False refers to orphan status
-		# If "false" refers to orphan status, why are there also both "true" and "orphan"?
-
-		while len(unchecked_trees) > 0:
-			new_tree = unchecked_trees.pop()
-			uTree = new_tree[0]
-			isOrphan = new_tree[1]
-			myTree = NJ.NJTree("filler", syn_file, mrca, alpha, beta, gamma, gain, loss)
-			# (nodes, extinct) = myTree.parseNewick(uTree)
-			# single node tree genes are added to orphans
-			if isOrphan == "orphan":
-				logger.critical("Need to handle orphan case")
-# 				for n in nodes:  # can there be more than one node if it's an orphan? If not, can use nodes[0] and assert len(nodes) == 0
-# 					o = n[1].split(":")[0]
-# 					o = o.replace("(", "")
-# 					orphans.append(o)
-					# last_tree = "orphan"
-				continue
-			# multiple node trees continue
-			else:
-				bigNode = myTree.buildGraphFromDistanceMatrix(uTree)
-				# bigNode = myTree.buildGraph(nodes,extinct)
-				myleaves = bigNode.split(";")
-				mysources = set([])  # sources are the child species contributing to this tree
-				for m in myleaves:
-					# logger.debug("m[0:3] = %s\n\t\tm = %s" %(m[0:3], m))
-					mysources.add("_".join(m.split("_")[:-1]))
-					# mysources.add(m[0:3])
-				# a valid tree has genes from both children, single source trees are broken into individual genes and added to the orphan list
-				# what about trees with more than 2 leaves?
-				if len(mysources) == 1:
-					for m in myleaves:
-						orphans.append(m)
-						# last_tree = "tree1"
-				# if the tree has >1 source, it is rooted and evaluated
+	
+	hom_file = open(tree_dir + "homology_matrices.dat", "r")
+	syn_file = open(tree_dir + "synteny_matrices.dat", "r")
+	
+	hom_line = hom_file.readline()
+	syn_line = syn_file.readline()
+	hom_mat = ""
+	syn_mat = ""
+	while hom_line != "":
+		if hom_line == "//\n":
+			unchecked_trees = []
+			# read in orphan file from tree dir
+# 			if t.find("orphan") > -1:
+# 				old_orphans = open(tree_dir + t, 'r').readlines()
+# 				continue
+# 			elif t.find("syn.dist") > -1:
+# 				continue
+# 			tree_file = tree_dir + t
+# 			syn_file = tree_file.replace("hom.dist", "syn.dist")
+			# print t
+			# mrca = node #this node is the most recent common ancestor
+			# myTree.readSyntenyMatrix()
+			# newick_lines = myTree.getNewickLines()
+			# unchecked_trees.append((newick_lines,"false")) #False refers to orphan status
+	
+			# Could probably replace these lines by directly reading the distance matrix file into the list without needing to create a NJ.NJTree
+			myTree = NJ.NJTree(hom_mat, syn_mat, mrca, alpha, beta, gamma, gain, loss)
+	# 		myTree = NJ.NJTree(tree_file, syn_file, mrca, alpha, beta, gamma, gain, loss)
+			d_lines = myTree.readDistanceMatrix()
+			unchecked_trees.append((d_lines, "false"))  # False refers to orphan status
+			# If "false" refers to orphan status, why are there also both "true" and "orphan"?
+	
+			while len(unchecked_trees) > 0:
+				new_tree = unchecked_trees.pop()
+				uTree = new_tree[0]
+				isOrphan = new_tree[1]
+				myTree = NJ.NJTree("filler", syn_file, mrca, alpha, beta, gamma, gain, loss)
+				# (nodes, extinct) = myTree.parseNewick(uTree)
+				# single node tree genes are added to orphans
+				if isOrphan == "orphan":
+					logger.critical("Need to handle orphan case")
+	# 				for n in nodes:  # can there be more than one node if it's an orphan? If not, can use nodes[0] and assert len(nodes) == 0
+	# 					o = n[1].split(":")[0]
+	# 					o = o.replace("(", "")
+	# 					orphans.append(o)
+						# last_tree = "orphan"
+					continue
+				# multiple node trees continue
 				else:
-					root = myTree.rootTree()
-					myTree.checkTree(root, NO_BREAK_EW)
-					# tree is valid, added to resolved clusters
-					if myTree.OK == "true":
-						format_nodes = []
-						for n in myTree.graph.nodes():
-							if n.count(";") == 0:
-								format_nodes.append(n)
-						ok_trees.append(format_nodes)
-						# last_tree = "tree2"
-
-					# tree is invalid, added to unchecked trees unless it is an orphan
+					bigNode = myTree.buildGraphFromDistanceMatrix(uTree)
+					# bigNode = myTree.buildGraph(nodes,extinct)
+					myleaves = bigNode.split(";")
+					mysources = set([])  # sources are the child species contributing to this tree
+					for m in myleaves:
+						# logger.debug("m[0:3] = %s\n\t\tm = %s" %(m[0:3], m))
+						mysources.add("_".join(m.split("_")[:-1]))
+						# mysources.add(m[0:3])
+					# a valid tree has genes from both children, single source trees are broken into individual genes and added to the orphan list
+					# what about trees with more than 2 leaves?
+					if len(mysources) == 1:
+						for m in myleaves:
+							orphans.append(m)
+							# last_tree = "tree1"
+					# if the tree has >1 source, it is rooted and evaluated
 					else:
-						# additional orphan exit
-						if myTree.OK == "orphan":
-							unchecked_trees.append((NJ.NJTree.toNewick(myTree.graph).split("\n"), myTree.OK))
-							# last_tree = "tree3"
-
+						root = myTree.rootTree()
+						myTree.checkTree(root, NO_BREAK_EW)
+						# tree is valid, added to resolved clusters
+						if myTree.OK == "true":
+							format_nodes = []
+							for n in myTree.graph.nodes():
+								if n.count(";") == 0:
+									format_nodes.append(n)
+							ok_trees.append(format_nodes)
+							# last_tree = "tree2"
+	
+						# tree is invalid, added to unchecked trees unless it is an orphan
 						else:
-							(myNewicks, myMatrices) = myTree.splitTree(root)
-							for m in myMatrices:
-								unchecked_trees.append((m.split("\n"), myTree.OK))
-							# for n in myNewicks:
-								# nTree = n.split("\n")
-								# unchecked_trees.append((nTree,myTree.OK))
-							# last_tree = "tree4"
+							# additional orphan exit
+							if myTree.OK == "orphan":
+								unchecked_trees.append((NJ.NJTree.toNewick(myTree.graph).split("\n"), myTree.OK))
+								# last_tree = "tree3"
+	
+							else:
+								(myNewicks, myMatrices) = myTree.splitTree(root)
+								for m in myMatrices:
+									unchecked_trees.append((m.split("\n"), myTree.OK))
+								# for n in myNewicks:
+									# nTree = n.split("\n")
+									# unchecked_trees.append((nTree,myTree.OK))
+								# last_tree = "tree4"
+			hom_mat = ""
+			syn_mat = ""
+		else:
+			hom_mat += hom_line
+			syn_mat += syn_line
+		hom_line = hom_file.readline()
+		syn_line = syn_file.readline()	
+# 	for t in os.listdir(tree_dir):
+	hom_file.close()
+	syn_file.close()
 
 	cluster_counter = 1  # used to number clusters
 	synteny_data = {}
@@ -295,7 +315,7 @@ def main(argv):
 			lc = "_".join(child.split("_")[:-1])
 			# logger.debug("%s splitted to %s" % (child, lc))
 			for neigh in synteny_data[lc][child]['neighbors']:
-				logger.debug("newSyntenyMap[%s]['neighbors'].append(childToCluster[%s]" % (clust, neigh))
+# 				logger.debug("newSyntenyMap[%s]['neighbors'].append(childToCluster[%s]" % (clust, neigh))
 				newSyntenyMap[clust]['neighbors'].append(childToCluster[neigh])
 	# pickle synteny data
 	pklSyn = my_dir + "synteny_data.pkl"

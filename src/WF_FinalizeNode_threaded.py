@@ -182,6 +182,7 @@ if __name__ == "__main__":
 	
 	os.system("cat "+node_dir+"clusters/*.tc.pep >"+node_dir+node+".pep")
 	os.system("rm "+node_dir+"clusters/*.tc.pep")
+	os.system("rm -r " + node_dir + "clusters")
 	
 	logger.info("Made pep file, sleeping 5 seconds")
 	# print "Made pep file, sleeping 5 seconds"

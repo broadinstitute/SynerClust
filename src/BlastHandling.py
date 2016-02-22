@@ -171,6 +171,8 @@ class BlastParse:
 		BlastParse.logger.info("gene count = %d" % (gene_count))
 		BlastParse.logger.info("count = %d" % (count))
 
+		homout = open(tree_dir + "homology_matrices.dat", "w")
+		synout = open(tree_dir + "synteny_matrices.dat", "w")
 		for sub in clusterToSub:
 			s = clusterToSub[sub]  # s is a graph object
 			if len(s.nodes()) == 1:
@@ -185,10 +187,11 @@ class BlastParse:
 					dists.append(str(h_dist[hd][he]))
 				line = hd + "\t" + "\t".join(dists) + "\n"
 				h_string = h_string + line
-			mat_file = tree_dir + sub + ".hom.dist"
-			matout = open(mat_file, 'w')
-			matout.write(h_string)
-			matout.close()
+			h_string += "//\n"
+# 			mat_file = tree_dir + sub + ".hom.dist"
+# 			matout = open(mat_file, 'w')
+			homout.write(h_string)
+# 			matout.close()
 
 			# synteny distance matrix
 			s_string = ""
@@ -198,10 +201,13 @@ class BlastParse:
 					dists.append(str(s_dist[sd][se]))
 				line = sd + "\t" + "\t".join(dists) + "\n"
 				s_string = s_string + line
-			mat_file = tree_dir + sub + ".syn.dist"
-			matout = open(mat_file, 'w')
-			matout.write(s_string)
-			matout.close()
+			h_string += "//\n"
+# 			mat_file = tree_dir + sub + ".syn.dist"
+# 			matout = open(mat_file, 'w')
+			synout.write(s_string)
+# 			matout.close()
+		homout.close()
+		synout.close()
 		return 0
 
 	# creates a distance matrix based on blast hits, augment distances with syntenic fractions
