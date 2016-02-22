@@ -1,15 +1,9 @@
 #!/usr/bin/env python
 
-# import sys
 import operator
-# import numpy
-# import os
 import math
 import logging
 import networkx as nx
-# from multiprocessing import Process, Queue
-# from Queue import Empty
-# import matplotlib.pyplot as plt
 
 
 class BlastSegment:
@@ -38,12 +32,10 @@ class BlastSegment:
 	# adjusted identity percentage, 100 000 < adjPID < 200 000
 	# lower means more identity
 	def setAdjPID(self):
-		# print self.pID,self.length,self.qLength, self.tLength
 		# percent of the shortest sequence that the blast result represents
 		percent = float(self.length) / float(min(self.qLength, self.tLength))  # mod for big BLAST
 		self.adjPID = self.pID * percent
 		self.score = (2.0 - self.adjPID) * 100000.0
-		# print self.adjPID
 
 	def getAdjPID(self):
 		return self.adjPID
@@ -125,21 +117,18 @@ class BlastParse:
 	@staticmethod
 	def makePutativeClusters(bestHits, tree_dir, synData, homScale, synScale, bestDirHits, numHits):
 		# numThreads = 4
-		MAX_HITS = numHits
+		# MAX_HITS = numHits
 		BlastParse.logger.info("len(best hits nodes) %d %d" % (len(bestHits.nodes()), len(bestHits.edges())))
-		# print "len(all hits nodes)", len(allHits.nodes()), len(allHits.edges())
 		subs = list(nx.connected_component_subgraphs(bestHits))
 		count = 1
 		orphan_file = tree_dir + "orphan_genes.txt"
 		orphans = open(orphan_file, 'w')
 		BlastParse.logger.info("len(subs) = %s" % (len(subs)))
-		# print "len(subs)",len(subs)
 		# map child genes to rough clusters and vice versa
 		geneToCluster = {}
 		clusterToGenes = {}
 		clusterToSub = {}
 		gene_count = 0
-		# drawn = 1
 		for s in subs:  # each subgraph is an initial cluster
 			# why are the subgraphs defined from the undirected graph and then used on the directed graph? Isn't RBH used?
 			my_sub = bestDirHits.subgraph(s.nodes())
@@ -155,36 +144,12 @@ class BlastParse:
 # 				elif not bd_sub[med[0]][med[1]]['rank'] <= MAX_HITS:
 # 					edges_to_remove.append(med)
 			bd_sub.remove_edges_from(edges_to_remove)
-			# edges_to_remove = []
-			# my_edges = [e for e in bd_sub.edges_iter()]
-			# for med in my_edges:
-				# if not (med[1],med[0]) in my_edges:
-					# edges_to_remove.append(med)
-			# print "edges to remove", len(edges_to_remove)
-			# bd_sub.remove_edges_from(edges_to_remove)
 
 			while len(bd_sub.nodes()) > 0:
 				clusterID = "cluster_" + str(count)
 				sccs = list(nx.strongly_connected_component_subgraphs(bd_sub))
 				scc = sccs[0]  # TODO verify : always only 1 possible, even when clustering more than 2 genomes?
-
-				# if drawn==0 and len(scc.nodes())>3:
-					# print "nodes", len(bd_sub.nodes()), len(scc.nodes())
-					# mypos = nx.spring_layout(scc,iterations=10)
-					# mypos = nx.shell_layout(bd_sub)
-					# nx.draw_networkx_nodes(scc,mypos,node_size=30)
-					# nx.draw_networkx_edges(scc,mypos,alpha=0.5)
-					# nx.draw_networkx_labels(scc,mypos,font_size=10,font_family='sans-serif')
-					# nx.draw(scc)
-					# plt.axis('off')
-					# me = tree_dir.split("/")[-3]
-					# plt.savefig(me+"."+clusterID+".a_cluster_graph.png")
-					# plt.close()
-					# drawn=1
 				if len(scc.nodes()) == 1:
-					# no = scc.nodes()[0]
-					# locus = no.split(";")[0][-10:]		#mod for big BLAST
-					# locus = no		#mod for big BLAST
 					locus = scc.nodes()[0]
 					orphans.write(locus + "\n")
 					geneToCluster[locus] = clusterID
@@ -192,12 +157,8 @@ class BlastParse:
 						clusterToGenes[clusterID] = []
 					clusterToGenes[clusterID].append(locus)
 				else:
-
 					clusterToSub[clusterID] = scc  # scc is a graph object
-					# for n in scc.nodes():
 					for locus in scc.nodes():
-						# locus = n.split(";")[0][-10:]		#mod for big BLAST
-						# locus = n		#mod for big BLAST
 						geneToCluster[locus] = clusterID
 						if clusterID not in clusterToGenes:
 							clusterToGenes[clusterID] = []
@@ -206,27 +167,17 @@ class BlastParse:
 					bd_sub.remove_node(NO)
 				count += 1
 				gene_count += len(scc.nodes())
-				# clusterID = "cluster_" + str(count)
-			# drawn = 1
-
 		orphans.close()
 		BlastParse.logger.info("gene count = %d" % (gene_count))
 		BlastParse.logger.info("count = %d" % (count))
 
-		# matQueue = Queue(0)
-		# processes = [Process(target=self.makeTreeFromMatrix, args=(matQueue,)) for i in range(numThreads)]
-
 		for sub in clusterToSub:
-			# if sub_count>10:
-				# sys.exit()
 			s = clusterToSub[sub]  # s is a graph object
 			if len(s.nodes()) == 1:
 				# is this possible???? If only 1 node it shoudn't be in clusterToSub
 				continue
-			# print sub, len(s.nodes())
 			(h_dist, s_dist) = BlastParse.makeDistanceMatrix(s, bestDirHits, geneToCluster, clusterToGenes, synData, homScale, synScale)
 			# homology distance matrix
-			# h_string = str(len(h_dist))+"\n"
 			h_string = ""
 			for hd in h_dist:
 				dists = []
@@ -238,10 +189,8 @@ class BlastParse:
 			matout = open(mat_file, 'w')
 			matout.write(h_string)
 			matout.close()
-			# matQueue.put(mat_file)
 
 			# synteny distance matrix
-			# s_string = str(len(s_dist))+"\n"
 			s_string = ""
 			for sd in s_dist:
 				dists = []
@@ -253,14 +202,6 @@ class BlastParse:
 			matout = open(mat_file, 'w')
 			matout.write(s_string)
 			matout.close()
-
-		# for p in processes:
-			# p.start()
-			# print "Starting",p.pid
-		# for p in processes:
-			# p.join()
-			# print "Stopping",p.pid
-		# os.system("rm "+tree_dir+"*.hom.dist")
 		return 0
 
 	# creates a distance matrix based on blast hits, augment distances with syntenic fractions
@@ -270,7 +211,6 @@ class BlastParse:
 		# big_dist = homScale*200000.0+synScale*200000.0
 		big_dist = 200000.0
 		myHomDist = {}
-		# print "blast distances"
 		# calculate blast distances
 		for n in graph.nodes():
 			myHomDist[n] = {}
@@ -284,24 +224,19 @@ class BlastParse:
 					# myDist[n][m] = myDist[n][m] - (bestDirHits[g][h]['weight']*homScale)
 					# myHomDist[n][m] = myHomDist[n][m] - bestDirHits[n][m]['weight']
 		# populate neighbor lists with rough cluster IDs
-		# print "getting neighbors"
 		syn = {}
 		for d in myHomDist:
 			# print "d", d
 			syn[d] = []
 			node = "_".join(d.split("_")[:-1])
-			# BlastParse.logger.debug("%s splitted to %s" %(d, node))
 			for n in synData[node][d]['neighbors']:
 				syn[d].append(geneToCluster[n])
 		# pairwise compare for syntenic fraction
-		# print "getting fractions"
 
 		mySynDist = {}
 		pairs = set([])
 		for m in graph.nodes():
 			mySynDist[m] = {}
-			# mnode = "_".join(m.split("_")[:-1])
-			# BlastParse.logger.debug("%s splitted to %s" %(m, mnode))
 			syn_m = set(syn[m])
 			mSeqs = len(syn[m])
 			for n in graph.nodes():
@@ -317,11 +252,8 @@ class BlastParse:
 				if n == m:
 					mySynDist[m][n] = 0.0
 					continue  # self comparisons should have identical neighbor sets anyway
-				# nnode = "_".join(n.split("_")[:-1])
-				# BlastParse.logger.debug("%s splitted to %s" % (n, nnode))
 				nSeqs = len(syn[n])
 				matches = 0
-				# union = 0
 				if mSeqs == 0 or nSeqs == 0:
 					mySynDist[m][n] -= 0.0  # no neighbors in common if someone has no neighbors
 					continue
@@ -331,24 +263,8 @@ class BlastParse:
 					t_n = max(syn[n].count(a), 0)
 					matches += min(t_m, t_n)
 				synFrac = float(matches) / float(min(mSeqs, nSeqs))
-				# print synFrac, matches, mSeqs, nSeqs
-				# oldDist = myDist[m][n]
-				# myDist[m][n] -= (synFrac*synScale)
 				mySynDist[m][n] = ((2.0 - synFrac) * 100000.0)
-				# print oldDist, myDist[m][n], synFrac
 		return (myHomDist, mySynDist)
-
-	# makes a neighbor joining tree using QuickTree from the distance matrix
-	# def makeTreeFromMatrix(self, matQ):
-	# 	while(True):
-	# 		try:
-	# 			matFile = matQ.get(timeout=5)
-	# 			treeFile = matFile.replace(".dist",".tree")
-	# cmd = "#QUICKTREE_PATH -in m -out t " + matFile +" > "+treeFile
-	# 			os.system(cmd)
-	# os.system("rm "+matFile)
-	# 		except Empty:
-	# 			break
 
 	# reads in the m8 file and returns hits, which is a dict of BlastSegments
 	def readBlastM8(self):
@@ -379,45 +295,3 @@ class BlastParse:
 				# print "better bits!", mySeg.bitScore, hits[Q][T].bitScore, Q, T
 				hits[Q][T] = mySeg
 		return hits
-
-	# def readBlat(self):
-	# 	blat = open(self.m8_file,'r').readlines()
-	# 	rhits = {}
-	# 	for b in blat:
-	# 		b = b.rstrip()
-	# 		line = b.split()
-	# 		q = line[0]
-	# 		t=line[1]
-	# 		if q==t:
-	# 			continue
-	# 		if float(line[10]) > 1e-2:
-	# 			continue
-	# 		if not q in rhits:
-	# 			rhits[q] = {}
-	# 		if not t in rhits[q]:
-	# 			rhits[q][t] = {"length":0,"mismatches":0,"bitscore":0.0,"evalue":float(line[10])}
-	# print rhits[q][t]
-	# 		rhits[q][t]["length"]+=int(line[3])
-	# 		rhits[q][t]["mismatches"]+=int(line[4])
-	# 		rhits[q][t]["bitscore"]+=float(line[11])
-	# print rhits[q][t]
-	# 	hits = {}
-	# 	for q in rhits:
-	# 		Q = q.split(";")[0]
-	# 		if not Q in hits:
-	# 			hits[Q] = {}
-	# 		for t in rhits[q]:
-	# 			T = t.split(";")[0]
-	# 			myLen = rhits[q][t]["length"]
-	# 			myMis = rhits[q][t]["mismatches"]
-	# 			myBit = rhits[q][t]["bitscore"]
-	# 			myE = rhits[q][t]["evalue"]
-	# 			myPID = float(myLen-myMis)/float(myLen)*100.0
-	# print q, t, myLen, myMis, myPID
-	# 			mySeg = BlastSegment(q,t,myPID,myLen,myBit,myE)
-	# 			mySeg.setAdjPID()
-	# 			if not T in hits[Q]:
-	# 				hits[Q][T] = mySeg
-	# 			elif mySeg.bitScore>hits[Q][T].bitScore:
-	# 				hits[Q][T] = mySeg
-	# 	return hits
