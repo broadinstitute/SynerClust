@@ -201,7 +201,7 @@ class BlastParse:
 					dists.append(str(s_dist[sd][se]))
 				line = sd + "\t" + "\t".join(dists) + "\n"
 				s_string = s_string + line
-			h_string += "//\n"
+			s_string += "//\n"
 # 			mat_file = tree_dir + sub + ".syn.dist"
 # 			matout = open(mat_file, 'w')
 			synout.write(s_string)

@@ -24,8 +24,6 @@ def usage():
 
 def main(argv):
 	node_dir = argv[0]
-	# flow_id = argv[1]
-	# jobs_per_command = int(argv[2])
 	mrca = argv[3]
 	alpha = float(argv[4])
 	gamma = float(argv[5])
@@ -64,11 +62,8 @@ def main(argv):
 	ok_trees = []
 
 	# Root, evaluate and split every tree until all trees are OK
-	# last_tree = ""
-	
 	hom_file = open(tree_dir + "homology_matrices.dat", "r")
 	syn_file = open(tree_dir + "synteny_matrices.dat", "r")
-	
 	hom_line = hom_file.readline()
 	syn_line = syn_file.readline()
 	hom_mat = ""
@@ -76,20 +71,6 @@ def main(argv):
 	while hom_line != "":
 		if hom_line == "//\n":
 			unchecked_trees = []
-			# read in orphan file from tree dir
-# 			if t.find("orphan") > -1:
-# 				old_orphans = open(tree_dir + t, 'r').readlines()
-# 				continue
-# 			elif t.find("syn.dist") > -1:
-# 				continue
-# 			tree_file = tree_dir + t
-# 			syn_file = tree_file.replace("hom.dist", "syn.dist")
-			# print t
-			# mrca = node #this node is the most recent common ancestor
-			# myTree.readSyntenyMatrix()
-			# newick_lines = myTree.getNewickLines()
-			# unchecked_trees.append((newick_lines,"false")) #False refers to orphan status
-	
 			# Could probably replace these lines by directly reading the distance matrix file into the list without needing to create a NJ.NJTree
 			myTree = NJ.NJTree(hom_mat, syn_mat, mrca, alpha, beta, gamma, gain, loss)
 	# 		myTree = NJ.NJTree(tree_file, syn_file, mrca, alpha, beta, gamma, gain, loss)
@@ -102,7 +83,6 @@ def main(argv):
 				uTree = new_tree[0]
 				isOrphan = new_tree[1]
 				myTree = NJ.NJTree("filler", syn_file, mrca, alpha, beta, gamma, gain, loss)
-				# (nodes, extinct) = myTree.parseNewick(uTree)
 				# single node tree genes are added to orphans
 				if isOrphan == "orphan":
 					logger.critical("Need to handle orphan case")
@@ -115,19 +95,15 @@ def main(argv):
 				# multiple node trees continue
 				else:
 					bigNode = myTree.buildGraphFromDistanceMatrix(uTree)
-					# bigNode = myTree.buildGraph(nodes,extinct)
 					myleaves = bigNode.split(";")
 					mysources = set([])  # sources are the child species contributing to this tree
 					for m in myleaves:
-						# logger.debug("m[0:3] = %s\n\t\tm = %s" %(m[0:3], m))
 						mysources.add("_".join(m.split("_")[:-1]))
-						# mysources.add(m[0:3])
 					# a valid tree has genes from both children, single source trees are broken into individual genes and added to the orphan list
 					# what about trees with more than 2 leaves?
 					if len(mysources) == 1:
 						for m in myleaves:
 							orphans.append(m)
-							# last_tree = "tree1"
 					# if the tree has >1 source, it is rooted and evaluated
 					else:
 						root = myTree.rootTree()
@@ -139,23 +115,15 @@ def main(argv):
 								if n.count(";") == 0:
 									format_nodes.append(n)
 							ok_trees.append(format_nodes)
-							# last_tree = "tree2"
-	
 						# tree is invalid, added to unchecked trees unless it is an orphan
 						else:
 							# additional orphan exit
 							if myTree.OK == "orphan":
 								unchecked_trees.append((NJ.NJTree.toNewick(myTree.graph).split("\n"), myTree.OK))
-								# last_tree = "tree3"
-	
 							else:
 								(myNewicks, myMatrices) = myTree.splitTree(root)
 								for m in myMatrices:
 									unchecked_trees.append((m.split("\n"), myTree.OK))
-								# for n in myNewicks:
-									# nTree = n.split("\n")
-									# unchecked_trees.append((nTree,myTree.OK))
-								# last_tree = "tree4"
 			hom_mat = ""
 			syn_mat = ""
 		else:
@@ -240,7 +208,6 @@ def main(argv):
 		taxa_map = {}
 		for g in ok:
 			child = "_".join(g.split("_")[:-1])
-			# logger.debug("%s splitted to %s" %(g, child))
 			newSyntenyMap[clusterID]['children'].append(g)
 			childToCluster[g] = clusterID
 			leafKids = pickleMaps[child][g]
@@ -251,7 +218,6 @@ def main(argv):
 			for l in leafKids:
 				newPickleMap[clusterID].append(l)
 				lKid = "_".join(l.split("_")[:-1])
-				# logger.debug("%s splitted to %s" %(l, lKid))
 				taxa.add(lKid)
 				if lKid not in taxa_map:
 					taxa_map[lKid] = 0
@@ -299,7 +265,6 @@ def main(argv):
 		else:
 			temp_pep = cluster_dir + clusterID + ".pep"
 			pepOut = open(temp_pep, 'w')
-			# print clusterID, len(treeSeqs), len(ok), tree_seq_count
 			for seq in treeSeqs:
 				seqlen = str(len(seq))
 				identifier = treeSeqs[seq][0]  # TODO output ALL IDs from seq because there might be more than a single ID, and this is NOT a .cons.pep file, just a .pep file
