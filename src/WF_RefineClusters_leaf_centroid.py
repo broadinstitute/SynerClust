@@ -31,7 +31,7 @@ def main(argv):
 	loss = float(argv[7])
 	children = argv[8:]
 	my_dir = node_dir + mrca + "/"
-	NO_BREAK_EW = 0.5
+# 	NO_BREAK_EW = 0.5
 	beta = 0.01
 
 	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
@@ -74,15 +74,15 @@ def main(argv):
 			# Could probably replace these lines by directly reading the distance matrix file into the list without needing to create a NJ.NJTree
 			myTree = NJ.NJTree(hom_mat, syn_mat, mrca, alpha, beta, gamma, gain, loss)
 	# 		myTree = NJ.NJTree(tree_file, syn_file, mrca, alpha, beta, gamma, gain, loss)
-			d_lines = myTree.readDistanceMatrix()
+			d_lines = myTree.readDistanceMatrix()  # TODO this is actually just hom_mat and the only place it is used
 			unchecked_trees.append((d_lines, "false"))  # False refers to orphan status
 			# If "false" refers to orphan status, why are there also both "true" and "orphan"?
-	
+
 			while len(unchecked_trees) > 0:
 				new_tree = unchecked_trees.pop()
 				uTree = new_tree[0]
 				isOrphan = new_tree[1]
-				myTree = NJ.NJTree("filler", syn_file, mrca, alpha, beta, gamma, gain, loss)
+				myTree = NJ.NJTree("filler", syn_mat, mrca, alpha, beta, gamma, gain, loss)
 				# single node tree genes are added to orphans
 				if isOrphan == "orphan":
 					logger.critical("Need to handle orphan case")
@@ -100,14 +100,14 @@ def main(argv):
 					for m in myleaves:
 						mysources.add("_".join(m.split("_")[:-1]))
 					# a valid tree has genes from both children, single source trees are broken into individual genes and added to the orphan list
-					# what about trees with more than 2 leaves?
+					# what about trees with paralogs in only one child? TODO
 					if len(mysources) == 1:
 						for m in myleaves:
 							orphans.append(m)
 					# if the tree has >1 source, it is rooted and evaluated
 					else:
 						root = myTree.rootTree()
-						myTree.checkTree(root, NO_BREAK_EW)
+						myTree.checkTree(root)
 						# tree is valid, added to resolved clusters
 						if myTree.OK == "true":
 							format_nodes = []
@@ -130,7 +130,7 @@ def main(argv):
 			hom_mat.append(hom_line)
 			syn_mat.append(syn_line)
 		hom_line = hom_file.readline()
-		syn_line = syn_file.readline()	
+		syn_line = syn_file.readline()
 # 	for t in os.listdir(tree_dir):
 	hom_file.close()
 	syn_file.close()
@@ -184,6 +184,7 @@ def main(argv):
 		if len(curPep) > 0:
 			blast_pep[curBlast].append(curPep)
 
+	# sys.exit()
 	# make control files for consensus sequence formation
 	# cons_cmds = []
 	singletons = cluster_dir + "singletons.cons.pep"
@@ -280,7 +281,7 @@ def main(argv):
 			lc = "_".join(child.split("_")[:-1])
 			# logger.debug("%s splitted to %s" % (child, lc))
 			for neigh in synteny_data[lc][child]['neighbors']:
-# 				logger.debug("newSyntenyMap[%s]['neighbors'].append(childToCluster[%s]" % (clust, neigh))
+				# logger.debug("newSyntenyMap[%s]['neighbors'].append(childToCluster[%s]" % (clust, neigh))
 				newSyntenyMap[clust]['neighbors'].append(childToCluster[neigh])
 	# pickle synteny data
 	pklSyn = my_dir + "synteny_data.pkl"
