@@ -164,7 +164,7 @@ class NJTree:
 		self.bigNode = bigNode
 		return bigNode
 	
-	def parseNewick(self, listt):
+	def parseNewick(self, listt):  # not used anymore
 		nodes = []
 		extinct_nodes = []
 		ln_count = 0
@@ -243,165 +243,6 @@ class NJTree:
 		last_string = last_string.rstrip()
 		return last_string + ";"
 		
-	def toNewickFromRooted(self):
-		up = []  # unprocessed
-		leaf = []
-		for n in self.rootedTree.nodes():
-			if len(self.rootedTree[n]) > 1:
-				up.append(n)
-			else:
-				leaf.append((n, self.rootedTree.node[n]['species']))
-		curNode = None
-		while len(up) > 0:
-			curNode = NJTree.calcMostEdgesToLeaves(up, leaf, self.rootedTree)[0]
-			leaves = []
-			for e in self.rootedTree[curNode]:
-				for l in leaf:
-					if l[0] == e:
-						e_i = leaf.index(l)
-						leaf.pop(e_i)
-						e_text = l[0]
-						if 'child_newick' in self.rootedTree.node[e]:
-							e_text = self.rootedTree.node[l[0]]['child_newick']
-						ew = self.rootedTree[curNode][l[0]]['homology_weight']
-						text = e_text + ":" + str(ew)
-						leaves.append(text)
-			# add newick text to curNode
-			node_text = "(" + ",".join(leaves) + ")"
-			self.rootedTree.node[curNode]['child_newick'] = node_text
-			# change curNode to leaf
-			cn_i = up.index(curNode)
-			up.pop(cn_i)
-			leaf.append((curNode, self.rootedTree.node[curNode]['species']))
-		return self.rootedTree.node[curNode]['child_newick'] + ";"
-	
-	def buildGraph(self, nodes, extinct):
-		while len(nodes) > 3:
-			nodes = sorted(nodes, key=lambda tup: tup[0])
-			md = NJTree.getMinDistancePair(nodes)
-			# remove nodes from current list
-			m1_i = nodes.index(md[0])
-			nodes.pop(m1_i)
-			m2_i = nodes.index(md[1])
-			nodes.pop(m2_i)
-			# find next extinct node
-			row_avg = float(md[0][0] + md[1][0]) / 2.0
-			max_row = float(max(md[0][0], md[1][0]))
-		
-			m0_id = md[0][1][0:md[0][1].find(":")]
-			m1_id = md[1][1][0:md[1][1].find(":")]
-			m_id = [m0_id, m1_id]
-			m_id.sort()
-			identifier = ";".join(m_id)
-			e_node = None
-			min_pcount = min(md[0][2], md[1][2])
-			for e in extinct:
-				if float(e[0]) > max_row and e[2] <= min_pcount:
-					e_node = e
-					break
-			# remove appropriate extinct node from extinct list; create new node based on merged children IDs
-			e_i = extinct.index(e_node)
-			extinct.pop(e_i)
-			nodes.append((row_avg, identifier + e[1], e[2], e[3], e[4]))
-			sp = ""
-			if self.graph.node[m0_id]['species'] == self.graph.node[m1_id]['species']:
-				sp = self.graph.node[m0_id]['species']
-			else:
-				sp = self.mrca
-			self.graph.add_node(identifier, row=row_avg, species=sp)
-			# add edges from new node to children
-			for n in md:
-				edge_weight = n[1].split(":")[1]
-				ew = float(edge_weight[0:edge_weight.find(".") + 5])
-				self.graph.add_edge(n[1].split(":")[0], identifier, homology_weight=ew)
-		if len(nodes) == 2:
-			edge_weight = nodes[0][1].split(":")[1]
-			ew = float(edge_weight[0:edge_weight.find(".") + 5])
-			self.graph.add_edge(nodes[0][1].split(":")[0], nodes[1][1].split(":")[0], homology_weight=ew)
-			self.bigNode = ";".join([nodes[0][1][0:nodes[0][1].find(":")], nodes[1][1][0:nodes[1][1].find(":")]])
-			return self.bigNode
-		
-		elif len(nodes) < 4:
-			# merge all nodes into one extinct node
-			semicolons = []
-			rows = []
-			node_ids = []
-			for n in nodes:
-				myID = n[1][0:n[1].find(":")]
-				mySC = myID.count(";")
-				semicolons.append((myID, mySC, n[0]))
-				rows.append(n[0])
-				node_ids.append(myID)
-			sc = sorted(semicolons, key=lambda tup: tup[1])
-			node_ids.sort()
-			newID = ";".join(node_ids)
-			row_sum = numpy.mean(rows)
-			newSpecies = self.mrca
-			if self.graph.node[sc[0][0]]['species'] == self.graph.node[sc[1][0]]['species']:
-				newSpecies = self.graph.node[sc[0][0]]['species']
-			# add new node to graph
-			self.graph.add_node(newID, row=row_sum, species=newSpecies)
-			# add edges to new node
-			for n in nodes:
-				edge_weight = n[1].split(":")[1]
-				ew = float(edge_weight[0:edge_weight.find(".") + 5])
-				self.graph.add_edge(n[1].split(":")[0], newID, homology_weight=ew)
-			self.bigNode = newID
-			return self.bigNode
-
-	@staticmethod
-	def getMinDistancePair(nodes):
-		min_dist = nodes[-1][0] - nodes[0][0]
-		i = len(nodes) - 1
-		while i >= 1:
-			j = i - 1
-			if j >= 0:
-				if i == j:
-					j -= 1
-				min_row = min(i, j)
-				if nodes[min_row][4] == True:
-					j -= 1
-				elif nodes[i][4] == False and nodes[j][4] == False:
-					j -= 1
-				else:
-					if abs(nodes[i][0] - nodes[j][0]) < min_dist:
-						min_dist = abs(nodes[i][0] - nodes[j][0])
-					j -= 1
-					if min_dist == 1:
-						j = -1
-						i = -1
-			i -= 1
-		md_pairs = []
-		while len(md_pairs) == 0:
-			max_rparen = 0
-			for n in nodes:
-				# ~ for m in nodes:
-				m_index = nodes.index(n) + 1
-				if m_index < len(nodes):
-					m = nodes[m_index]
-					if m[0] < n[0]:
-						continue
-					if abs(n[0] - m[0]) <= min_dist:
-						if n[4] == True:
-							continue
-						if n[4] == False and m[4] == False:
-							continue
-						if m[2] == 0 and len(nodes) > 2:
-							continue
-						my_mrp = max(n[2], m[2])
-						if my_mrp > max_rparen:
-							max_rparen = my_mrp
-						md_pairs.append((n, m))
-			if len(md_pairs) == 0:
-				min_dist += 1
-		# get pairs that have the maximum rparen counts
-		max_rparen_pairs = []
-		for md in md_pairs:
-			if md[0][2] == max_rparen or md[1][2] == max_rparen:
-				max_rparen_pairs.append(md)
-		max_rparen_pairs = sorted(max_rparen_pairs, key=lambda pair: pair[1][3], reverse=True)
-		return max_rparen_pairs[0]
-		
 	def rootTree(self):
 		"""Return Score, root edges, number of losses
 		"""
@@ -440,45 +281,6 @@ class NJTree:
 		self.rootedTree = roots[0][2]
 		return (roots[0][0], roots[0][1], roots[0][3])
 			
-	def findMidpointEdge(self):
-		sp = self.shortest_paths
-		longest = 0.0
-		long_pair = None
-		pairs = set([])
-		for m in sp:
-			for n in sp:
-				my_pair = (m, n)
-				if my_pair in pairs:
-					continue
-				else:
-					pairs.add(my_pair)
-					my_inv_pair = (n, m)
-					pairs.add(my_inv_pair)
-				if m == n:
-					continue
-				if sp[m][n] > longest:
-					longest = sp[m][n]
-					long_pair = (m, n)
-				elif long_pair == None:
-					long_pair = (m, n)
-		path = nx.shortest_path(self.graph, long_pair[0], long_pair[1])
-		cur_node = path.pop()
-		cur_length = 0.0
-		root_edge = None
-		mid = longest / 2.0
-		while path:
-			nextNode = path.pop()
-			cur_length += self.graph[cur_node][nextNode]['homology_weight']
-			if cur_length > mid:
-				root_edge = (cur_node, nextNode)
-				break
-			cur_node = nextNode
-		if root_edge == None:
-			# this basically means all of the sequences are identical
-			# ~ print "no root edge, setting to 'longest' pair"
-			root_edge = long_pair
-		return root_edge
-	
 	def scoreEdge(self, e, min_gl):
 		# get homology distances, calculate variance
 		h_dists = self.getHomologyDistances(e)
@@ -665,6 +467,7 @@ class NJTree:
 		""" Returns "true" if they are 2 species in the tree and the mrca is not present.
 		Returns "false" if they are 2 species in the tree but one of them is the mrca, or if more than 100 nodes in the graph.
 		Returns "orphan" if they is only 1 species in the tree
+		mrca = current node
 		"""
 		if len(self.graph.nodes()) > 100:  # TODO why this arbitrary limit on the size of the tree?
 			self.OK = "false"
@@ -693,22 +496,6 @@ class NJTree:
 				return self.OK
 		# How can the MRCA be one of the species??
 		# should add a verification that there are no more than 2 species
-
-	# Centroid is based on distance. 
-	def calcCentroid(self):
-		if self.shortest_paths == None:
-			self.shortest_paths = nx.shortest_path_length(self.graph, None, None, 'homology_weight')
-		nodes = self.bigNode.split(";")
-		minDist = float(len(nodes) * 2)
-		minRoot = ""
-		for r in nodes:
-			dist = 0.0
-			for n in nodes:
-				dist += self.shortest_paths[r][n]
-			if dist < minDist:
-				minDist = dist
-				minRoot = r
-		self.centroid = minRoot
 	
 	def splitTree(self, root):
 		self.graph.remove_edge(root[1][0], root[1][1])
@@ -763,59 +550,3 @@ class NJTree:
 				m_dists.append(str(mn_dist))
 			mat_string += "\t".join(m_dists)
 		return mat_string
-
-	def splitBigTree(self):
-		g_edges = self.graph.edges(data=True)
-		biggest_edge_weight = 0.0
-		biggest_edge = (None, None)
-		for ge in g_edges:
-			gw = ge[2]['homology_weight']
-			if gw > biggest_edge_weight:
-				biggest_edge_weight = gw
-				biggest_edge = (ge[0], ge[1])
-		self.graph.remove_edge(biggest_edge[0], biggest_edge[1])
-		unchecked_new_graphs = nx.connected_component_subgraphs(self.graph)
-		too_big = 1
-		new_graphs = []
-		while too_big == 1:
-			ok = 1
-			while len(unchecked_new_graphs) > 0:
-				ng = unchecked_new_graphs.pop()
-				if len(ng.nodes()) > 50:
-					ok = 0
-					g_edges = ng.edges(data=True)
-					biggest_edge_weight = 0.0
-					biggest_edge = (None, None)
-					for ge in g_edges:
-						gw = ge[2]['homology_weight']
-						if gw > biggest_edge_weight:
-							biggest_edge_weight = gw
-							biggest_edge = (ge[0], ge[1])
-					ng.remove_edge(biggest_edge[0], biggest_edge[1])
-					my_subs = nx.connected_component_subgraphs(ng)
-					for ms in my_subs:
-						unchecked_new_graphs.append(ms)
-				else:
-					new_graphs.append(ng)
-
-			if ok == 1:
-				too_big = 0
-		newicks = []
-		for n in new_graphs:
-			# remove "root" node, put an edge in its place... these trees shouldn't be rooted! 
-			# then get the newick format of the unrooted tree
-			myRoot = None
-			if n.has_node(biggest_edge[0]):
-				myRoot = biggest_edge[0]
-			else:
-				myRoot = biggest_edge[1]
-# 			children = []
-			if not len(n[myRoot]) == 2:
-				if len(n.nodes()) == 1:
-					newicks.append(("(" + myRoot + ");"))
-				else:
-					print n[myRoot]
-					sys.exit("splitTree: not 2 edges from temp root!:  " + str(len(n[myRoot])))
-			else:
-				newicks.append(NJTree.toNewick(n))
-		return newicks

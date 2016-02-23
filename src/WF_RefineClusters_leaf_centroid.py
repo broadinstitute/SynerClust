@@ -66,8 +66,8 @@ def main(argv):
 	syn_file = open(tree_dir + "synteny_matrices.dat", "r")
 	hom_line = hom_file.readline()
 	syn_line = syn_file.readline()
-	hom_mat = ""
-	syn_mat = ""
+	hom_mat = []
+	syn_mat = []
 	while hom_line != "":
 		if hom_line == "//\n":
 			unchecked_trees = []

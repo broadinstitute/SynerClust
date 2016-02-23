@@ -31,7 +31,7 @@ def main(argv):
 	gamma = float(argv[5])
 	gain = float(argv[6])
 	loss = float(argv[7])
-	# children = argv[8:]
+	children = argv[8:]
 	my_dir = node_dir + mrca + "/"
 	NO_BREAK_EW = 0.5
 	beta = 0.01
@@ -99,13 +99,13 @@ def main(argv):
 			uTree = new_tree[0]
 			isOrphan = new_tree[1]
 			myTree = NJ.NJTree("filler", syn_file, mrca, alpha, beta, gamma, gain, loss)
-			(nodes, extinct) = myTree.parseNewick(uTree)
+# 			(nodes, extinct) = myTree.parseNewick(uTree)
 			# single node tree genes are added to orphans
 			if isOrphan == "orphan":
-				for n in nodes:  # can there be more than one node if it's an orphan? If not, can use nodes[0] and assert len(nodes) == 0
-					o = n[1].split(":")[0]
-					o = o.replace("(", "")
-					orphans.append(o)
+# 				for n in nodes:  # can there be more than one node if it's an orphan? If not, can use nodes[0] and assert len(nodes) == 0
+# 					o = n[1].split(":")[0]
+# 					o = o.replace("(", "")
+# 					orphans.append(o)
 					# last_tree = "orphan"
 				continue
 			# multiple node trees continue

@@ -588,56 +588,56 @@ class Tree:
 				retNode = n
 		return (retNode, mostLeaves)
 
-	def getMinDistancePair(self, nodes, extinct):
-		min_extinct_pcount = sorted(extinct, key=lambda tup: tup[2])[0][2]
-		# calc smallest line distance between 2 nodes
-		# (ln_count,locus,dist,p_count,tp_count, c_paren)
-		min_dist = nodes[-1][0] - nodes[0][0] + 1.0
-		i = len(nodes) - 1
-		while i >= 0:
-			j = len(nodes) - 1
-			while j >= 0:
-				min_row = min(i, j)
-				max_row = max(i, j)
-				if i == j:
-					j -= 1
-				elif nodes[min_row][5] is True:
-					j -= 1
-				elif min(nodes[i][3], nodes[j][3]) < min_extinct_pcount:
-					j -= 1
-				elif nodes[min_row][3] <= nodes[max_row][3]:
-					j -= 1
-				else:
-					if abs(nodes[i][0] - nodes[j][0]) < min_dist:
-						min_dist = abs(nodes[i][0] - nodes[j][0])
-					j -= 1
-			i -= 1
-		# if a node pairing has the minimum distance, add it
-		md_pairs = []
-		max_rparen = 0
-		for n in nodes:
-			for m in nodes:
-				if m[0] <= n[0]:
-					continue
-				min_row = min(m[0], n[0])
-				if m[0] == min_row and m[5] is True:
-					continue
-				if n[0] == min_row and n[5] is True:
-					continue
-				if abs(n[3]-m[3]) > 1:
-					continue
-				if abs(n[0]-m[0]) == min_dist:
-					my_mrp = max(n[3], m[3])
-					if my_mrp > max_rparen:
-						max_rparen = my_mrp
-					md_pairs.append((n, m))
-		# get pairs that have the maximum rparen counts
-		max_rparen_pairs = []
-		for md in md_pairs:
-			if md[0][3] == max_rparen or md[1][3] == max_rparen:
-				max_rparen_pairs.append(md)
-		max_rparen_pairs = sorted(max_rparen_pairs, key=lambda pair: pair[1][4], reverse=True)
-		return max_rparen_pairs[0]
+# 	def getMinDistancePair(self, nodes, extinct):
+# 		min_extinct_pcount = sorted(extinct, key=lambda tup: tup[2])[0][2]
+# 		# calc smallest line distance between 2 nodes
+# 		# (ln_count,locus,dist,p_count,tp_count, c_paren)
+# 		min_dist = nodes[-1][0] - nodes[0][0] + 1.0
+# 		i = len(nodes) - 1
+# 		while i >= 0:
+# 			j = len(nodes) - 1
+# 			while j >= 0:
+# 				min_row = min(i, j)
+# 				max_row = max(i, j)
+# 				if i == j:
+# 					j -= 1
+# 				elif nodes[min_row][5] is True:
+# 					j -= 1
+# 				elif min(nodes[i][3], nodes[j][3]) < min_extinct_pcount:
+# 					j -= 1
+# 				elif nodes[min_row][3] <= nodes[max_row][3]:
+# 					j -= 1
+# 				else:
+# 					if abs(nodes[i][0] - nodes[j][0]) < min_dist:
+# 						min_dist = abs(nodes[i][0] - nodes[j][0])
+# 					j -= 1
+# 			i -= 1
+# 		# if a node pairing has the minimum distance, add it
+# 		md_pairs = []
+# 		max_rparen = 0
+# 		for n in nodes:
+# 			for m in nodes:
+# 				if m[0] <= n[0]:
+# 					continue
+# 				min_row = min(m[0], n[0])
+# 				if m[0] == min_row and m[5] is True:
+# 					continue
+# 				if n[0] == min_row and n[5] is True:
+# 					continue
+# 				if abs(n[3]-m[3]) > 1:
+# 					continue
+# 				if abs(n[0]-m[0]) == min_dist:
+# 					my_mrp = max(n[3], m[3])
+# 					if my_mrp > max_rparen:
+# 						max_rparen = my_mrp
+# 					md_pairs.append((n, m))
+# 		# get pairs that have the maximum rparen counts
+# 		max_rparen_pairs = []
+# 		for md in md_pairs:
+# 			if md[0][3] == max_rparen or md[1][3] == max_rparen:
+# 				max_rparen_pairs.append(md)
+# 		max_rparen_pairs = sorted(max_rparen_pairs, key=lambda pair: pair[1][4], reverse=True)
+# 		return max_rparen_pairs[0]
 
 	def getGenomeToLocus(self):
 		return self.genomeToLocus
