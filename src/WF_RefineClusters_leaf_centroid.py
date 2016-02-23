@@ -124,11 +124,11 @@ def main(argv):
 								(myNewicks, myMatrices) = myTree.splitTree(root)
 								for m in myMatrices:
 									unchecked_trees.append((m.split("\n"), myTree.OK))
-			hom_mat = ""
-			syn_mat = ""
+			hom_mat = []
+			syn_mat = []
 		else:
-			hom_mat += hom_line
-			syn_mat += syn_line
+			hom_mat.append(hom_line)
+			syn_mat.append(syn_line)
 		hom_line = hom_file.readline()
 		syn_line = syn_file.readline()	
 # 	for t in os.listdir(tree_dir):
