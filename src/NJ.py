@@ -7,7 +7,7 @@ import NetworkX_Extension as nxe
 
 class NJTree:
 	logger = logging.getLogger("NJTree")
-
+	
 	def __init__(self, hom_mat, syn_mat, mrca, alpha, beta, gamma, gain, loss):
 		# self.newick_file = newick_file
 		self.distance_matrix = hom_mat

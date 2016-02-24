@@ -57,8 +57,8 @@ def main(argv):
 	os.system("mkdir " + cluster_dir)
 	cluster_dir = cluster_dir + "/"
 
-	old_orphans = []
-	orphans = []
+# 	old_orphans = open(tree_dir + "orphan_genes.txt", 'r').readlines()
+	orphans = open(tree_dir + "orphan_genes.txt", 'r').readlines()
 	ok_trees = []
 
 	# Root, evaluate and split every tree until all trees are OK
@@ -155,8 +155,8 @@ def main(argv):
 	newSyntenyMap = {}
 	childToCluster = {}  # child gene/og --> og.id for this node
 
-	for o in old_orphans:
-		orphans.append(o)
+# 	for o in old_orphans:
+# 		orphans.append(o)
 
 	for o in orphans:
 		ok_trees.insert(0, [o.rstrip()])
