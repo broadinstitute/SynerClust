@@ -139,6 +139,7 @@ def main(argv):
 	synteny_data = {}
 	pickleSeqs = {}
 	pickleMaps = {}
+	picklePeps = {}
 	# print "last_tree", last_tree
 	# load locus_mapping files from children
 	for c in children:
@@ -264,16 +265,23 @@ def main(argv):
 				seqlen = str(len(bseq))
 				singles.write(">" + clusterID + ";" + seqlen + "\n" + bseq + "\n")
 		else:
-			temp_pep = cluster_dir + clusterID + ".pep"
-			pepOut = open(temp_pep, 'w')
+# 			temp_pep = cluster_dir + clusterID + ".pep"
+# 			pepOut = open(temp_pep, 'w')
+			pickleSeqs[clusterID] = []
 			for seq in treeSeqs:
 				seqlen = str(len(seq))
 				identifier = treeSeqs[seq][0]  # TODO output ALL IDs from seq because there might be more than a single ID, and this is NOT a .cons.pep file, just a .pep file
-				pepOut.write(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
-			pepOut.close()
+# 				pepOut.write(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
+				pickleSeqs[clusterID].append(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
+# 			pepOut.close()
 		cluster_counter += 1
 	singles.close()
 	sstats.close()
+
+	pklPep = my_dir + "pep_data.pkl"
+	sdat = open(pklPep, 'wb')
+	pickle.dump(pickleSeqs, sdat)
+	sdat.close()
 
 	# update synteny data
 	for clust in newSyntenyMap:
@@ -291,9 +299,9 @@ def main(argv):
 
 	# pickle the locus mappings
 	pklMap = my_dir + "locus_mappings.pkl"
-	pdat = open(pklMap, 'wb')
-	pickle.dump(newPickleMap, pdat)
-	pdat.close()
+	sdat = open(pklMap, 'wb')
+	pickle.dump(newPickleMap, sdat)
+	sdat.close()
 
 	# script complete call
 	clusters_done_file = my_dir + "CLUSTERS_REFINED"
