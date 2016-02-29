@@ -22,10 +22,10 @@ def usage():
 	sys.exit(1)
 	
 def run_muscle(cmd, stdin_data):
-	muscle_cmd =["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
+# 	muscle_cmd =["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
 # 	muscle_cmd =["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
 # 	cmd = '/home/kamigiri/tools/muscle3.8.31_i86linux64 -maxiters 2 -diags -sv -distance1 kbit20_3 -quiet'
-	process = subprocess.Popen(muscle_cmd, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = dev_null)
+	process = subprocess.Popen(cmd, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = dev_null)
 # 	process = subprocess.Popen(shlex.split(cmd), stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = dev_null)
 	output = process.communicate(stdin_data)[0]
 	
@@ -91,7 +91,8 @@ def makeConsensus(tq, hamm_dist, consensus_pep, output_lock):
 # 				muscle_cmd = "#MUSCLE_PATH -maxiters 2 -diags -sv -distance1 kbit20_3 -quiet -in /dev/stdin -out /dev/stdout"  # < " + pep_data
 # 			muscle_cmd = "~/tools/muscle3.8.31_i86linux64 -maxiters 2 -diags -sv -distance1 kbit20_3 -quiet -in /dev/stdin -out /dev/stdout"  # < " + pep_data
 # 			muscle_cmd = ["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet", "-in", "/dev/stdin", "-out", "/dev/stdout"]
-			muscle_cmd =["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet", "-in", "/dev/stdin", "-out", "/dev/stdout"]
+			muscle_cmd =["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
+# 			muscle_cmd =["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet", "-in", "/dev/stdin", "-out", "/dev/stdout"]
 # 				os.system(muscle_cmd)
 # 				mus_out = open(temp_pep_align, 'r').readlines()
 			mus_out = run_muscle(muscle_cmd, "".join(pep_data)).split("\n")
