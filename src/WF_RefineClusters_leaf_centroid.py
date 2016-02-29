@@ -138,6 +138,7 @@ def main(argv):
 	cluster_counter = 1  # used to number clusters
 	synteny_data = {}
 	pickleSeqs = {}
+	pickleToCons = {}
 	pickleMaps = {}
 	picklePeps = {}
 	# print "last_tree", last_tree
@@ -267,12 +268,12 @@ def main(argv):
 		else:
 # 			temp_pep = cluster_dir + clusterID + ".pep"
 # 			pepOut = open(temp_pep, 'w')
-			pickleSeqs[clusterID] = []
+			pickleToCons[clusterID] = []
 			for seq in treeSeqs:
 				seqlen = str(len(seq))
 				identifier = treeSeqs[seq][0]  # TODO output ALL IDs from seq because there might be more than a single ID, and this is NOT a .cons.pep file, just a .pep file
 # 				pepOut.write(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
-				pickleSeqs[clusterID].append(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
+				pickleToCons[clusterID].append(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
 # 			pepOut.close()
 		cluster_counter += 1
 	singles.close()
@@ -280,7 +281,7 @@ def main(argv):
 
 	pklPep = my_dir + "pep_data.pkl"
 	sdat = open(pklPep, 'wb')
-	pickle.dump(pickleSeqs, sdat)
+	pickle.dump(pickleToCons, sdat)
 	sdat.close()
 
 	# update synteny data

@@ -10,7 +10,8 @@ from multiprocessing import Process, Queue
 from Queue import Empty
 import scipy.spatial.distance as distance
 import subprocess
-import io
+# import io
+# import shlex
 
 # manifest_complete = 0
 
@@ -20,12 +21,52 @@ def usage():
 	print "After consensus sequences are generated, concatenates them into one big file, NODE.pep, and creates a NODE_COMPLETE file."
 	sys.exit(1)
 	
-def run_command(cmd, stdin_data):
+def run_muscle(cmd, stdin_data):
+	muscle_cmd =["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
+# 	cmd = '/home/kamigiri/tools/muscle3.8.31_i86linux64 -maxiters 2 -diags -sv -distance1 kbit20_3 -quiet'
+	process = subprocess.Popen(muscle_cmd, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = dev_null)
+# 	process = subprocess.Popen(shlex.split(cmd), stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = dev_null)
+	output = process.communicate(stdin_data)[0]
+	
 # 	process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-	process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stdin = subprocess.PIPE, stderr = dev_null)
-	stdout_stderr = process.communicate(stdin_data)
+
+# 	qr, qw = os.fdopen(r,'r',0), os.fdopen(w,'w',0)
+	
+# 	qr2, qw2 = os.fdopen(r2,'r',0), os.fdopen(w2,'w',0)
+# 	w.write(stdin_data)
+# 	w.close()
+# 	w.flush()
+# 	process = subprocess.Popen(cmd, shell = True, stdout = w2, stdin = r)#, stderr = dev_null)
 # 	process.wait()
-	return stdout_stderr[0]
+# 	qw2.close()
+# 	qr.close()
+# 	output = r2.readlines()
+# 	qr2.close()
+
+	# r, w = os.fdopen(r,'r',0), os.fdopen(w,'w',0)
+# 	r, w = os.pipe()
+# 	r2, w2 = os.pipe()
+# 	ow = os.fdopen(w, 'w', 0)
+# 	orr = os.fdopen(r, 'r', 0)
+# 	ow2 = os.fdopen(w2, 'w', 0)
+# 	or2 = os.fdopen(r2, 'r', 0)
+# 	# r2, w2 = os.fdopen(r2,'r',0), os.fdopen(w2,'w',0)
+# 	ow.write(stdin_data)
+# 	ow.close()
+# 	cmd = '/home/kamigiri/tools/muscle3.8.31_i86linux64 -maxiters 2 -diags -sv -distance1 kbit20_3 -quiet <&{fd1} >&{fd2}'.format(fd1=r, fd2=w2)
+# 	print stdin_data[:100] + "\n"
+# 	process = subprocess.call(cmd, shell = True, stderr = dev_null)
+# # 	process.wait()
+# 	orr.close()
+# 	ow2.close()
+# 	output = or2.readlines()
+# 	or2.close()
+
+	return output
+# 	process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stdin = subprocess.PIPE, stderr = dev_null)
+# 	stdout_stderr = process.communicate(stdin_data)
+# 	process.wait()
+# 	return stdout_stderr[0]
 # 	return process.stdout.readlines()
 
 def makeConsensus(tq, hamm_dist, consensus_pep, output_lock):
@@ -52,7 +93,7 @@ def makeConsensus(tq, hamm_dist, consensus_pep, output_lock):
 			muscle_cmd =["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet", "-in", "/dev/stdin", "-out", "/dev/stdout"]
 # 				os.system(muscle_cmd)
 # 				mus_out = open(temp_pep_align, 'r').readlines()
-			mus_out = run_command(muscle_cmd, "".join(pep_data)).split("\n")
+			mus_out = run_muscle(muscle_cmd, "".join(pep_data)).split("\n")
 			mus_seqs = {}
 			mus_str_seqs = {}
 			total_length = 0
@@ -158,7 +199,9 @@ if __name__ == "__main__":
 	notOKQ = Queue(0)
 	output_lock = threading.Lock()
 	consensus_pep = node_dir + node + ".pep"
+	os.system("rm " + consensus_pep)  # since the file is opened in append mode every time, we need to delete anything from a previous run
 	
+	numThreads = 1
 	processes = [Process(target=makeConsensus, args=(notOKQ, h_dist, consensus_pep, output_lock)) for i in range(numThreads)]
 # 	notOK = []
 # 	processID = 1
@@ -218,11 +261,14 @@ if __name__ == "__main__":
 # 	os.system("cat " + node_dir + "clusters/*.tc.pep >" + node_dir + node + ".pep")
 # 	os.system("rm " + node_dir + "clusters/*.tc.pep")
 # 	os.system("rm -r " + node_dir + "clusters")
-	
+
+#TODO add singletons with cat
+	os.system("cat " + node_dir + "clusters/singletons.cons.pep >> " + consensus_pep)
 	logger.info("Made pep file")
 	# print "Made pep file, sleeping 5 seconds"
 # 	time.sleep(5)
 	
+	sys.exit()
 	node_done_file = node_dir + "NODE_COMPLETE"
 	cr = open(node_done_file, 'w')
 	cr.write("Way to go!\n")
