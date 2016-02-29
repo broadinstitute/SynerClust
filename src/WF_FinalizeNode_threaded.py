@@ -23,6 +23,7 @@ def usage():
 	
 def run_muscle(cmd, stdin_data):
 	muscle_cmd =["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
+# 	muscle_cmd =["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
 # 	cmd = '/home/kamigiri/tools/muscle3.8.31_i86linux64 -maxiters 2 -diags -sv -distance1 kbit20_3 -quiet'
 	process = subprocess.Popen(muscle_cmd, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = dev_null)
 # 	process = subprocess.Popen(shlex.split(cmd), stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = dev_null)
@@ -201,7 +202,7 @@ if __name__ == "__main__":
 	consensus_pep = node_dir + node + ".pep"
 	os.system("rm " + consensus_pep)  # since the file is opened in append mode every time, we need to delete anything from a previous run
 	
-	numThreads = 1
+# 	numThreads = 1
 	processes = [Process(target=makeConsensus, args=(notOKQ, h_dist, consensus_pep, output_lock)) for i in range(numThreads)]
 # 	notOK = []
 # 	processID = 1
@@ -262,8 +263,7 @@ if __name__ == "__main__":
 # 	os.system("rm " + node_dir + "clusters/*.tc.pep")
 # 	os.system("rm -r " + node_dir + "clusters")
 
-#TODO add singletons with cat
-	os.system("cat " + node_dir + "clusters/singletons.cons.pep >> " + consensus_pep)
+	os.system("cat " + node_dir + "clusters/singletons.cons.pep >> " + consensus_pep)  # ">>" to append 
 	logger.info("Made pep file")
 	# print "Made pep file, sleeping 5 seconds"
 # 	time.sleep(5)
