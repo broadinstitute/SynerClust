@@ -470,6 +470,7 @@ class NJTree:
 		mrca = current node
 		"""
 		if len(self.graph.nodes()) > 100:  # TODO why this arbitrary limit on the size of the tree?
+			NJTree.logger.debug("Too big graph detected and arbitrarly split")
 			self.OK = "false"
 			return self.OK
 		# check species of root node neighbors
@@ -483,17 +484,19 @@ class NJTree:
 		set_species.add(self.rootedTree.node[edge[1]]['species'])
 		species.append(self.rootedTree.node[edge[0]]['species'])
 		species.append(self.rootedTree.node[edge[1]]['species'])
-		if len(species) == 1 or len(set_species) == 1 and (not self.mrca in set_species):
+		# can this still happen?
+		if len(species) == 1: #or len(set_species) == 1 and (not self.mrca in set_species):
 			# all leaf nodes get added to orphan pile
+			NJTree.logger.debug("Orphan in checkTree still happens")
 			self.OK = "orphan"
 			return self.OK
 		if len(species) == 2:
-			if self.mrca in species:
-				self.OK = "false"
-				return self.OK
-			else:
-				self.OK = "true"
-				return self.OK
+# 			if self.mrca in species:
+# 				self.OK = "false"
+# 				return self.OK
+# 			else:
+			self.OK = "true"
+			return self.OK
 		# How can the MRCA be one of the species??
 		# should add a verification that there are no more than 2 species
 	
