@@ -217,7 +217,7 @@ def main(argv):
 			if child not in child_leaves:
 				child_leaves[child] = 0
 			child_leaves[child] += len(leafKids)
-
+# TODO in this part, children pickle are opened every time, could probably only open each one
 			for l in leafKids:
 				newPickleMap[clusterID].append(l)
 				lKid = "_".join(l.split("_")[:-1])

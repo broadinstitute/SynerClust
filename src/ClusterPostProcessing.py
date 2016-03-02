@@ -43,11 +43,11 @@ def main(argv):
 			l_s[line[1]] = line[7]
 
 	totalGenes = 0
-	# counter = 1
+	counter = 1
 	clusters = {}
 	cluster_noOrphan = 0
 	for l in locusMap:
-		counter = "_".join(l.split("_")[:-1])
+# 		counter = "_".join(l.split("_")[:-1])
 		clusters[counter] = {'leaves': {}, 'transcripts': []}
 		leafKids = locusMap[l]
 		for k in leafKids:
@@ -59,7 +59,7 @@ def main(argv):
 		totalGenes += len(clusters[counter]['transcripts'])
 		if len(clusters[counter]['transcripts']) > 1:
 			cluster_noOrphan += 1
-		# counter += 1
+		counter += 1
 	print "total genes: ", totalGenes
 
 	pairs = set([])
