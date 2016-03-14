@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import sys
 import SequenceParse
 import pickle

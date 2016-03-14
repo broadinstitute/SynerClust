@@ -43,7 +43,8 @@ class RepoParse:
 					curGenome["Genome"] = dat[1] # need to use the hardnamed key in case "Genome" found in for example "Genomes"
 				elif dat[0].find("Annotation") > -1:
 					if not os.path.isabs(dat[1]): # if not an absolute path
-					#if not dat[1][0] == "/": # if not an absolute path
+# 					if os.path.isabs(dat[1]): # if not an absolute path
+# 					if not dat[1][0] == "/": # if not an absolute path
 					# if not dat[1].find("/") > -1:
 						# genome_path = repo_path + curGenome["Genome"] + "/"
 						# genome_path = repo_path
@@ -69,8 +70,8 @@ class RepoParse:
 						# curGenome["Sequence"] = genome_path + curGenome["Genome"] + ".genome.fa"
 						# if not curGenome["Genome"] + ".genome.fa" in myfiles:
 						# 	curGenome["Sequence"] = genome_path + curGenome["Genome"] +".genome"
-					else: 
-						sys.exit("Specified annotation file not found for : " %(dat[1]))
+# 					else: 
+# 						sys.exit("Specified annotation file not found for : %s" %(dat[1]))
 					curGenome["Annotation"] = dat[1]
 					if not "Sequence" in curGenome: # in case the Sequence is provided before the Annotation
 						curGenome["Sequence"] = seq
@@ -130,7 +131,7 @@ class RepoParse:
 		RepoParse.logger.info("Wrote locus tags to locus_tag_file.txt")
 				
 	def assignGenomeLocus(self, genome):
-		RepoParse.logger.debug("".join(traceback.format_stack()))
+# 		RepoParse.logger.debug("".join(traceback.format_stack()))
 		# L for leaf
 		# 000000 because it is a leaf/basic level
 		# hash of the genome name, the [:-2] is to discard the "==" from the encoding
