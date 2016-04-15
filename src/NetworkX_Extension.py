@@ -10,6 +10,7 @@ def all_pairs_path_length(G, weight='weight'):
 	# TODO add a verification that the graph is really acyclic
 	
 	nodes = G.nodes()
+	paths = nx.shortest_path(G)
 	distances = {}
 	s = 0
 	while s < len(nodes):
@@ -17,7 +18,7 @@ def all_pairs_path_length(G, weight='weight'):
 		source = nodes[s]
 		while t < len(nodes):
 			target = nodes[t]
-			path = nx.shortest_path(G)[source][target]
+			path = paths[source][target]
 			i = 0
 			if not source in distances:
 				distances[source] = {}

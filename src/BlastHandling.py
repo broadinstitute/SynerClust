@@ -4,7 +4,8 @@ import operator
 import math
 import logging
 import networkx as nx
-
+import numpy
+import pickle
 
 class BlastSegment:
 	# logger = logging.getLogger("BlastSegment")
@@ -46,6 +47,7 @@ class BlastSegment:
 
 class BlastParse:
 	logger = logging.getLogger("BlastParse")
+	EVALUE_THRESHOLD = 1e-4
 
 	def __init__(self, m8_file):
 		self.m8_file = m8_file
@@ -87,14 +89,16 @@ class BlastParse:
 				for ts in q_hits:
 					ts_score = ts.getScore()
 					t = ts.target.split(";")[0]
-					if best_evalue == 1.0 and ts.evalue < float(1e-3):  # TODO change hardcoded evalue threshold
-						bestAdjPID = ts.getAdjPID()
-						best_evalue = ts.evalue
-						qd_best.append((q, t, ts_score))
-						q_best.append((q, t, ts_score))
-					elif (ts.getAdjPID() > bestAdjPID * min_best_hit) and best_evalue < 1.0:
+					if ts.evalue < float(BlastParse.EVALUE_THRESHOLD):
+						if best_evalue == 1.0:  # and ts.evalue < float(1e-3):  # TODO change hardcoded evalue threshold
+							bestAdjPID = ts.getAdjPID()
+							best_evalue = ts.evalue
+							qd_best.append((q, t, ts_score))
+							q_best.append((q, t, ts_score))
+						elif (ts.getAdjPID() > bestAdjPID * min_best_hit):  # and best_evalue < 1.0:
 						# TODO find out why using these hard coded values, and maybe change them?
-						if (ts.evalue < float(1.0e-150)) or (best_evalue > 0.0 and (math.log10(best_evalue) + 30.0 > math.log10(ts.evalue))):
+						# this condition prevents matches that have anything more than 1e-150 evalue if a previous match had 0 evalue
+# 						if (ts.evalue < float(1.0e-150)) or (best_evalue > 0.0 and (math.log10(best_evalue) + 30.0 > math.log10(ts.evalue))):
 							qd_best.append((q, t, ts_score))
 							q_best.append((q, t, ts_score))
 				q_best = sorted(q_best, key=lambda tup: tup[2])
@@ -102,8 +106,9 @@ class BlastParse:
 				i = 0
 				qbi = 1
 				qdbi = 1
+				# weights given are the match score calculated with the adjusted percentage of identity (alignement length/shortest length)*pID
 				while i < len(q_best) or i < len(qd_best):
-					if (i < len(q_best)) and q_node != species:  # query species != target species, but why only in the not directed graph?
+					if (i < len(q_best)): # and q_node != species:  # query species != target species, but why only in the not directed graph?
 						if not bestHits.has_edge(q_best[i][0], q_best[i][1]):  # why only verify in the not directed graph?
 							bestHits.add_edge(q_best[i][0], q_best[i][1], weight=q_best[i][2], rank=qbi)
 							qbi += 1
@@ -134,20 +139,23 @@ class BlastParse:
 			my_sub = bestDirHits.subgraph(s.nodes())
 			bd_sub = my_sub.copy()
 			# my_edges = [e for e in bd_sub.edges_iter()]
-			my_edges = bd_sub.edges()
-			edges_to_remove = []
-			for med in my_edges:
-				BlastParse.logger.debug("med[0][:3] == med[1][:3]\n\t\tmed[0] = %s\n\t\tmed[1] = %s" % (med[0], med[1]))
-				# remove self hits
-				if "_".join(med[0].split("_")[:-1]) == "_".join(med[1].split("_")[:-1]):
-					edges_to_remove.append(med)
-# 				elif not bd_sub[med[0]][med[1]]['rank'] <= MAX_HITS:
+# 			my_edges = bd_sub.edges()
+# 			edges_to_remove = []
+# 			for med in my_edges:
+# 				# remove self hits
+# 				if "_".join(med[0].split("_")[:-1]) == "_".join(med[1].split("_")[:-1]):
+# 					BlastParse.logger.debug("Removing edge between :\n\t\tmed[0] = %s\n\t\tmed[1] = %s" % (med[0], med[1]))
 # 					edges_to_remove.append(med)
-			bd_sub.remove_edges_from(edges_to_remove)
+# # 				elif not bd_sub[med[0]][med[1]]['rank'] <= MAX_HITS:
+# # 					edges_to_remove.append(med)
+# 			bd_sub.remove_edges_from(edges_to_remove)
 
 			while len(bd_sub.nodes()) > 0:
 				clusterID = "cluster_" + str(count)
 				sccs = list(nx.strongly_connected_component_subgraphs(bd_sub))
+				# if len(sccs) > 1:
+				# 	BlastParse.logger.warning("More than 1 strongly connected component in this graph!!!")
+				# 	BlastParse.logger.debug(sccs[1].nodes())
 				scc = sccs[0]  # TODO verify : always only 1 possible, even when clustering more than 2 genomes?
 				if len(scc.nodes()) == 1:
 					locus = scc.nodes()[0]
@@ -171,43 +179,48 @@ class BlastParse:
 		BlastParse.logger.info("gene count = %d" % (gene_count))
 		BlastParse.logger.info("count = %d" % (count))
 
-		homout = open(tree_dir + "homology_matrices.dat", "w")
-		synout = open(tree_dir + "synteny_matrices.dat", "w")
-		for sub in clusterToSub:
-			s = clusterToSub[sub]  # s is a graph object
-			if len(s.nodes()) == 1:
-				# is this possible???? If only 1 node it shoudn't be in clusterToSub
-				continue
-			(h_dist, s_dist) = BlastParse.makeDistanceMatrix(s, bestDirHits, geneToCluster, clusterToGenes, synData, homScale, synScale)
-			# homology distance matrix
-			h_string = ""
-			for hd in h_dist:
-				dists = []
-				for he in h_dist[hd]:
-					dists.append(str(h_dist[hd][he]))
-				line = hd + "\t" + "\t".join(dists) + "\n"
-				h_string = h_string + line
-			h_string += "//\n"
-# 			mat_file = tree_dir + sub + ".hom.dist"
-# 			matout = open(mat_file, 'w')
-			homout.write(h_string)
-# 			matout.close()
+		with open(tree_dir + "gene_to_cluster.pkl", "w") as f:
+			pickle.dump(geneToCluster, f)
+		with open(tree_dir + "cluster_to_genes.pkl", "w") as f:
+			pickle.dump(clusterToGenes, f)
 
-			# synteny distance matrix
-			s_string = ""
-			for sd in s_dist:
-				dists = []
-				for se in s_dist[sd]:
-					dists.append(str(s_dist[sd][se]))
-				line = sd + "\t" + "\t".join(dists) + "\n"
-				s_string = s_string + line
-			s_string += "//\n"
-# 			mat_file = tree_dir + sub + ".syn.dist"
-# 			matout = open(mat_file, 'w')
-			synout.write(s_string)
-# 			matout.close()
-		homout.close()
-		synout.close()
+# 		homout = open(tree_dir + "homology_matrices.dat", "w")
+# 		synout = open(tree_dir + "synteny_matrices.dat", "w")
+# 		for sub in clusterToSub:
+# 			s = clusterToSub[sub]  # s is a graph object
+# 			if len(s.nodes()) == 1:
+# 				# is this possible???? If only 1 node it shoudn't be in clusterToSub
+# 				continue
+# 			(h_dist, s_dist) = BlastParse.makeDistanceMatrix(s, bestDirHits, geneToCluster, clusterToGenes, synData, homScale, synScale)
+# 			# homology distance matrix
+# 			h_string = ""
+# 			for hd in h_dist:
+# 				dists = []
+# 				for he in h_dist[hd]:
+# 					dists.append(str(h_dist[hd][he]))
+# 				line = hd + "\t" + "\t".join(dists) + "\n"
+# 				h_string = h_string + line
+# 			h_string += "//\n"
+# # 			mat_file = tree_dir + sub + ".hom.dist"
+# # 			matout = open(mat_file, 'w')
+# 			homout.write(h_string)
+# # 			matout.close()
+# 
+# 			# synteny distance matrix
+# 			s_string = ""
+# 			for sd in s_dist:
+# 				dists = []
+# 				for se in s_dist[sd]:
+# 					dists.append(str(s_dist[sd][se]))
+# 				line = sd + "\t" + "\t".join(dists) + "\n"
+# 				s_string = s_string + line
+# 			s_string += "//\n"
+# # 			mat_file = tree_dir + sub + ".syn.dist"
+# # 			matout = open(mat_file, 'w')
+# 			synout.write(s_string)
+# # 			matout.close()
+# 		homout.close()
+# 		synout.close()
 		return 0
 
 	# creates a distance matrix based on blast hits, augment distances with syntenic fractions
@@ -230,6 +243,7 @@ class BlastParse:
 					# myDist[n][m] = myDist[n][m] - (bestDirHits[g][h]['weight']*homScale)
 					# myHomDist[n][m] = myHomDist[n][m] - bestDirHits[n][m]['weight']
 		# populate neighbor lists with rough cluster IDs
+		# synData contains one entry for each child node with their synteny_data.pkl
 		syn = {}
 		for d in myHomDist:
 			# print "d", d
@@ -241,11 +255,18 @@ class BlastParse:
 
 		mySynDist = {}
 		pairs = set([])
-		for m in graph.nodes():
+		all_nodes = graph.nodes()
+		all_nodes.sort()
+		syn_matrix = numpy.empty(len(all_nodes) * (len(all_nodes) - 1) / 2)
+# 		for m in graph.nodes():
+		i = 1
+		pos = 0
+		for m in all_nodes[1:]:
 			mySynDist[m] = {}
 			syn_m = set(syn[m])
 			mSeqs = len(syn[m])
-			for n in graph.nodes():
+# 			for n in graph.nodes():
+			for n in all_nodes[:i]:
 				mySynDist[m][n] = big_dist
 				my_pair = (m, n)
 				if my_pair in pairs:
@@ -261,16 +282,20 @@ class BlastParse:
 				nSeqs = len(syn[n])
 				matches = 0
 				if mSeqs == 0 or nSeqs == 0:
-					mySynDist[m][n] -= 0.0  # no neighbors in common if someone has no neighbors
+					mySynDist[m][n] -= 0.0  # no neighbors in common if someone has no neighbors  # -= 0 ? does it change anything?
 					continue
 				all_neighbors = syn_m & set(syn[n])
 				for a in all_neighbors:
 					t_m = max(syn[m].count(a), 0)
 					t_n = max(syn[n].count(a), 0)
 					matches += min(t_m, t_n)
-				synFrac = float(matches) / float(min(mSeqs, nSeqs))
+				synFrac = float(matches) / float(min(mSeqs, nSeqs))  # why mSeqs and not len(syn_m) which is a set that removes duplicates?
 				mySynDist[m][n] = ((2.0 - synFrac) * 100000.0)
+				syn_matrix[pos] = 1.0 - synFrac
+				pos += 1
+			i += 1
 		return (myHomDist, mySynDist)
+# 		return (myHomDist, syn_matrix)
 
 	# reads in the m8 file and returns hits, which is a dict of BlastSegments
 	def readBlastM8(self):

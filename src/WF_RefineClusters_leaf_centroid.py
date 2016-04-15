@@ -266,8 +266,8 @@ def main(argv):
 				seqlen = str(len(bseq))
 				singles.write(">" + clusterID + ";" + seqlen + "\n" + bseq + "\n")
 		else:
-# 			temp_pep = cluster_dir + clusterID + ".pep"
-# 			pepOut = open(temp_pep, 'w')
+			#  temp_pep = cluster_dir + clusterID + ".pep"
+			#  pepOut = open(temp_pep, 'w')
 			pickleToCons[clusterID] = []
 			for seq in treeSeqs:
 				seqlen = str(len(seq))

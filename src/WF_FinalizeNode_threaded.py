@@ -4,32 +4,169 @@ import sys
 import os
 import pickle
 import logging
-import threading
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, RLock
 from Queue import Empty
 import scipy.spatial.distance as distance
 import subprocess
+import networkx as nx
+import median_of_medians
+import numpy
 
 DEVNULL = open(os.devnull, 'w')
+DIST_THRESHOLD = 0.7
+# REGEX = re.compile("(\([a-zA-Z0-9-_:;.]+,[a-zA-Z0-9-_:;.]+\))")
+# MUSCLE_CMD =["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
+MUSCLE_CMD = ["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]  # kept for debugging
+# FASTTREE_CMD = ["#FASTTREE_PATH", "-quiet"]
+FASTTREE_CMD = ["/home/kamigiri/tools/FastTreeDouble", "-quiet", "-nosupport"]
+
 
 def usage():
 	print "After consensus sequences are generated, concatenates them into one big file, NODE.pep, and creates a NODE_COMPLETE file."
 	sys.exit(1)
 
-def run_muscle(cmd, stdin_data):
-	process = subprocess.Popen(cmd, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = DEVNULL)
-	output = process.communicate(stdin_data)[0]
-	return output
+
+def get_fasttree(stdin_data):
+	process = subprocess.Popen(MUSCLE_CMD, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
+	output1 = process.communicate(stdin_data)[0]
+	process = subprocess.Popen(FASTTREE_CMD, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
+	output2 = process.communicate(output1)[0]
+	return (output1, output2)
+
 
 def makeConsensus(tq, hamm_dist, consensus_pep, output_lock):
+	logger = logging.getLogger()
 	while True:
 		try:
 			nos = tq.get(block=True, timeout=3)
 			pep_data = nos[0]
 			clusterID = nos[1]
-			muscle_cmd =["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
-# 			muscle_cmd =["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]  # kept for debugging
-			mus_out = run_muscle(muscle_cmd, "".join(pep_data)).split("\n")
+			logger.info("Processing cluster " + clusterID)
+			(mus_out, output) = get_fasttree("".join(pep_data))
+
+			graph = nx.Graph()
+			counter = 1
+			leaves = []
+			representative_sequences = []
+			logger.debug(output)
+			while(True):
+				r = output.find(")")
+				l = output[:r].rfind("(")
+
+				children = output[l + 1:r].split(",")
+				if len(children) == 1:
+					if len(graph.nodes()) == 0:
+						representative_sequences.append(output.split(":")[0][1:])
+					break
+				group = "node" + str(counter)
+				counter += 1
+
+				if group not in graph.nodes():  # isn't it always a new node?
+					graph.add_node(group)
+				for child in children:
+					child = child.split(":")
+					if child[0] not in graph.nodes():
+						graph.add_node(child[0])
+						leaves.append(child[0])
+					graph.add_edge(group, child[0], dist=float(child[1]))
+				output = output[:l] + group + output[r + 1:]
+			
+			logger.info("Built graph for cluster " + clusterID)
+			matrix_size = len(leaves) * (len(leaves) - 1) / 2
+			while (matrix_size > 0):
+				# nodes are headers/gene references
+				leaves.sort()  # why?
+				dist_matrix = numpy.empty(matrix_size, float)  # diagonal matrix stored as an array
+				j = 0
+				i = 1
+				for n in leaves[1:]:
+					for m in leaves[:i]:
+						dist_matrix[j] = nx.shortest_path_length(graph, n, m, "dist")
+						j += 1
+					i += 1
+
+				# n rows, 2 columns
+				# 1st column = values, 2nd column = index
+				# average_dist is actually a sum of dist
+				# but since dividing all of its values by len(leaves) wouldn't change the median and we don't use these values elsewhere there is no need to do it
+				average_dist = numpy.zeros((len(leaves), 2), float)
+				# for i in xrange(len(nodes)):
+				# 	average_dist[i][1] = i
+				# 	for j in xrange(len(nodes)):  # still reads each cell twice, can try to see if more efficient to find to which 2 average_dist to add each cell
+				# 		if i == j:
+				# 			continue
+				# 		elif i < j:
+				# 			average_dist[i][0] += dist_matrix[(j * (j - 1) / 2) + i]
+				# 		else:
+				# 			average_dist[i][0] += dist_matrix[(i * (i - 1) / 2) + j]
+
+				# read through the matrix only once to fill average_dist
+				imax = 1
+				pos = 0
+				while(pos < matrix_size):
+					average_dist[imax-1][1] = imax-1
+					for i in xrange(imax):
+						average_dist[i][0] += dist_matrix[pos]
+						average_dist[imax][0] += dist_matrix[pos]
+						pos += 1
+					imax += 1
+
+				# pick something close to the median (median of medians)
+				# for_med = numpy.copy(average_dist)  # the median of medians search reorders elements
+				index = int(average_dist[median_of_medians.for2DArray(average_dist)][1])
+				representative_sequences.append(leaves[index])
+				logger.info("Added representative to cluster " + clusterID)
+				# n = math.floor((math.sqrt(8 * index + 1) - 1) / 2)
+				# check which sequences are more distant to it than the threshold
+				to_remove = numpy.full(len(leaves), -1, int)
+				old_length = len(leaves)
+				i = 0
+				for j in xrange(old_length):
+					if index == j:
+						to_remove[i] = j
+						leaves.remove(leaves[j-i])
+						i += 1
+					elif index < j:
+						if dist_matrix[(j * (j - 1) / 2) + index] < DIST_THRESHOLD:
+							to_remove[i] = j
+							leaves.remove(leaves[j-i])
+							i += 1
+					else:
+						if dist_matrix[(index * (index - 1) / 2) + j] < DIST_THRESHOLD:
+							to_remove[i] = j
+							leaves.remove(leaves[j-i])
+							i += 1
+
+				new_length = old_length - i
+				new_dist_matrix = numpy.empty(((new_length - 1) * new_length) / 2, float)
+
+				# -1 or -inf in old matrix where needed
+				i = 0
+				while(i < len(to_remove) and to_remove[i] != -1):
+					t = to_remove[i] * (to_remove[i] - 1) / 2
+					step = to_remove[i]
+					for j in xrange(t, t + step):
+						dist_matrix[j] = -float('Inf')
+					pos = t + step - 1
+					while (step < old_length - 1):
+						step += 1
+						pos += step
+						dist_matrix[pos] = -float('Inf')
+					i += 1
+
+				i = 0
+				for d in numpy.nditer(dist_matrix):
+					if d != -float('Inf'):
+						new_dist_matrix[i] = d
+						i += 1
+
+				dist_matrix = new_dist_matrix
+				matrix_size = len(leaves) * (len(leaves) - 1) / 2
+			# -float('Inf')
+			# remove from matrix data that is not needed anymore
+			# redo on remaining sequences using the matrix with only their sequences (prune the big matrix)
+
+			mus_out = mus_out.split("\n")
 			mus_seqs = {}
 			mus_str_seqs = {}
 			total_length = 0
@@ -53,35 +190,15 @@ def makeConsensus(tq, hamm_dist, consensus_pep, output_lock):
 					total_length += len(l)
 			output_lock.acquire()
 			cons_out = open(consensus_pep, "a")
-			while len(unrep) > 0:
-				hams = {}
-				minDist = float(len(unrep))
-				minDistSeq = ""
-				for ms in unrep:
-					hams[ms] = {}
-					m_m = mus_str_seqs[ms]
-					m_len = len(m_m)
-					m_start = m_len - len(m_m.lstrip("-"))
-					m_stop = len(m_m.rstrip("-"))
-					dist = 0
-					for ns in unrep:
-						hams[ms][ns] = distance.hamming(mus_seqs[ms][m_start:m_stop], mus_seqs[ns][m_start:m_stop])
-						dist += distance.hamming(mus_seqs[ms], mus_seqs[ns])
-					if dist < minDist or len(minDistSeq) == 0:
-						minDist = dist
-						minDistSeq = ms
-				cons_seq = "".join(mus_seqs[minDistSeq])
+
+			for s in representative_sequences:
+				cons_seq = "".join(mus_seqs[s])
 				cons_seq = cons_seq.replace("-", "")
 				cons_out.write(">" + clusterID + ";" + str(len(cons_seq)) + "\n")
 				cons_out.write(cons_seq + "*\n")
-				repped = []
-				for ms in unrep:
-					if hams[ms][minDistSeq] < hamm_dist:
-						repped.append(ms)
-				for r in repped:
-					unrep.remove(r)
-			cons_out.close()
+			cons_out.close
 			output_lock.release()
+
 		except Empty:
 			break
 
@@ -117,9 +234,12 @@ if __name__ == "__main__":
 	sdat.close()
 
 	notOKQ = Queue(0)
-	output_lock = threading.Lock()
+	output_lock = RLock()
 	consensus_pep = node_dir + node + ".pep"
 	os.system("rm " + consensus_pep)  # since the file is opened in append mode every time, we need to delete anything from a previous run
+
+# 	with open("all_clusters_cons_pep_data.pkl") as f:
+# 		all_pep_pkl = pickle.load(f)
 
 	processes = [Process(target=makeConsensus, args=(notOKQ, h_dist, consensus_pep, output_lock)) for i in range(numThreads)]
 
@@ -131,12 +251,12 @@ if __name__ == "__main__":
 		logger.info("Starting %s" % (p.pid))
 		# print "Starting",p.pid
 	for p in processes:
-		logger.info("Starting %s" % (p.pid))
 		# print "Stopping",p.pid
 		p.join()
+		logger.info("Finished %s" % (p.pid))
 
 	logger.info("All consensus sequences accounted for.")
-	os.system("cat " + node_dir + "clusters/singletons.cons.pep >> " + consensus_pep)  # ">>" to append 
+	os.system("cat " + node_dir + "clusters/singletons.cons.pep >> " + consensus_pep)  # ">>" to append
 	logger.info("Made pep file")
 
 	node_done_file = node_dir + "NODE_COMPLETE"

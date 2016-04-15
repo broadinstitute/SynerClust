@@ -4,6 +4,7 @@ import sys
 import SequenceParse
 import pickle
 import os
+import numpy
 # Given a fasta sequence, gff3 file, locus tag and output file, the Synergy2 directory structure is created for this genome
 
 
@@ -41,7 +42,7 @@ def makePicklesForSingleGenome(working_dir, genome, node, SYNTENIC_WINDOW):
 			continue
 		if not l[2] in neighbors:
 			neighbors[l[2]] = []
-		gene_tup = (l[1], int(l[3]), int(l[4]), l[5], int(l[6]))  # scaffold -> locus,start,stop,strand,length
+		gene_tup = (l[1], int(l[3]), int(l[4]), l[5], int(l[6]))  # scaffold -> generated locus name ,start,stop,strand,length
 		locusToTID[l[1]] = l[0]
 		neighbors[l[2]].append(gene_tup)
 		genes[l[1]] = l[7]
@@ -71,6 +72,9 @@ def makeSyntenyPickle(working_dir, genome, node, neighbors, SYNTENIC_WINDOW):
 	# make a pickle!
 	gsyn = {}
 	nsyn = {}
+	
+	# +1 in size of the array because gene id counter starts at 0, so for later it's easier to just use that id without -1, leaving tsyn[0] empty
+	tsyn = numpy.empty(sum([len(neighbors[i]) for i in neighbors]) + 1, dtype=list)
 	MAX_DIST = SYNTENIC_WINDOW
 	for n in neighbors:
 		# n is a scaffold ID
@@ -87,6 +91,8 @@ def makeSyntenyPickle(working_dir, genome, node, neighbors, SYNTENIC_WINDOW):
 			nsyn[locus] = {}
 			nsyn[locus]['neighbors'] = []
 			nsyn[locus]['count'] = 1
+			tlocus = int(locus.split("_")[-1])
+			tsyn[tlocus] = []
 			gmid = (rend - lend + 1) / 2 + lend
 			minmid = lend - MAX_DIST
 			maxmid = rend + MAX_DIST
@@ -112,6 +118,7 @@ def makeSyntenyPickle(working_dir, genome, node, neighbors, SYNTENIC_WINDOW):
 					genome_tup = (h[0], h[1], h[2], dist, stream)
 					gsyn[locus].append(genome_tup)
 					nsyn[locus]['neighbors'].append(h[0])
+					tsyn[tlocus].append(h[0])
 				if mid > maxmid:
 					break
 # TODO inspect here
@@ -119,9 +126,12 @@ def makeSyntenyPickle(working_dir, genome, node, neighbors, SYNTENIC_WINDOW):
 	gdat = open(working_dir + "genomes/" + genome + "/synteny_data.pkl", 'wb')
 	pickle.dump(gsyn, gdat)
 	gdat.close()
-	ndat = open(working_dir + "nodes/" + node + "/synteny_data.pkl", 'wb')
-	pickle.dump(nsyn, ndat)
-	ndat.close()
+	gdat = open(working_dir + "nodes/" + node + "/synteny_data.pkl", 'wb')
+	pickle.dump(nsyn, gdat)
+	gdat.close()
+	gdat = open(working_dir + "nodes/" + node + "/synteny_table.pkl", 'wb')
+	pickle.dump(tsyn, gdat)
+	gdat.close()
 
 
 def extractAnnotation(gff3_file, seq_file, genome_name, locus, out_file, stat_file, peptide_file):
