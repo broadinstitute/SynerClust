@@ -1,14 +1,19 @@
 #!/usr/bin/env python
 
-import sys, numpy, math, logging
+import sys
+import numpy
+import math
+import logging
 from scipy.stats import poisson
 import networkx as nx
 import NetworkX_Extension as nxe
 # from GSA import Edge
 
+
 class NJTree:
+
 	logger = logging.getLogger("NJTree")
-	
+
 # 	def __init__(self, hom_mat, syn_mat, mrca, alpha, beta, gamma, gain, loss):
 # 		# self.newick_file = newick_file
 # 		self.distance_matrix = hom_mat
@@ -36,14 +41,14 @@ class NJTree:
 # 		self.paths = None
 # 		self.centroid = ""
 # 		self.gl_map = {}  # node -> gain/loss tuple
-		
+
 	def __init__(self, mrca, alpha, beta, gamma, gain, loss):
 		self.graph = nx.Graph()
 		self.bigNode = ""
 # 		self.alpha = 10.0  # TODO take into account the actual value given
 		self.alpha = float(alpha)
 # 		self.beta = 0.01  # TODO take into account the actual value given
-		self.beta= float(beta)
+		self.beta = float(beta)
 		self.gamma = float(gamma)
 		self.gain = float(gain)
 		self.loss = float(loss)
@@ -77,20 +82,20 @@ class NJTree:
 			m = m.rstrip()
 			dat = m.split()
 			gene = dat[0]
-			if not gene in valid_nodes:
+			if gene not in valid_nodes:
 				continue
 			self.syntenyMatrix[gene] = {}
 			dists = dat[1:]
 			for vi in valid_index:
 				self.syntenyMatrix[gene][rev_index[vi]] = float(dists[vi])
 		self.syntenyIndex = index
-			
+
 	def readDistanceMatrix(self):
 # 		matrix_data=open(self.distance_file,'r').readlines()
 # 		matrix_data = self.distance_matrix
 		return self.distance_matrix
 # 		return matrix_data
-	
+
 	def buildGraphFromDistanceMatrix(self, matrix_data):
 		matrix = {}
 		unadded_nodes = set([])
@@ -276,7 +281,7 @@ class NJTree:
 					l += 1
 		if unadded_count == 2:
 			self.graph.add_edge(unadded_nodes[0], unadded_nodes[1], homology_dist=hom_matrix[0], synteny_dist=syn_matrix[0])  # check this
-			unadded_nodes = [";".join(unadded_nodes)]
+			unadded_nodes = [";".join(unadded_nodes[:2])]
 		bigNode = unadded_nodes.pop()
 		self.bigNode = bigNode
 		return bigNode
