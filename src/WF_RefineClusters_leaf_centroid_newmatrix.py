@@ -142,7 +142,7 @@ def main(argv):
 # 	with open(repo_path + "nodes/" + node + "pep_data.pkl", "r") as f:
 # 		pickleSeqs = pickle.load(f)
 
-	muscle_cmd =["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet", "|", "#FASTTREE_PATH", "-quiet"]
+	muscle_cmd =["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
 	# muscle_cmd = ["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
 	fasttree_cmd = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
 	# fasttree_cmd = ["/home/kamigiri/tools/FastTreeDouble", "-quiet", "-nosupport"]
@@ -210,7 +210,9 @@ def main(argv):
 				graph.add_edge(group, child[0], dist=float(child[1]))
 			output = output[:l] + group + output[r + 1:]
 
-		assert leaves.sort() == cluster_to_genes[cluster].sort()  # if good, can replace leaves list by graph.nodes()
+		leaves.sort()
+		cluster_to_genes[cluster].sort()
+		assert leaves == cluster_to_genes[cluster]  # if good, can replace leaves list by graph.nodes()
 # 		if 'L_0000000_9VzQfBUR7laObXloLMne2g_000709' not in graph.nodes():
 # 			continue
 # 		if 'L_0000000_9VzQfBUR7laObXloLMne2g_001369' not in graph.nodes():
