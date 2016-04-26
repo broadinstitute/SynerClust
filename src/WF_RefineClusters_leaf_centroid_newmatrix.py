@@ -208,8 +208,7 @@ def main(argv):
 					leaves.append(child[0])
 				graph.add_edge(group, child[0], dist=float(child[1]))
 			output = output[:l] + group + output[r + 1:]
-		
-		
+
 		assert leaves.sort() == cluster_to_genes[cluster].sort()  # if good, can replace leaves list by graph.nodes()
 # 		if 'L_0000000_9VzQfBUR7laObXloLMne2g_000709' not in graph.nodes():
 # 			continue
@@ -220,7 +219,7 @@ def main(argv):
 # 		nodes = graph.nodes()  # nodes are headers/gene references
 # 		nodes.sort()
 		leaves.sort()
-		
+
 		syn = {}
 		for n in leaves:  # genes
 # 		for n in children:
@@ -228,8 +227,7 @@ def main(argv):
 			leaf = "_".join(n.split("_")[:-1])
 			for m in synteny_data[leaf][n]['neighbors']:
 				syn[n].append(gene_to_cluster[m])
-		
-		
+
 		hom_matrix = numpy.empty(len(leaves) * (len(leaves) - 1) / 2)
 		syn_matrix = numpy.empty(len(leaves) * (len(leaves) - 1) / 2)
 		i = 1
@@ -243,7 +241,7 @@ def main(argv):
 				nSeqs = len(syn[n])
 				matches = 0
 				if mSeqs == 0 or nSeqs == 0:
-					syn_matrix[pos] = 0.0  # no neighbors in common if someone has no neighbors  # -= 0 ? does it change anything?
+					syn_matrix[pos] = 1.0  # no neighbors in common if someone has no neighbors  # -= 0 ? does it change anything?
 					pos += 1
 					continue
 				all_neighbors = syn_m & set(syn[n])
@@ -438,7 +436,6 @@ def main(argv):
 
 # 		sys.exit()
 		sstats.write("\t".join(out_dat) + "\n")
-		
 
 		if tree_seq_count == 1:
 			for seq in treeSeqs:

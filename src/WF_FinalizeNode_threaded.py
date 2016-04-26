@@ -19,6 +19,7 @@ DIST_THRESHOLD = 0.7
 MUSCLE_CMD = ["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]  # kept for debugging
 # FASTTREE_CMD = ["#FASTTREE_PATH", "-quiet"]
 FASTTREE_CMD = ["/home/kamigiri/tools/FastTreeDouble", "-quiet", "-nosupport"]
+OUTPUT_LOCK = RLock()
 
 
 def usage():
@@ -34,7 +35,7 @@ def get_fasttree(stdin_data):
 	return (output1, output2)
 
 
-def makeConsensus(tq, hamm_dist, consensus_pep, output_lock):
+def makeConsensus(tq, hamm_dist, consensus_pep):
 	logger = logging.getLogger()
 	while True:
 		try:
@@ -188,16 +189,16 @@ def makeConsensus(tq, hamm_dist, consensus_pep, output_lock):
 					for i in l:
 						mus_seqs[seqID].append(i)
 					total_length += len(l)
-			output_lock.acquire()
-			cons_out = open(consensus_pep, "a")
 
+			OUTPUT_LOCK.acquire()
+			cons_out = open(consensus_pep, "a")
 			for s in representative_sequences:
 				cons_seq = "".join(mus_seqs[s])
 				cons_seq = cons_seq.replace("-", "")
 				cons_out.write(">" + clusterID + ";" + str(len(cons_seq)) + "\n")
 				cons_out.write(cons_seq + "*\n")
 			cons_out.close
-			output_lock.release()
+			OUTPUT_LOCK.release()
 
 		except Empty:
 			break
@@ -234,14 +235,13 @@ if __name__ == "__main__":
 	sdat.close()
 
 	notOKQ = Queue(0)
-	output_lock = RLock()
 	consensus_pep = node_dir + node + ".pep"
 	os.system("rm " + consensus_pep)  # since the file is opened in append mode every time, we need to delete anything from a previous run
 
 # 	with open("all_clusters_cons_pep_data.pkl") as f:
 # 		all_pep_pkl = pickle.load(f)
 
-	processes = [Process(target=makeConsensus, args=(notOKQ, h_dist, consensus_pep, output_lock)) for i in range(numThreads)]
+	processes = [Process(target=makeConsensus, args=(notOKQ, h_dist, consensus_pep)) for i in range(numThreads)]
 
 	for clusterID in pickleSeqs:
 		notOKQ.put((pickleSeqs[clusterID], clusterID))
