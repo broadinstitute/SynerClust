@@ -142,7 +142,7 @@ def main(argv):
 # 	with open(repo_path + "nodes/" + node + "pep_data.pkl", "r") as f:
 # 		pickleSeqs = pickle.load(f)
 
-	fasttree_cmd =["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet", "|", "#FASTTREE_PATH", "-quiet"]
+	muscle_cmd =["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet", "|", "#FASTTREE_PATH", "-quiet"]
 	# muscle_cmd = ["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
 	fasttree_cmd = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
 	# fasttree_cmd = ["/home/kamigiri/tools/FastTreeDouble", "-quiet", "-nosupport"]
