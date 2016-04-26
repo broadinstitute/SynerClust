@@ -27,7 +27,7 @@ def main(argv):
 	s2_bin = s2path+"bin/"
 	s2_src = s2path+"src"
 	#QUICKTREE_PATH
-	QT_path = raw_input("Enter the path to your QuickTree executable:\n")
+	FT_path = raw_input("Enter the path to your QuickTree executable:\n")
 	#MUSCLE_PATH
 	muscle_path = raw_input("Enter the path to your MUSCLE executable:\n")
 	#BLAST_PATH
@@ -54,7 +54,7 @@ def main(argv):
 	for sfile in src_files:
 		sf = open(s2_src+"/"+sfile,'r').read()
 		sf = sf.replace('#SYNERGY2_PATH',s2_bin)
-		sf = sf.replace('#QUICKTREE_PATH',QT_path)
+		sf = sf.replace('#FASTTREE_PATH',FT_path)
 		sf = sf.replace('#MUSCLE_PATH',muscle_path)
 		sf = sf.replace('#BLAST_PATH',blast_path)
 		#~ sf = sf.replace('#WORKFLOW_TYPE',wf_type)
