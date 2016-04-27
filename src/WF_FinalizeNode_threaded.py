@@ -74,18 +74,19 @@ def makeConsensus(tq, hamm_dist, consensus_pep):
 			
 			logger.info("Built graph for cluster " + clusterID)
 			matrix_size = len(leaves) * (len(leaves) - 1) / 2
+			leaves_length = len(leaves)
+			# nodes are headers/gene references
+			leaves.sort()  # why?
+			dist_matrix = numpy.empty(matrix_size, float)  # diagonal matrix stored as an array
+			j = 0
+			i = 1
+			for n in leaves[1:]:
+				for m in leaves[:i]:
+					dist_matrix[j] = nx.shortest_path_length(graph, n, m, "dist")
+					j += 1
+				i += 1
+			
 			while (matrix_size > 0):
-				# nodes are headers/gene references
-				leaves.sort()  # why?
-				dist_matrix = numpy.empty(matrix_size, float)  # diagonal matrix stored as an array
-				j = 0
-				i = 1
-				for n in leaves[1:]:
-					for m in leaves[:i]:
-						dist_matrix[j] = nx.shortest_path_length(graph, n, m, "dist")
-						j += 1
-					i += 1
-
 				# n rows, 2 columns
 				# 1st column = values, 2nd column = index
 				# average_dist is actually a sum of dist
@@ -119,10 +120,9 @@ def makeConsensus(tq, hamm_dist, consensus_pep):
 				logger.info("Added representative to cluster " + clusterID)
 				# n = math.floor((math.sqrt(8 * index + 1) - 1) / 2)
 				# check which sequences are more distant to it than the threshold
-				to_remove = numpy.full(len(leaves), -1, int)
-				old_length = len(leaves)
+				to_remove = numpy.full(leaves_length, -1, int)
 				i = 0
-				for j in xrange(old_length):
+				for j in xrange(leaves_length):
 					if index == j:
 						to_remove[i] = j
 						leaves.remove(leaves[j-i])
@@ -139,31 +139,45 @@ def makeConsensus(tq, hamm_dist, consensus_pep):
 							i += 1
 
 				logger.debug("Distance check with " + str(i) + " represented sequences done for " + clusterID)
-				new_length = old_length - i
-				new_dist_matrix = numpy.empty(((new_length - 1) * new_length) / 2, float)
+				# new_length = old_length - i
+				leaves_length -= i
+				# new_dist_matrix = numpy.empty(((new_length - 1) * new_length) / 2, float)
 
 				# -1 or -inf in old matrix where needed
-				i = 0
-				while(i < len(to_remove) and to_remove[i] != -1):
-					t = to_remove[i] * (to_remove[i] - 1) / 2
-					step = to_remove[i]
-					for j in xrange(t, t + step):
-						dist_matrix[j] = -float('Inf')
-					pos = t + step - 1
-					while (step < old_length - 1):
-						step += 1
-						pos += step
-						dist_matrix[pos] = -float('Inf')
-					i += 1
+				k = 0
+				l = 1
+				offset = 0
+				for pos in xrange(matrix_size):
+					if k in to_remove or l in to_remove:
+						offset += 1
+					else:
+						dist_matrix[pos - offset] = dist_matrix[pos]
+					k += 1
+					if not k < l:
+						k = 0
+						l += 1
 
-				i = 0
-				for d in numpy.nditer(dist_matrix):
-					if d != -float('Inf'):
-						new_dist_matrix[i] = d
-						i += 1
+				# i = 0
+				# while(i < len(to_remove) and to_remove[i] != -1):
+				# 	t = to_remove[i] * (to_remove[i] - 1) / 2
+				# 	step = to_remove[i]
+				# 	for j in xrange(t, t + step):
+				# 		dist_matrix[j] = -float('Inf')
+				# 	pos = t + step - 1
+				# 	while (step < old_length - 1):
+				# 		step += 1
+				# 		pos += step
+				# 		dist_matrix[pos] = -float('Inf')
+				# 	i += 1
 
-				dist_matrix = new_dist_matrix
-				matrix_size = len(leaves) * (len(leaves) - 1) / 2
+				# i = 0
+				# for d in numpy.nditer(dist_matrix):
+				# 	if d != -float('Inf'):
+				# 		new_dist_matrix[i] = d
+				# 		i += 1
+
+				# dist_matrix = new_dist_matrix
+				matrix_size = leaves_length * (leaves_length - 1) / 2
 				logger.debug("Matrix updated for " + clusterID)
 			# -float('Inf')
 			# remove from matrix data that is not needed anymore
