@@ -138,6 +138,7 @@ def makeConsensus(tq, hamm_dist, consensus_pep):
 							leaves.remove(leaves[j-i])
 							i += 1
 
+				logger.debug("Distance check with " + str(i) + " represented sequences done for " + clusterID)
 				new_length = old_length - i
 				new_dist_matrix = numpy.empty(((new_length - 1) * new_length) / 2, float)
 
@@ -163,6 +164,7 @@ def makeConsensus(tq, hamm_dist, consensus_pep):
 
 				dist_matrix = new_dist_matrix
 				matrix_size = len(leaves) * (len(leaves) - 1) / 2
+				logger.debug("Matrix updated for " + clusterID)
 			# -float('Inf')
 			# remove from matrix data that is not needed anymore
 			# redo on remaining sequences using the matrix with only their sequences (prune the big matrix)
@@ -189,16 +191,21 @@ def makeConsensus(tq, hamm_dist, consensus_pep):
 					for i in l:
 						mus_seqs[seqID].append(i)
 					total_length += len(l)
-
+			
+			logger.debug("Trying to acquire lock for " + clusterID)
 			OUTPUT_LOCK.acquire()
+			logger.debug("Acquired lock for " + clusterID)
 			cons_out = open(consensus_pep, "a")
 			for s in representative_sequences:
 				cons_seq = "".join(mus_seqs[s])
 				cons_seq = cons_seq.replace("-", "")
 				cons_out.write(">" + clusterID + ";" + str(len(cons_seq)) + "\n")
 				cons_out.write(cons_seq + "*\n")
+				logger.debug("Wrote sequence for " + clusterID)
 			cons_out.close
+			logger.debug("Trying to release lock for " + clusterID)
 			OUTPUT_LOCK.release()
+			logger.debug("Released lock for " + clusterID)
 
 		except Empty:
 			break
