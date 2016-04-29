@@ -75,7 +75,7 @@ def makeSyntenyPickle(working_dir, genome, node, neighbors, SYNTENIC_WINDOW):
 	
 	# +1 in size of the array because gene id counter starts at 0, so for later it's easier to just use that id without -1, leaving tsyn[0] empty
 	# tsyn = numpy.empty(sum([len(neighbors[i]) for i in neighbors]) + 1, dtype=list)
-	tsyn = numpy.empty(max([g[len(g)-1][0] for g in [neighbors[n] for n in neighbors]]) + 1, dtype=list)
+	tsyn = numpy.empty(int(max([g[len(g)-1][0] for g in [neighbors[n] for n in neighbors]])).split("_")[-1]) + 1, dtype=list)
 	MAX_DIST = SYNTENIC_WINDOW
 	for n in neighbors:
 		# n is a scaffold ID
