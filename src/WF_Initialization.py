@@ -321,9 +321,10 @@ class Tree:
 			current = queue.pop()
 			stack.append(current)
 			for e in self.rooted_tree.edges(current[0]):  # get children
-				queue.append([e[1], count, []])  # add child to the queue (~breadth first search)
-				current[2].append(count)  # add child to parent dependency
-				count += 1
+				if e[1][0] != "L":  # not a leaf
+					queue.append([e[1], count, []])  # add child to the queue (~breadth first search)
+					current[2].append(count)  # add child to parent dependency
+					count += 1
 		with open(working_dir + "uger_jobs.txt", "w") as out:
 			while len(stack) > 0:
 				current = stack.pop()
