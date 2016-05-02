@@ -315,7 +315,7 @@ class Tree:
 		root = nodeTier[max(nodeTier)][0]
 		stamp = int(time.time())
 		stack = []
-		queue = collection.deque([[root, 0, []]]])  # current_node, current_id, [child1_id, child2_id]
+		queue = collection.deque([[root, 0, []]])  # current_node, current_id, [child1_id, child2_id]
 		count = 1
 		while len(queue) > 0:
 			current = queue.pop()
