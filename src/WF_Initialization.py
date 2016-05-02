@@ -12,6 +12,8 @@ import logging
 # import TreeLib
 import networkx as nx
 import traceback
+import collections
+import time
 
 
 class Tree:
@@ -310,6 +312,26 @@ class Tree:
 		self.makeNodeFlowWorkflowControl(nodeTier, childToParent, working_dir)
 
 	def makeNodeFlowWorkflowControl(self, nodeTier, childToParent, working_dir):
+		root = nodeTier[max(nodeTier)][0]
+		stamp = int(time.time())
+		stack = []
+		queue = collection.deque([[root, 0, []]]])  # current_node, current_id, [child1_id, child2_id]
+		count = 1
+		while len(queue) > 0:
+			current = queue.pop()
+			stack.append(current)
+			for e in self.rooted_tree.edges(current[0]):  # get children
+				queue.append([e[1], count, []]])  # add child to the queue (~breadth first search)
+				current[2].append(count)  # add child to parent dependency
+				count += 1
+		with open(working_dir + "uger_jobs.txt", "w") as out:
+			while len(stack) > 0:
+				current = stack.pop()
+				out.write("qsub -N #TIMESTAMP" + current[1])
+				if len(current[2]) != 0:
+					out.write("-hold_jid #TIMESTAMP" + current[2][0] + ",#TIMESTAMP" + current[2][1])
+				out.write(" " + working_dir + "/nodes/" + current[0] + "/" + current[0] + ".sh\n")
+
 		all_proc_nodes = []
 		serial_sets = {}
 		sets = 1
@@ -350,17 +372,19 @@ class Tree:
 		self.makeNodeFlowLauncher(working_dir, serial_sets)
 
 	def makeSingleNodeFlow(self, working_dir, curNode, cmd_id, kids):
-		my_dir = working_dir+"nodes/"+curNode+"/"
+		my_dir = working_dir + "nodes/" + curNode + "/"
 		child1 = kids[0]
 		child2 = kids[1]
 
 		syn2_path = self.syn2_path
-		config_file = syn2_path+"WF_NodeFlowTemplate.ini"
+		config_file = syn2_path + "WF_NodeFlowTemplate.ini"
 		# config_file = syn2_path+"WF_NewNodeFlowTemplate.ini"
-		template_file = syn2_path+"WF_NodeFlowTemplate.xml"
+		template_file = syn2_path + "WF_NodeFlowTemplate.xml"
+		sh_file = syn2_path + "NewNodeShTemplate.sh"
 
-		my_config_file = my_dir+curNode+".ini"
-		my_template_file = my_dir+curNode+".xml"
+		my_config_file = my_dir + curNode + ".ini"
+		my_template_file = my_dir + curNode + ".xml"
+		my_sh_file = my_dir + curNode + ".sh"
 
 		c_file = open(config_file, 'r').read()
 		c_file = c_file.replace('#SYNERGY2_PATH', syn2_path)
@@ -388,6 +412,32 @@ class Tree:
 		my_conf.write(c_file)
 		my_conf.close()
 
+		s_file = open(sh_file, 'r').read()
+		s_file = s_file.replace('#SYNERGY2_PATH', syn2_path)
+		s_file = s_file.replace('#WORKING_DIR', working_dir)
+		s_file = s_file.replace('#CHILD1', child1)
+		s_file = s_file.replace('#CHILD2', child2)
+		s_file = s_file.replace('#NODE', curNode)
+		s_file = s_file.replace('#ID', cmd_id)
+		s_file = s_file.replace('#BLAST_EVAL', str(self.blast_eval))
+		s_file = s_file.replace('#NUM_CORES', str(self.num_cores))
+		s_file = s_file.replace('#HAMMING', str(self.hamming))
+		s_file = s_file.replace('#CMDS_PER_JOB', str(self.cmds_per_job))
+		s_file = s_file.replace('#ALPHA', str(self.alpha))
+		s_file = s_file.replace('#GAMMA', str(self.gamma))
+		s_file = s_file.replace('#GAIN', str(self.gain))
+		s_file = s_file.replace('#LOSS', str(self.loss))
+		s_file = s_file.replace('#MIN_BEST_HIT', str(self.min_best_hit))
+		s_file = s_file.replace('#NUM_HITS', str(self.num_hits))
+		s_file = s_file.replace('#MIN_SYNTENIC_FRACTION', str(self.min_syn_frac))
+		s_file = s_file.replace('#HOMOLOGY_SCALE', str(self.homScale))
+		s_file = s_file.replace('#SYNTENY_SCALE', str(self.synScale))
+		s_file = s_file.replace('#WORKING_DIR', working_dir)
+
+		my_sh = open(my_sh_file, 'w')
+		my_sh.write(s_file)
+		my_sh.close()
+
 		t_file = open(template_file, 'r').read()
 		t_file = t_file.replace('#NODE', curNode)
 		t_file = t_file.replace('#ID', cmd_id)
@@ -400,69 +450,69 @@ class Tree:
 		my_temp.write(t_file)
 		my_temp.close()
 
-	def makeSingleConsensusFlow(self, working_dir, curNode, prev_cmd_id):
-		ids = prev_cmd_id.split(".")
-		last = int(ids[-1])+1
-		ids[-1] = str(last)
-		cmd_id = ".".join(ids)
+	# def makeSingleConsensusFlow(self, working_dir, curNode, prev_cmd_id):
+	# 	ids = prev_cmd_id.split(".")
+	# 	last = int(ids[-1])+1
+	# 	ids[-1] = str(last)
+	# 	cmd_id = ".".join(ids)
 
-		s2 = self.syn2_path
-		my_dir = working_dir+"nodes/"+curNode+"/"
+	# 	s2 = self.syn2_path
+	# 	my_dir = working_dir+"nodes/"+curNode+"/"
 
-		config_file = s2+"WF_consensus_seq_flow_template.ini"
-		template_file = s2+"WF_consensus_seq_flow_template.xml"
+	# 	config_file = s2+"WF_consensus_seq_flow_template.ini"
+	# 	template_file = s2+"WF_consensus_seq_flow_template.xml"
 
-		my_config_file = my_dir+"consensus_seq_flow_config.ini"
-		my_template_file = my_dir+"consensus_seq_flow_template.xml"
+	# 	my_config_file = my_dir+"consensus_seq_flow_config.ini"
+	# 	my_template_file = my_dir+"consensus_seq_flow_template.xml"
 
-		c_file = open(config_file, 'r').read()
-		c_file = c_file.replace('#WORKING_DIR', working_dir)
-		c_file = c_file.replace('#NODE', curNode)
-		c_file = c_file.replace('#ID', cmd_id)
-		c_file = c_file.replace('#SYNERGY2_PATH', s2)
+	# 	c_file = open(config_file, 'r').read()
+	# 	c_file = c_file.replace('#WORKING_DIR', working_dir)
+	# 	c_file = c_file.replace('#NODE', curNode)
+	# 	c_file = c_file.replace('#ID', cmd_id)
+	# 	c_file = c_file.replace('#SYNERGY2_PATH', s2)
 
-		t_file = open(template_file, 'r').read()
-		t_file = t_file.replace('#ID', cmd_id)
+	# 	t_file = open(template_file, 'r').read()
+	# 	t_file = t_file.replace('#ID', cmd_id)
 
-		my_conf = open(my_config_file, 'w')
-		my_conf.write(c_file)
-		my_conf.close()
+	# 	my_conf = open(my_config_file, 'w')
+	# 	my_conf.write(c_file)
+	# 	my_conf.close()
 
-		my_temp = open(my_template_file, 'w')
-		my_temp.write(t_file)
-		my_temp.close()
+	# 	my_temp = open(my_template_file, 'w')
+	# 	my_temp.write(t_file)
+	# 	my_temp.close()
 
-	def makeFinalizeNodeFlow(self, working_dir, curNode, prev_cmd_id):
-		ids = prev_cmd_id.split(".")
-		last = int(ids[-1])+2
-		ids[-1] = str(last)
-		cmd_id = ".".join(ids)
+	# def makeFinalizeNodeFlow(self, working_dir, curNode, prev_cmd_id):
+	# 	ids = prev_cmd_id.split(".")
+	# 	last = int(ids[-1])+2
+	# 	ids[-1] = str(last)
+	# 	cmd_id = ".".join(ids)
 
-		s2 = self.syn2_path
-		my_dir = working_dir+"nodes/"+curNode+"/"
+	# 	s2 = self.syn2_path
+	# 	my_dir = working_dir+"nodes/"+curNode+"/"
 
-		config_file = s2+"WF_finalize_node_template.ini"
-		template_file = s2+"WF_finalize_node_template.xml"
+	# 	config_file = s2+"WF_finalize_node_template.ini"
+	# 	template_file = s2+"WF_finalize_node_template.xml"
 
-		my_config_file = my_dir+"finalize_node_config.ini"
-		my_template_file = my_dir+"finalize_node_template.xml"
+	# 	my_config_file = my_dir+"finalize_node_config.ini"
+	# 	my_template_file = my_dir+"finalize_node_template.xml"
 
-		c_file = open(config_file, 'r').read()
-		c_file = c_file.replace('#WORKING_DIR', working_dir)
-		c_file = c_file.replace('#NODE', curNode)
-		c_file = c_file.replace('#ID', cmd_id)
-		c_file = c_file.replace('#SYNERGY2_PATH', s2)
+	# 	c_file = open(config_file, 'r').read()
+	# 	c_file = c_file.replace('#WORKING_DIR', working_dir)
+	# 	c_file = c_file.replace('#NODE', curNode)
+	# 	c_file = c_file.replace('#ID', cmd_id)
+	# 	c_file = c_file.replace('#SYNERGY2_PATH', s2)
 
-		t_file = open(template_file, 'r').read()
-		t_file = t_file.replace('#ID', cmd_id)
+	# 	t_file = open(template_file, 'r').read()
+	# 	t_file = t_file.replace('#ID', cmd_id)
 
-		my_conf = open(my_config_file, 'w')
-		my_conf.write(c_file)
-		my_conf.close()
+	# 	my_conf = open(my_config_file, 'w')
+	# 	my_conf.write(c_file)
+	# 	my_conf.close()
 
-		my_temp = open(my_template_file, 'w')
-		my_temp.write(t_file)
-		my_temp.close()
+	# 	my_temp = open(my_template_file, 'w')
+	# 	my_temp.write(t_file)
+	# 	my_temp.close()
 
 	def makeNodeFlowLauncher(self, working_dir, serial_sets):
 		ini_file = open(working_dir + self.flow_name + ".ini", 'w')
