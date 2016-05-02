@@ -329,8 +329,8 @@ class Tree:
 				current = stack.pop()
 				out.write("qsub -N #TIMESTAMP" + str(current[1]))
 				if len(current[2]) != 0:
-					out.write("-hold_jid #TIMESTAMP" + str(current[2][0]) + ",#TIMESTAMP" + str(current[2][1]))
-				out.write(" " + working_dir + "/nodes/" + str(current[0]) + "/" + str(current[0]) + ".sh\n")
+					out.write(" -hold_jid #TIMESTAMP" + str(current[2][0]) + ",#TIMESTAMP" + str(current[2][1]))
+				out.write(" " + working_dir + "nodes/" + str(current[0]) + "/" + str(current[0]) + ".sh\n")
 
 		all_proc_nodes = []
 		serial_sets = {}
