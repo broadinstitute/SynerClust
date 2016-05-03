@@ -279,7 +279,7 @@ def main(argv):
 	# print argv
 
 	if args.annot == "1":
-		stat_file = out_file.replace("annotation.txt", "stats.txt")
+		stat_file = args.out_file.replace("annotation.txt", "stats.txt")
 		extractAnnotation(args.gff3_file, args.seq_file, args.genome_name, args.locus, args.out_file, args.stat_file, args.peptide_file)
 
 	if args.pickle_juice == "1":
