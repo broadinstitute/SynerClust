@@ -104,7 +104,7 @@ class RepoParse:
 					curGenome["Peptide"] = dat[1]
 				elif dat[0].find("transl_table") > -1:
 					curGenome["transl_table"] = dat[1]
-			if len(curGenome) > 0:
+			if len(curGenome) > 1:
 				myG = Genome(curGenome["Genome"], curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"], curGenome["transl_table"])
 				self.genomes.append(myG)
 		
