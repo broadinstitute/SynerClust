@@ -32,7 +32,7 @@ class RepoParse:
 								RepoParse.logger.error("curGenome[\"Sequence\"] not found at : %s" %(curGenome["Sequence"]))
 								sys.exit("No sequence file specified and not found at default location for %s" %(curGenome["Genome"]))
 							RepoParse.logger.debug("Creating genome entry with %s %s %s %s" %(curGenome["Genome"], curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"]))
-							myG = Genome(curGenome["Genome"], curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"])
+							myG = Genome(curGenome["Genome"], curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"], curGenome["transl_table"])
 							self.genomes.append(myG)
 						curGenome = {}
 						curGenome["transl_table"] = 1
