@@ -321,17 +321,17 @@ class Tree:
 			current = queue.pop()
 			stack.append(current)
 			for e in self.rooted_tree.edges(current[0]):  # get children
-				if e[1][0] != "L":  # not a leaf
-					queue.append([e[1], count, []])  # add child to the queue (~breadth first search)
-					current[2].append(count)  # add child to parent dependency
-					count += 1
+				queue.append([e[1], count, []])  # add child to the queue (~breadth first search)
+				current[2].append(count)  # add child to parent dependency
+				count += 1
 		with open(working_dir + "uger_jobs.txt", "w") as out:
 			while len(stack) > 0:
 				current = stack.pop()
-				out.write("qsub -N #TIMESTAMP" + str(current[1]))
-				if len(current[2]) != 0:
-					out.write(" -hold_jid #TIMESTAMP" + str(current[2][0]) + ",#TIMESTAMP" + str(current[2][1]))
-				out.write(" " + working_dir + "nodes/" + str(current[0]) + "/" + str(current[0]) + ".sh\n")
+				if current[1][0] != "L":  # not a leaf
+					out.write("qsub -N #TIMESTAMP" + str(current[1]))
+					if len(current[2]) != 0:
+						out.write(" -hold_jid #TIMESTAMP" + str(current[2][0]) + ",#TIMESTAMP" + str(current[2][1]))
+					out.write(" " + working_dir + "nodes/" + str(current[0]) + "/" + str(current[0]) + ".sh\n")
 
 		all_proc_nodes = []
 		serial_sets = {}
