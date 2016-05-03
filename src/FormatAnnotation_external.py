@@ -280,7 +280,7 @@ def main(argv):
 
 	if args.annot == "1":
 		stat_file = args.out_file.replace("annotation.txt", "stats.txt")
-		extractAnnotation(args.gff3_file, args.seq_file, args.genome_name, args.locus, args.out_file, args.stat_file, args.peptide_file)
+		extractAnnotation(args.gff3_file, args.seq_file, args.genome_name, args.locus, args.out_file, stat_file, args.peptide_file)
 
 	if args.pickle_juice == "1":
 		working = args.out_file.split("genomes")[0]
