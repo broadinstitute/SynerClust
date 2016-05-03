@@ -5,6 +5,7 @@ import SequenceParse
 import pickle
 import os
 import numpy
+import argparse
 # Given a fasta sequence, gff3 file, locus tag and output file, the Synergy2 directory structure is created for this genome
 
 
@@ -251,30 +252,44 @@ def extractAnnotation(gff3_file, seq_file, genome_name, locus, out_file, stat_fi
 
 
 def main(argv):
+	usage = "usage: FormatAnnotation_external.py [options] <reference.fasta> <scaffolds.fasta>"
+	parser = argparse.ArgumentParser(usage)
+	parser.add_argument('-gff', dest="gff3_file", required=True, help="GFF3 annotation file. (Required)")
+	parser.add_argument('-seq', dest="seq_file", required=True, help="Sequence file. (Required)")
+	parser.add_argument('-name', dest="genome_name", required=True, help="Genome name. (Required)")
+	parser.add_argument('--pep', dest="peptide_file", help="Peptide file name.")
+	parser.add_argument('-locus', dest="locus", required=True, help="Locus name. (Required)")
+	parser.add_argument('-out', dest="out_file", required=True, help="Output name. (Required)")
+	parser.add_argument('-synteny', type=int, dest="syntenic_window", required=True, help="Syntenic window size. (Required)")
+	parser.add_argument('--annot', dest="annot", default = '0', help="")
+	parser.add_argument('--pickle', dest="pickle_juice", default = '0', help="")
+	parser.add_argument("--transl_table", type=int, dest="transl_table", default=1, help="Translation table to use. (NCBI IDs)")
+	args = parser.parse_args()
+
 	# gff3, seq, and genome name
-	gff3_file = argv[0]
-	seq_file = argv[1]
-	genome_name = argv[2]
-	peptide_file = argv[3]
-	locus = argv[4]
-	out_file = argv[5]
-	SYNTENIC_WINDOW = int(argv[6])
-	annot = argv[7]
-	pickle_juice = argv[8]
-	print argv
+	# gff3_file = argv[0]
+	# seq_file = argv[1]
+	# genome_name = argv[2]
+	# peptide_file = argv[3]
+	# locus = argv[4]
+	# out_file = argv[5]
+	# SYNTENIC_WINDOW = int(argv[6])
+	# annot = argv[7]
+	# pickle_juice = argv[8]
+	# print argv
 
-	if annot == "1":
+	if args.annot == "1":
 		stat_file = out_file.replace("annotation.txt", "stats.txt")
-		extractAnnotation(gff3_file, seq_file, genome_name, locus, out_file, stat_file, peptide_file)
+		extractAnnotation(args.gff3_file, args.seq_file, args.genome_name, args.locus, args.out_file, args.stat_file, args.peptide_file)
 
-	if pickle_juice == "1":
-		working = out_file.split("genomes")[0]
+	if args.pickle_juice == "1":
+		working = args.out_file.split("genomes")[0]
 		nodes_dir = working + "nodes/"
-		node_dir = nodes_dir + locus
-		if locus not in os.listdir(nodes_dir):
+		node_dir = nodes_dir + args.locus
+		if args.locus not in os.listdir(nodes_dir):
 			os.system("mkdir " + node_dir)
 		node_dir = node_dir + "/"
-		makePicklesForSingleGenome(working, genome_name, locus, SYNTENIC_WINDOW)
+		makePicklesForSingleGenome(working, args.genome_name, args.locus, args.syntenic_window)
 
 
 if __name__ == "__main__":

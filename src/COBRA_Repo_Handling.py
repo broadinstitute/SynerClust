@@ -13,13 +13,14 @@ class RepoParse:
 		self.locusTags = set([])
 		RepoParse.logger.debug("RepoParse initialized")
 		
-	def parseRepoFile(self,repo_path):
+	def parseRepoFile(self, repo_path):
 		RepoParse.logger.debug("Parsing repo files")
 		with open(self.repo_file) as f:
 			lines = f.readlines()
 			# print lines
 		# lines = open(self.repo_file,'r').readlines()
 			curGenome = {}
+			curGenome["transl_table"] = 1
 			for l in lines:
 				if l.find("#") > -1:
 					continue
@@ -34,6 +35,7 @@ class RepoParse:
 							myG = Genome(curGenome["Genome"], curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"])
 							self.genomes.append(myG)
 						curGenome = {}
+						curGenome["transl_table"] = 1
 					continue
 				dat = l.split()
 				if len(dat) < 2:
@@ -100,8 +102,10 @@ class RepoParse:
 					curGenome["Sequence"] = dat[1]
 				elif dat[0].find("Peptide") > -1:
 					curGenome["Peptide"] = dat[1]
+				elif dat[0].find("transl_table") > -1:
+					curGenome["transl_table"] = dat[1]
 			if len(curGenome) > 0:
-				myG = Genome(curGenome["Genome"], curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"])
+				myG = Genome(curGenome["Genome"], curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"], curGenome["transl_table"])
 				self.genomes.append(myG)
 		
 	def assignLocusTags(self):
@@ -143,7 +147,7 @@ class RepoParse:
 		# self.locusTags.add(code)
 		return code
 			
-	def makeGenomeDirectories(self, genome_dir, distribute,synteny_window):
+	def makeGenomeDirectories(self, genome_dir, distribute, synteny_window):
 		command_lists = []
 		for g in self.genomes:
 			ret = g.setupDirectory(genome_dir, distribute, synteny_window)
@@ -163,13 +167,14 @@ class RepoParse:
 class Genome:
 	logger = logging.getLogger(__name__)
 
-	def __init__(self, genome, annotation, sequence,peptide):
+	def __init__(self, genome, annotation, sequence, peptide, transl_table):
 		self.genome = genome
 		self.locus = ""
 		self.annotation = annotation
 		self.sequence = sequence
 		self.peptide = peptide
 		self.directory = ""
+		self.transl_table = transl_table
 		Genome.logger.debug("Genome Initialized")
 		
 	def setupDirectory(self, genomeDir, distribute, synteny_window):
@@ -200,10 +205,10 @@ class Genome:
 		if pickles == " 0 " and annot == " 0 ":
 			return False
 		if distribute == 1:
-			cmd = "#SYNERGY2_PATHFormatAnnotation_external.py "+self.annotation+" "+self.sequence+" "+self.genome+" "+self.peptide+" "+self.locus+" "+myDir+"annotation.txt "+str(synteny_window)+annot+pickles+"\n"
+			cmd = "#SYNERGY2_PATHFormatAnnotation_external.py -gff " + self.annotation + " -seq " + self.sequence + " -name " + self.genome + " --pep " + self.peptide + " -locus " + self.locus + " -out " + myDir + "annotation.txt -synteny " + str(synteny_window) + " --annot " + annot + " --pickle " + pickles + " --transl_table" + self.transl_table + "\n"
 			return cmd
 		else:
-			cmd = "#SYNERGY2_PATHFormatAnnotation_external.py "+self.annotation+" "+self.sequence+" "+self.genome+" "+self.peptide+" "+self.locus+" "+myDir+"annotation.txt "+str(synteny_window)+annot+pickles+"\n"
+			cmd = "#SYNERGY2_PATHFormatAnnotation_external.py -gff " + self.annotation + " -seq " + self.sequence + " -name " + self.genome + " --pep " + self.peptide + " -locus " + self.locus + " -out " + myDir + "annotation.txt -synteny " + str(synteny_window) + " --annot " + annot + " --pickle " + pickles + " --transl_table" + self.transl_table + "\n"
 			os.system(cmd)
 			#~ cmd2 = "cp "+self.sequence+" "+myDir+"."
 			#~ cmd3 ="mv "+myDir+self.sequence+" "+myDir+self.genome+".genome"
