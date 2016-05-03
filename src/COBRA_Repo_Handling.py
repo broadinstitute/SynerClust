@@ -205,10 +205,10 @@ class Genome:
 		if pickles == " 0 " and annot == " 0 ":
 			return False
 		if distribute == 1:
-			cmd = "#SYNERGY2_PATHFormatAnnotation_external.py -gff " + self.annotation + " -seq " + self.sequence + " -name " + self.genome + " --pep " + self.peptide + " -locus " + self.locus + " -out " + myDir + "annotation.txt -synteny " + str(synteny_window) + " --annot " + annot + " --pickle " + pickles + " --transl_table" + self.transl_table + "\n"
+			cmd = "#SYNERGY2_PATHFormatAnnotation_external.py -gff " + self.annotation + " -seq " + self.sequence + " -name " + self.genome + " --pep " + self.peptide + " -locus " + self.locus + " -out " + myDir + "annotation.txt -synteny " + str(synteny_window) + " --annot " + annot + " --pickle " + pickles + " --transl_table " + self.transl_table + "\n"
 			return cmd
 		else:
-			cmd = "#SYNERGY2_PATHFormatAnnotation_external.py -gff " + self.annotation + " -seq " + self.sequence + " -name " + self.genome + " --pep " + self.peptide + " -locus " + self.locus + " -out " + myDir + "annotation.txt -synteny " + str(synteny_window) + " --annot " + annot + " --pickle " + pickles + " --transl_table" + self.transl_table + "\n"
+			cmd = "#SYNERGY2_PATHFormatAnnotation_external.py -gff " + self.annotation + " -seq " + self.sequence + " -name " + self.genome + " --pep " + self.peptide + " -locus " + self.locus + " -out " + myDir + "annotation.txt -synteny " + str(synteny_window) + " --annot " + annot + " --pickle " + pickles + " --transl_table " + self.transl_table + "\n"
 			os.system(cmd)
 			#~ cmd2 = "cp "+self.sequence+" "+myDir+"."
 			#~ cmd3 ="mv "+myDir+self.sequence+" "+myDir+self.genome+".genome"
