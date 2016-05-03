@@ -87,12 +87,13 @@ def main(argv):
 		else:
 			count += 1
 			for t in transcripts:
-				tNum = int(t)
+				# tNum = int(t)
 				for s in transcripts:
 					if s == t:
 						continue
-					sNum = int(s)
-					tlist = [sNum, tNum]
+					# sNum = int(s)
+					# tlist = [sNum, tNum]
+					tlist = [s, t]
 					tlist.sort()
 					tup = (tlist[0], tlist[1])
 					pairs.add(tup)
