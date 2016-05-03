@@ -327,7 +327,7 @@ class Tree:
 		with open(working_dir + "uger_jobs.txt", "w") as out:
 			while len(stack) > 0:
 				current = stack.pop()
-				if current[1][0] != "L":  # not a leaf
+				if current[0][0] != "L":  # not a leaf
 					out.write("qsub -N #TIMESTAMP" + str(current[1]))
 					if len(current[2]) != 0:
 						out.write(" -hold_jid #TIMESTAMP" + str(current[2][0]) + ",#TIMESTAMP" + str(current[2][1]))
