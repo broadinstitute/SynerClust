@@ -322,7 +322,7 @@ class Tree:
 				queue.append([e[1], count, []])  # add child to the queue (~breadth first search)
 				current[2].append(count)  # add child to parent dependency
 				count += 1
-		with open(working_dir + "uger_jobs.txt", "w") as out:
+		with open(working_dir + "uger_jobs.sh", "w") as out:
 			out.write("#! /bin/bash\n\nTIME=$(date +%%s)\n")
 			while len(stack) > 0:
 				current = stack.pop()
@@ -331,7 +331,7 @@ class Tree:
 					if len(current[2]) != 0:
 						out.write(" -hold_jid ${TIME}" + str(current[2][0]) + ",${TIME}" + str(current[2][1]))
 					out.write(" " + working_dir + "nodes/" + str(current[0]) + "/" + str(current[0]) + ".sh\n")
-
+		os.system("chmod +x" + working_dir + "uger_jobs.sh")
 		all_proc_nodes = []
 		serial_sets = {}
 		sets = 1
