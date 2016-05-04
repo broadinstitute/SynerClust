@@ -13,7 +13,6 @@ import logging
 import networkx as nx
 import traceback
 import collections
-import time
 
 
 class Tree:
@@ -72,16 +71,16 @@ class Tree:
 	def writeLocusTagFile(self):
 		tag_out = open(self.genomeToLocusFile, 'w')
 		for g in self.genomeToLocus:
-			line = "\t".join([g, self.genomeToLocus[g]])+"\n"
+			line = "\t".join([g, self.genomeToLocus[g]]) + "\n"
 			tag_out.write(line)
 		tag_out.close()
 		Tree.logger.info("Wrote locus tags to locus_tag_file.txt")
 
 	def makePicklesForSingleGenome(self, working_dir, genome, node):
-		gdat = open(working_dir+"genomes/"+genome+"/annotation.txt", 'r').readlines()
+		gdat = open(working_dir + "genomes/" + genome + "/annotation.txt", 'r').readlines()
 		# this file might not be necessary in the long-term, in fact these genome directories may not be necessary at all
 		# everything should be pulled out and stored in pickles after the repo files are parsed.  Whatever.
-		ndat = open(working_dir+"nodes/"+node+"/"+node+".pep", 'w')
+		ndat = open(working_dir + "nodes/" + node + "/" + node + ".pep", 'w')
 		# print node
 		x = gdat[0].split()[1]
 		y = "_".join(x.split("_")[:-1])
@@ -108,7 +107,7 @@ class Tree:
 			neighbors[l[2]].append(gene_tup)
 			genes[l[1]] = l[7]
 			gene_map[l[1]] = [l[1]]
-			line = ">"+l[1]+";"+l[6]+"\n"+l[7]+"\n"
+			line = ">" + l[1] + ";" + l[6] + "\n" + l[7] + "\n"
 			ndat.write(line)
 		ndat.close()
 
@@ -199,10 +198,10 @@ class Tree:
 				if r == s:
 					continue
 				# print subnodes[r]+subnodes[s], r, s
-				if (subnodes[r]+subnodes[s]) < minTotal:
+				if (subnodes[r] + subnodes[s]) < minTotal:
 					# print "min!", r, s
 					Tree.logger.info("min! %s %s" % (str(r), str(s)))
-					minTotal = subnodes[r]+subnodes[s]
+					minTotal = subnodes[r] + subnodes[s]
 					minPair = (r, s)
 		minList = [minPair[0], minPair[1]]
 		minList.sort()
@@ -217,7 +216,7 @@ class Tree:
 		gene_nodes_num_tiers = {}
 		noGene_nodes = {}  # node maps to children
 		ready_nodes = []
-		n_list = os.listdir(node_dir+"/")
+		n_list = os.listdir(node_dir + "/")
 		pick_count = 0
 		for n in self.rooted_tree.nodes():
 			# print "rooted_tree node", n, self.rooted_tree[n]
@@ -226,10 +225,10 @@ class Tree:
 				# print e
 				noGene_nodes[n].append(e[1])
 			if n not in n_list:
-				os.system("mkdir "+node_dir+"/"+n)
+				os.system("mkdir " + node_dir + "/" + n)
 			if len(noGene_nodes[n]) == 0:
 				pick_count += 1
-				if "PICKLES_COMPLETE" not in os.listdir(node_dir+"/"+n):
+				if "PICKLES_COMPLETE" not in os.listdir(node_dir + "/" + n):
 					self.makePicklesForSingleGenome(working_dir, self.locusToGenome[n], n)
 					Tree.logger.info("%s %s %s" % (pick_count, n, self.locusToGenome[n]))
 					# print pick_count, n, self.locusToGenome[n]
@@ -313,7 +312,6 @@ class Tree:
 
 	def makeNodeFlowWorkflowControl(self, nodeTier, childToParent, working_dir):
 		root = nodeTier[max(nodeTier)][0]
-		stamp = int(time.time())
 		stack = []
 		queue = collections.deque([[root, 0, []]])  # current_node, current_id, [child1_id, child2_id]
 		count = 1
@@ -325,12 +323,13 @@ class Tree:
 				current[2].append(count)  # add child to parent dependency
 				count += 1
 		with open(working_dir + "uger_jobs.txt", "w") as out:
+			out.write("#! /bin/bash\n\nTIME=$(date +%\s)\n")
 			while len(stack) > 0:
 				current = stack.pop()
 				if current[0][0] != "L":  # not a leaf
-					out.write("qsub -N #TIMESTAMP" + str(current[1]))
+					out.write("qsub -N $TIME" + str(current[1]))
 					if len(current[2]) != 0:
-						out.write(" -hold_jid #TIMESTAMP" + str(current[2][0]) + ",#TIMESTAMP" + str(current[2][1]))
+						out.write(" -hold_jid $TIME" + str(current[2][0]) + ",$TIME" + str(current[2][1]))
 					out.write(" " + working_dir + "nodes/" + str(current[0]) + "/" + str(current[0]) + ".sh\n")
 
 		all_proc_nodes = []
@@ -342,7 +341,7 @@ class Tree:
 			local_proc_nodes = []
 			curNode = n
 			set_cmd_count = 1
-			next_cmd_id = "1."+str(sets)+"."+str(set_cmd_count)
+			next_cmd_id = "1." + str(sets) + "." + str(set_cmd_count)
 			while curNode not in all_proc_nodes:
 				kids = []
 				for e in self.rooted_tree.edges(curNode):
@@ -518,20 +517,20 @@ class Tree:
 	def makeNodeFlowLauncher(self, working_dir, serial_sets):
 		ini_file = open(working_dir + self.flow_name + ".ini", 'w')
 		xml_file = open(working_dir + self.flow_name + ".xml", 'w')
-		xml_file.write("""<?xml version="1.0" encoding="utf-8"?>"""+"\n")
-		xml_file.write("""<commandSetRoot>"""+"\n")
-		xml_file.write("""\t<commandSet type="parallel">"""+"\n")
-		xml_file.write("""\t\t<name>"""+self.flow_name+"""</name>"""+"\n")
-		ini_file.write("[1]\nname="+self.flow_name+"\n")
+		xml_file.write("""<?xml version="1.0" encoding="utf-8"?>""" + "\n")
+		xml_file.write("""<commandSetRoot>""" + "\n")
+		xml_file.write("""\t<commandSet type="parallel">""" + "\n")
+		xml_file.write("""\t\t<name>""" + self.flow_name + """</name>""" + "\n")
+		ini_file.write("[1]\nname=" + self.flow_name + "\n")
 		instance_commands = []
 
 		for s in serial_sets:
 			sub_s = 1
-			xml_file.write("""\t\t<commandSet type="serial">"""+"\n")
-			xml_file.write("""\t\t\t<configMapId>1."""+str(s)+"""</configMapId>"""+"\n")
-			xml_file.write("""\t\t\t<name>subflow1."""+str(s)+"""</name>"""+"\n")
-			ini_file.write("[1."+str(s)+"]\n")
-			ini_file.write("name=subflow1."+str(s)+"\n\n")
+			xml_file.write("""\t\t<commandSet type="serial">""" + "\n")
+			xml_file.write("""\t\t\t<configMapId>1.""" + str(s) + """</configMapId>""" + "\n")
+			xml_file.write("""\t\t\t<name>subflow1.""" + str(s) + """</name>""" + "\n")
+			ini_file.write("[1." + str(s) + "]\n")
+			ini_file.write("name=subflow1." + str(s) + "\n\n")
 
 			for n in serial_sets[s]:
 				ini_id = n[0]
@@ -539,37 +538,37 @@ class Tree:
 					# wait command
 					xml_file.write("\t\t\t<command>\n")
 					xml_file.write("\t\t\t\t<name>WaitForNode</name>\n")
-					xml_file.write("\t\t\t\t<configMapId>"+ini_id+"</configMapId>\n")
+					xml_file.write("\t\t\t\t<configMapId>" + ini_id + "</configMapId>\n")
 					xml_file.write("\t\t\t</command>\n")
-					ini_file.write("["+ini_id+"]\n")
+					ini_file.write("[" + ini_id + "]\n")
 					ini_file.write("name=WaitForNode\n")
 					ini_file.write("type=RunUnixCommand\n")
-					ini_file.write("executable="+self.syn2_path+"WF_WaitForFile.py\n")
-					ini_file.write("arg="+working_dir+"nodes/"+n[2]+"/\n")
+					ini_file.write("executable=" + self.syn2_path + "WF_WaitForFile.py\n")
+					ini_file.write("arg=" + working_dir + "nodes/" + n[2] + "/\n")
 					ini_file.write("arg=NODE_COMPLETE\n\n")
 				else:
 					# node flow command
 					node = n[1]
 					path_to_node_dir = working_dir + "nodes/" + node + "/"
-					instance_cmd = "RunWorkflow -t "+path_to_node_dir+node+".xml -c "+path_to_node_dir+node+".ini -i "+path_to_node_dir+node+"_instance.xml\n"
+					instance_cmd = "RunWorkflow -t " + path_to_node_dir + node + ".xml -c " + path_to_node_dir + node + ".ini -i " + path_to_node_dir + node + "_instance.xml\n"
 					# tier = int(ini_id.split(".")[-1])
 					dist_to_root = len(nx.shortest_path(self.rooted_tree, self.tree_obj.root, node))
 					instance_commands.append((instance_cmd, dist_to_root))
 					xml_file.write("\t\t\t<command>\n")
-					xml_file.write("\t\t\t\t<name>"+node+"</name>\n")
-					xml_file.write("\t\t\t\t<configMapId>"+ini_id+"</configMapId>\n")
+					xml_file.write("\t\t\t\t<name>" + node + "</name>\n")
+					xml_file.write("\t\t\t\t<configMapId>" + ini_id + "</configMapId>\n")
 					xml_file.write("\t\t\t</command>\n")
-					ini_file.write("["+ini_id+"]\n")
-					ini_file.write("name="+node+"\n")
+					ini_file.write("[" + ini_id + "]\n")
+					ini_file.write("name=" + node + "\n")
 					ini_file.write("type=RunUnixCommand\n")
-					ini_file.write("executable="+self.syn2_path+"WF_WaitForFile.py\n")
-					ini_file.write("arg="+working_dir+"nodes/"+n[1]+"/\n")
+					ini_file.write("executable=" + self.syn2_path + "WF_WaitForFile.py\n")
+					ini_file.write("arg=" + working_dir + "nodes/" + n[1] + "/\n")
 					ini_file.write("arg=NODE_COMPLETE\n\n")
 
 				sub_s += 1
-			xml_file.write("""\t\t</commandSet>"""+"\n")
+			xml_file.write("""\t\t</commandSet>""" + "\n")
 
-		xml_file.write("""\t</commandSet>"""+"\n")
+		xml_file.write("""\t</commandSet>""" + "\n")
 		xml_file.write("""</commandSetRoot>""")
 		xml_file.close()
 
@@ -591,7 +590,7 @@ class Tree:
 		last_string = ""
 		if len(graph.nodes()) == 2:
 			ew = str(graph[leaf[0][0]][leaf[1][0]]['weight'])
-			last_string = "("+leaf[0][0]+":"+ew+","+leaf[1][0]+":"+ew+")"
+			last_string = "(" + leaf[0][0] + ":" + ew + "," + leaf[1][0] + ":" + ew + ")"
 		while len(up) > 0:
 			(curNode, e_count) = self.calcMostEdgesToLeaves(up, leaf, graph)
 			leaves = []
@@ -606,7 +605,7 @@ class Tree:
 							e_text = graph.node[e]['child_newick']
 						leaf.pop(e_i)
 						ew = graph[curNode][e]['weight']
-						text = e_text+":"+str(ew)
+						text = e_text + ":" + str(ew)
 						leaves.append(text)
 			# add newick text to curNode
 			node_text = "(" + ",".join(leaves) + ")"
@@ -618,12 +617,12 @@ class Tree:
 			leaf.append((curNode, curNode[0]))
 		if len(leaf) == 2 and len(up) == 0 and len(graph.nodes()) > 2:
 			ew = str(graph[leaf[0][0]][leaf[1][0]]['weight'])
-			last_string = "("+graph.node[leaf[0][0]]['child_newick']+":"+ew+","+graph.node[leaf[1][0]]['child_newick']+":"+ew+")"
+			last_string = "(" + graph.node[leaf[0][0]]['child_newick'] + ":" + ew + "," + graph.node[leaf[1][0]]['child_newick'] + ":" + ew + ")"
 		last_string = last_string.replace("(", "(\n")
 		last_string = last_string.replace(",", ",\n")
 		last_string = last_string.replace(")", ")\n")
 		last_string = last_string.rstrip()
-		return last_string+";"
+		return last_string + ";"
 
 	def calcMostEdgesToLeaves(self, unprocN, leaf, TG):
 		mostLeaves = -1
