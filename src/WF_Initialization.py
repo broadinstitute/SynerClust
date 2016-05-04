@@ -323,13 +323,13 @@ class Tree:
 				current[2].append(count)  # add child to parent dependency
 				count += 1
 		with open(working_dir + "uger_jobs.txt", "w") as out:
-			out.write("#! /bin/bash\n\nTIME=$(date +%\s)\n")
+			out.write("#! /bin/bash\n\nTIME=$(date +%%s)\n")
 			while len(stack) > 0:
 				current = stack.pop()
 				if current[0][0] != "L":  # not a leaf
-					out.write("qsub -N $TIME" + str(current[1]))
+					out.write("qsub -N ${TIME}" + str(current[1]))
 					if len(current[2]) != 0:
-						out.write(" -hold_jid $TIME" + str(current[2][0]) + ",$TIME" + str(current[2][1]))
+						out.write(" -hold_jid ${TIME}" + str(current[2][0]) + ",${TIME}" + str(current[2][1]))
 					out.write(" " + working_dir + "nodes/" + str(current[0]) + "/" + str(current[0]) + ".sh\n")
 
 		all_proc_nodes = []
