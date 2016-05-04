@@ -323,7 +323,7 @@ class Tree:
 				current[2].append(count)  # add child to parent dependency
 				count += 1
 		with open(working_dir + "uger_jobs.sh", "w") as out:
-			out.write("#! /bin/bash\n\nTIME=$(date +%%s)\n")
+			out.write("#! /bin/bash\n\nTIME=$(date +%s)\n")
 			while len(stack) > 0:
 				current = stack.pop()
 				if current[0][0] != "L":  # not a leaf
