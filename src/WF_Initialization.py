@@ -331,7 +331,7 @@ class Tree:
 					if len(current[2]) != 0:
 						out.write(" -hold_jid ${TIME}" + str(current[2][0]) + ",${TIME}" + str(current[2][1]))
 					out.write(" " + working_dir + "nodes/" + str(current[0]) + "/" + str(current[0]) + ".sh\n")
-		os.system("chmod +x" + working_dir + "uger_jobs.sh")
+		os.chmod(working_dir + "uger_jobs.sh", 0775)
 		all_proc_nodes = []
 		serial_sets = {}
 		sets = 1
