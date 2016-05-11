@@ -116,7 +116,7 @@ def main(argv):
 	parser.add_argument('-m', '--min_best_hit', type=float, dest="min_best_hit", default=0.5, help="Minimal % of match length for Blastp hits compared to best one.")
 	parser.add_argument('-B', '--blast_eval', type=float, dest="blast_eval", default=#BLAST_EVAL_DEFAULT, help="Minimal e-value for Blastp hits.")
 	parser.add_argument('-l', '--locus', dest="locus_file", default="", help="Locus file.")
-	parser.add_argument('-n', '--num_cores', type=int, dest="num_cores", default=#NUM_CORE_DEFAULT, help="Locus file.")
+	parser.add_argument('-n', '--num_cores', type=int, dest="num_cores", default=#NUM_CORES_DEFAULT, help="Locus file.")
 	parser.add_argument('-F', '--min_syntenic_fraction', type=float, dest="minSynFrac", default=0.5, help="Minimal syntenic fraction.")
 	parser.add_argument('-D', '--hamming', type=float, dest="hamming", default=0.6, help="Hamming distance for representative selection.")
 	parser.add_argument('-s', '--synteny_window', type=int, dest="synteny_window", default=6000, help="Size of the syntenic window.")
