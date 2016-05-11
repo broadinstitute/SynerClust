@@ -105,7 +105,7 @@ def main(argv):
 	usage = "usage: WF_RefineCluster_leaf_centroid_newmatrix.py [options]"
 	parser = argparse.ArgumentParser(usage)
 	parser.add_argument('-t', '--tree', dest="species_tree", required=True, help="Species tree. (Required)")
-	parser.add_argument('-r', '--repo', dest="cobra_repo", required=True, help="Cobra repository. (Required)")
+	parser.add_argument('-r', '--repo', dest="cobra_repo_path", required=True, help="Cobra repository. (Required)")
 	parser.add_argument('-w', '--working', dest="working_dir", required=True, help="Working directory. (Required)")
 	parser.add_argument('-f', '--flow', dest="flow_name", default="default_flow", help="Flow Name.")
 	parser.add_argument('-a', '--alpha', type=float, dest="alpha", default=10.0, help="Synteny weight")
@@ -131,10 +131,12 @@ def main(argv):
 	node_dir = args.working_dir + "nodes/"
 	if not "nodes" in os.listdir(args.working_dir):
 		os.system("mkdir " + node_dir)
-		
+	
+	cobra_repo_path = "/".join(args.cobra_repo.split("/")[0:-1])+"/"
+	
 	#read COBRA repository and set up file system
 	myRepo = COBRA_Repo_Handling.RepoParse(args.cobra_repo)
-	myRepo.parseRepoFile(args.cobra_repo_path)
+	myRepo.parseRepoFile(cobra_repo_path)
 	if len(args.locus_file)>0:
 		myRepo.readLocusTagFile(args.locus_file)
 		myRepo.assignLocusTags()
