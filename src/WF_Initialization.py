@@ -18,7 +18,7 @@ import collections
 class Tree:
 	logger = logging.getLogger("Tree")
 
-	def __init__(self, tree_obj, flow_name, blast_eval, num_cores, alpha, beta, gamma, gain, loss, min_best_hit, syn_dist, homScale, synScale, numHits, minSynFrac, hamming):
+	def __init__(self, tree_obj, flow_name, blast_eval, num_cores, alpha, beta, gamma, gain, loss, min_best_hit, syn_dist, numHits, minSynFrac, hamming):
 		self.tree_obj = tree_obj
 		self.genomeToLocusFile = tree_obj.genomeToLocusFile
 		self.genomeToLocus = tree_obj.genomeToLocus
@@ -36,8 +36,8 @@ class Tree:
 		self.min_best_hit = min_best_hit
 # 		self.cmds_per_job = cmds_per_job
 		self.syn_dist = int(syn_dist)
-		self.homScale = homScale
-		self.synScale = synScale
+# 		self.homScale = homScale
+# 		self.synScale = synScale
 		self.flow_name = flow_name
 		self.num_hits = numHits
 		self.min_syn_frac = minSynFrac
@@ -430,8 +430,8 @@ class Tree:
 		s_file = s_file.replace('#LOSS', str(self.loss))
 		s_file = s_file.replace('#MIN_BEST_HIT', str(self.min_best_hit))
 		s_file = s_file.replace('#MIN_SYNTENIC_FRACTION', str(self.min_syn_frac))
-		s_file = s_file.replace('#HOMOLOGY_SCALE', str(self.homScale))
-		s_file = s_file.replace('#SYNTENY_SCALE', str(self.synScale))
+# 		s_file = s_file.replace('#HOMOLOGY_SCALE', str(self.homScale))
+# 		s_file = s_file.replace('#SYNTENY_SCALE', str(self.synScale))
 		s_file = s_file.replace('#WORKING_DIR', working_dir)
 
 		my_sh = open(my_sh_file, 'w')

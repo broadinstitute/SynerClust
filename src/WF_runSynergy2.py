@@ -179,7 +179,7 @@ def main(argv):
 	logger.info(root_edge)
 	myTree.rootTree(root_edge)
 	logger.info("initializing")
-	myInitTree = WF_Initialization.Tree(myTree, args.flow_name, args.blast_eval, args.num_cores, args.alpha, args.beta, args.gamma, args.gain, args.loss, args.min_best_hit, args.synteny_window, args.homScale, args.synScale, args.minSynFrac, args.hamming)
+	myInitTree = WF_Initialization.Tree(myTree, args.flow_name, args.blast_eval, args.num_cores, args.alpha, args.beta, args.gamma, args.gain, args.loss, args.min_best_hit, args.synteny_window, args.minSynFrac, args.hamming)
 	logger.info("dependicizing")
 	myInitTree.calculateNodeDependencies(args.working_dir)
 	myInitTree.writeLocusTagFile()
