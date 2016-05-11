@@ -45,9 +45,9 @@ class NJTree:
 	def __init__(self, mrca, alpha, beta, gamma, gain, loss):
 		self.graph = nx.Graph()
 		self.bigNode = ""
-# 		self.alpha = 10.0  # TODO take into account the actual value given
+		# self.alpha = 10.0  # TODO take into account the actual value given
 		self.alpha = float(alpha)
-# 		self.beta = 0.01  # TODO take into account the actual value given
+		# self.beta = 0.01  # TODO take into account the actual value given
 		self.beta = float(beta)
 		self.gamma = float(gamma)
 		self.gain = float(gain)
@@ -59,16 +59,15 @@ class NJTree:
 		self.hom_shortest_paths = None
 		self.syn_shortest_paths = None
 		self.paths = None
-# 		self.centroid = ""
+		# self.centroid = ""
 		self.gl_map = {}  # node -> gain/loss tuple
-		
-	
+
 	def readSyntenyMatrix(self, valid_nodes):
-# 		matrix_data = open(self.synteny_file,'r').readlines()
+		# matrix_data = open(self.synteny_file,'r').readlines()
 		matrix_data = self.synteny_data
 		index = {}
 		rev_index = {}
-# 		count = 0
+		# count = 0
 		valid_index = set([])
 		tcount = 0
 		for m in matrix_data:
@@ -91,8 +90,8 @@ class NJTree:
 		self.syntenyIndex = index
 
 	def readDistanceMatrix(self):
-# 		matrix_data=open(self.distance_file,'r').readlines()
-# 		matrix_data = self.distance_matrix
+		# matrix_data=open(self.distance_file,'r').readlines()
+		# matrix_data = self.distance_matrix
 		return self.distance_matrix
 # 		return matrix_data
 
@@ -146,7 +145,6 @@ class NJTree:
 			mp1_mp_dist = 0.5 * matrix[minp[0]][minp[1]] + 0.5 * (Udists[minp[1]] - Udists[minp[0]]) / uan_denom
 			syn_mp1_mp_dist = 0.5 * self.syntenyMatrix[minp[0]][minp[1]] + 0.5 * (synUdists[minp[1]] - synUdists[minp[0]]) / uan_denom
 
-						
 			newNode = ";".join(minp)
 			my_species = ""
 			if self.graph.node[minp[0]]['species'] == self.graph.node[minp[1]]['species']:
@@ -167,7 +165,7 @@ class NJTree:
 				new_dist = (dik + djk - dij) / 2.0
 				matrix[newNode][k] = new_dist
 				matrix[k][newNode] = new_dist
-				
+
 				dik = self.syntenyMatrix[minp[0]][k]
 				djk = self.syntenyMatrix[minp[1]][k]
 				dij = self.syntenyMatrix[minp[0]][minp[1]]
@@ -194,8 +192,8 @@ class NJTree:
 	def buildGraphFromNewDistanceMatrix(self, hom_matrix, syn_matrix, leaves):
 		for l in leaves:
 			my_species = "_".join(l.split("_")[:-1])
-			self.graph.add_node(l, species=my_species)	
-#### TODO Verify order of the leaves names and of the data
+			self.graph.add_node(l, species=my_species)
+# TODO Verify order of the leaves names and of the data
 
 		unadded_nodes = leaves
 		unadded_count = len(unadded_nodes)
@@ -209,7 +207,7 @@ class NJTree:
 			pos = 0
 			while(pos < matrix_size):
 				for i in xrange(imax):
-					sum_of_hom[i] += hom_matrix[pos] 
+					sum_of_hom[i] += hom_matrix[pos]
 					sum_of_syn[i] += syn_matrix[pos]
 					sum_of_hom[imax] += hom_matrix[pos]
 					sum_of_syn[imax] += syn_matrix[pos]
@@ -228,11 +226,15 @@ class NJTree:
 				if not k < l:
 					k = 0
 					l += 1
-			mp0_mp_dist = 0.5 * hom_matrix[minp[0] + ((minp[1] - 1) * minp[1] / 2)] + 0.5 * ((sum_of_hom[minp[0]] + sum_of_syn[minp[0]]) - (sum_of_hom[minp[1]] + sum_of_syn[minp[1]])) / uan_denom
-			syn0_mp_dist = 0.5 * syn_matrix[minp[0] + ((minp[1] - 1) * minp[1] / 2)] + 0.5 * ((sum_of_hom[minp[0]] + sum_of_syn[minp[0]]) - (sum_of_hom[minp[1]] + sum_of_syn[minp[1]])) / uan_denom
-			mp1_mp_dist = 0.5 * hom_matrix[minp[0] + ((minp[1] - 1) * minp[1] / 2)] + 0.5 * ((sum_of_hom[minp[1]] + sum_of_syn[minp[1]]) - (sum_of_hom[minp[0]] + sum_of_syn[minp[0]])) / uan_denom
-			syn1_mp_dist = 0.5 * syn_matrix[minp[0] + ((minp[1] - 1) * minp[1] / 2)] + 0.5 * ((sum_of_hom[minp[1]] + sum_of_syn[minp[1]]) - (sum_of_hom[minp[0]] + sum_of_syn[minp[0]])) / uan_denom
-						
+# 			mp0_mp_dist = 0.5 * hom_matrix[minp[0] + ((minp[1] - 1) * minp[1] / 2)] + 0.5 * ((sum_of_hom[minp[0]] + sum_of_syn[minp[0]]) - (sum_of_hom[minp[1]] + sum_of_syn[minp[1]])) / uan_denom
+			mp0_mp_dist = 0.5 * hom_matrix[minp[0] + ((minp[1] - 1) * minp[1] / 2)] + 0.5 * (sum_of_hom[minp[0]] - sum_of_hom[minp[1]]) / uan_denom
+# 			syn0_mp_dist = 0.5 * syn_matrix[minp[0] + ((minp[1] - 1) * minp[1] / 2)] + 0.5 * ((sum_of_hom[minp[0]] + sum_of_syn[minp[0]]) - (sum_of_hom[minp[1]] + sum_of_syn[minp[1]])) / uan_denom
+			syn0_mp_dist = 0.5 * syn_matrix[minp[0] + ((minp[1] - 1) * minp[1] / 2)] + 0.5 * (sum_of_syn[minp[0]] - sum_of_syn[minp[1]]) / uan_denom
+# 			mp1_mp_dist = 0.5 * hom_matrix[minp[0] + ((minp[1] - 1) * minp[1] / 2)] + 0.5 * ((sum_of_hom[minp[1]] + sum_of_syn[minp[1]]) - (sum_of_hom[minp[0]] + sum_of_syn[minp[0]])) / uan_denom
+			mp1_mp_dist = 0.5 * hom_matrix[minp[0] + ((minp[1] - 1) * minp[1] / 2)] + 0.5 * (sum_of_hom[minp[1]] - sum_of_hom[minp[0]]) / uan_denom
+# 			syn1_mp_dist = 0.5 * syn_matrix[minp[0] + ((minp[1] - 1) * minp[1] / 2)] + 0.5 * ((sum_of_hom[minp[1]] + sum_of_syn[minp[1]]) - (sum_of_hom[minp[0]] + sum_of_syn[minp[0]])) / uan_denom
+			syn1_mp_dist = 0.5 * syn_matrix[minp[0] + ((minp[1] - 1) * minp[1] / 2)] + 0.5 * (sum_of_syn[minp[1]] - sum_of_syn[minp[0]]) / uan_denom
+
 			newNode = ";".join([unadded_nodes[minp[0]], unadded_nodes[minp[1]]])
 			my_species = ""
 			if self.graph.node[unadded_nodes[minp[0]]]['species'] == self.graph.node[unadded_nodes[minp[1]]]['species']:
@@ -245,10 +247,10 @@ class NJTree:
 			self.graph.add_edge(unadded_nodes[minp[1]], newNode, homology_dist=mp1_mp_dist, synteny_dist=syn1_mp_dist)
 
 			unadded_nodes[minp[0]] = newNode
-			for i in xrange(minp[1], unadded_count-1):
+			for i in xrange(minp[1], unadded_count - 1):
 				unadded_nodes[i] = unadded_nodes[i + 1]
 			unadded_count -= 1  # replaced 2 nodes with 1
-			
+
 		# replace the first line/column of the merging with the merging and shift values after second line/column
 			k = 0
 			l = 1
@@ -273,8 +275,8 @@ class NJTree:
 					hom_matrix[pos - offset] = 0.5 * (dfk_hom + dgk_hom - dfg_hom)
 					syn_matrix[pos - offset] = 0.5 * (dfk_syn + dgk_syn - dfg_syn)
 				else:
-					hom_matrix[pos - offset] = hom_matrix[pos]				
-					syn_matrix[pos - offset] = syn_matrix[pos]				
+					hom_matrix[pos - offset] = hom_matrix[pos]
+					syn_matrix[pos - offset] = syn_matrix[pos]
 				k += 1
 				if not k < l:
 					k = 0
@@ -364,14 +366,14 @@ class NJTree:
 		last_string = last_string.replace(")", ")\n")
 		last_string = last_string.rstrip()
 		return last_string + ";"
-		
+
 	def rootTree(self):
 		"""Return Score, root edge, number of losses
 		"""
 		# for each edge in 'tree' graph, score the tree
 		roots = []
 		min_gl = len(self.graph.nodes()) * 2
-		
+
 		if self.rootEdge is not None:
 			self.hom_shortest_paths = nxe.all_pairs_path_length(self.graph, 'homology_dist')
 			self.paths = nx.shortest_path(self.graph, None, None)
@@ -379,10 +381,10 @@ class NJTree:
 			(score, tree, gl_sum, loss) = self.scoreEdge(self.rootEdge, min_gl)
 			self.rootedTree = tree
 			return (score, self.rootEdge, loss)
-			
+
 		# store shortest path matrix - it is the same for everyone
 		if len(self.graph.nodes()) > 100:
-# 			big_e = 0.0
+			# big_e = 0.0
 			big_combo = 0.0
 			e_pair = None
 			for e in self.graph.edges():
@@ -394,7 +396,7 @@ class NJTree:
 						e_pair = e
 						big_combo = my_big_combo
 			return (-1.0, e_pair, len(self.graph.nodes()))
-				
+
 		else:
 			self.hom_shortest_paths = nxe.all_pairs_path_length(self.graph, 'homology_dist')
 			self.paths = nx.shortest_path(self.graph, None, None)
@@ -411,7 +413,7 @@ class NJTree:
 			self.OK = "true"
 		self.rootedTree = roots[0][2]
 		return (roots[0][0], roots[0][1], roots[0][3])
-			
+
 	def scoreEdge(self, e, min_gl):
 		# get homology distances, calculate variance
 		h_dists = self.getHomologyDistances(e)
@@ -448,10 +450,11 @@ class NJTree:
 		if s_var > 0:
 			syn_factor = (-self.alpha) * math.log10(s_var)
 		score = math.exp(gl_factor) * math.exp(dist_factor) * math.exp(syn_factor)
+		score2 = gl_factor + dist_factor + syn_factor
 		# score = math.exp(gl_factor + dist_factor + syn_factor) should be the same
 		# and since exp is a strictly increasing function, the ranking would remain the same without applying it
 		return (score, tree, my_gl, loss)
-				
+
 	# returns a list of distances from the root edge midpoint to all leaf nodes
 	def getHomologyDistances(self, e):
 		# bigNode is a concatenation of all leaf nodes in this tree, separated by a ;
@@ -460,14 +463,14 @@ class NJTree:
 		for n in nodes:
 			dists.append(self.getHomInterNodeDist(n, e, 'homology_dist'))
 		return dists
-		
+
 	def getSyntenyDistances(self, e):
 		nodes = self.bigNode.split(";")
 		dists = []
 		for n in nodes:
 			dists.append(self.getSynInterNodeDist(n, e, 'synteny_dist'))
 		return dists
-		
+
 	# this calculates the distance from leaf to root-edge midpoint
 	def getHomInterNodeDist(self, n, e, attr):
 		# find distance to farthest node on potential root edge
@@ -483,8 +486,8 @@ class NJTree:
 		edge_length = self.graph[e[0]][e[1]][attr]
 		mid_edge = edge_length / 2.0
 		dist = raw_len + mid_edge
-		return dist	
-		
+		return dist
+
 	# this calculates the distance from leaf to root-edge midpoint
 	def getSynInterNodeDist(self, n, e, attr):
 		# find distance to farthest node on potential root edge
@@ -496,13 +499,13 @@ class NJTree:
 		raw_path = self.paths[n][near_node]
 		for i in range(len(raw_path) - 1):
 			raw_len += self.graph[raw_path[i]][raw_path[i + 1]]['synteny_dist']
-		
+
 		# subract half of root edge length from raw_dist to get the distance from the root (edge mid-point) to this node, n
 		edge_length = self.graph[e[0]][e[1]][attr]
 		mid_edge = edge_length / 2.0
 		dist = raw_len + mid_edge
 		return dist
-		
+
 	def getGainLossCount(self, e, min_gl):
 		# TODO verify how the species of a node is set to MRCA
 		# returns 0 gain when there needs to be a duplication event for the tree to exist (the loss after is found)
@@ -560,6 +563,7 @@ class NJTree:
 					curNodeSpecies = self.mrca
 					# 2 child species
 					if self.mrca in childSpecies:
+						# shouldn't there be a gain somewhere too in this case?
 						loss += 1
 						gl_total += 1
 				# ~ self.gl_map[curNode] = {'gain':gain,'loss':loss, 'species':curNodeSpecies}
@@ -568,7 +572,7 @@ class NJTree:
 			leaf.append((curNode, curNodeSpecies))
 			tGraph.node[curNode]['species'] = curNodeSpecies
 		return (gain, loss, tGraph)
-	
+
 	@staticmethod
 	def calcMostEdgesToLeaves(unprocN, leaf, TG):
 		"""
@@ -593,7 +597,6 @@ class NJTree:
 				return (retNode, mostLeaves)
 		return (retNode, mostLeaves)
 
-
 	# checks if tree needs to be split
 	def checkTree(self, root):
 		""" Returns "true" if they are 2 species in the tree and the mrca is not present.
@@ -616,7 +619,7 @@ class NJTree:
 		set_species.add(self.rootedTree.node[edge[1]]['species'])
 		species.append(self.rootedTree.node[edge[0]]['species'])
 		species.append(self.rootedTree.node[edge[1]]['species'])
-		if len(species) == 1 or len(set_species) == 1 and (not self.mrca in set_species):
+		if len(species) == 1 or len(set_species) == 1 and (self.mrca not in set_species):
 			# all leaf nodes get added to orphan pile
 			# NJTree.logger.debug("Orphan in checkTree still happens")
 			self.OK = "orphan"
@@ -630,14 +633,14 @@ class NJTree:
 				return self.OK
 		# How can the MRCA be one of the species??
 		# should add a verification that there are no more than 2 species
-	
+
 	def splitTree(self, root):
 		self.graph.remove_edge(root[1][0], root[1][1])
 		new_graphs = nx.connected_component_subgraphs(self.graph)
 		newicks = []
 		matrices = []
 		for n in new_graphs:
-			# remove "root" node, put an edge in its place... these trees shouldn't be rooted! 
+			# remove "root" node, put an edge in its place... these trees shouldn't be rooted!
 			# then get the newick format of the unrooted tree
 			myRoot = None
 			if n.has_node(root[1][1]):
@@ -660,7 +663,7 @@ class NJTree:
 				matrices.append(NJTree.makeDistanceMatrix(myRoot, n))
 				newicks.append(NJTree.toNewick(n))
 		return (newicks, matrices)
-	
+
 	def splitNewTree(self, root):
 		new_trees = []
 		new_root_edges = []
@@ -703,10 +706,12 @@ class NJTree:
 					new_root_edges.append(new_tree.rootEdge)
 					new_tree.bigNode = new_BigNode
 					new_tree.graph = n
+					new_tree.hom_shortest_paths = self.hom_shortest_paths
+					new_tree.syn_shortest_paths = self.syn_shortest_paths
 					new_trees.append(new_tree)
 					break
 		return (new_trees, new_root_edges)
-# 			# remove "root" node, put an edge in its place... these trees shouldn't be rooted! 
+# 			# remove "root" node, put an edge in its place... these trees shouldn't be rooted!
 # 			# then get the newick format of the unrooted tree
 # 			myRoot = None
 # 			if n.has_node(root[1][1]):
@@ -729,7 +734,7 @@ class NJTree:
 # 				matrices.append(NJTree.makeDistanceMatrix(myRoot, n))
 # 				newicks.append(NJTree.toNewick(n))
 # 		return (newicks, matrices)
-	
+
 	@staticmethod
 	def makeDistanceMatrix(root, N):
 		d = nx.shortest_path(N)

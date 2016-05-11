@@ -9,6 +9,7 @@ import numpy
 from collections import Counter
 import logging
 import subprocess
+import argparse
 # import scipy.spatial.distance as distance
 
 DEVNULL = open(os.devnull, 'w')
@@ -36,18 +37,32 @@ def usage():
 
 
 def main(argv):
-	node_dir = argv[0]
-	repo_path = argv[0][:-6]
-	mrca = argv[3]
-	node = argv[3]
-	alpha = float(argv[4])
-	gamma = float(argv[5])
-	gain = float(argv[6])
-	loss = float(argv[7])
-	children = argv[8:]
-	my_dir = node_dir + mrca + "/"
-# 	NO_BREAK_EW = 0.5
-	beta = 0.01
+	usage = "usage: WF_RefineCluster_leaf_centroid_newmatrix.py [options]"
+	parser = argparse.ArgumentParser(usage)
+	parser.add_argument('-dir', dest="node_dir", required=True, help="Path to the \"nodes\" folder. (Required)")
+	parser.add_argument('-node', dest="node", required=True, help="Current node name. (Required)")
+	parser.add_argument('-alpha', type=float, dest="alpha", required=True, help="Synteny weight. (Required)")
+	parser.add_argument('-beta', type=float, dest="beta", required=True,help="Homology weight. (Required)")
+	parser.add_argument('-gamma', type=float, dest="gamma", required=True, help="Gain/Loss weight. (Required)")
+	parser.add_argument('-gain', type=float, dest="gain", required=True, help="Duplication rate for Poisson distribution. (Required)")
+	parser.add_argument('-loss', type=float, dest="loss", required=True, help="Deletion rate for Poisson distribution. (Required)")
+	parser.add_argument('children', nargs='2', required=True, help="Children nodes. (Required)")
+	args = parser.parse_args()
+	
+	repo_path = args.node_dir[:-6]
+	my_dir = args.node_dir + args.mrca + "/"
+	
+# 	node_dir = argv[0]
+# # 	repo_path = argv[0][:-6]
+# 	mrca = argv[3]
+# 	node = argv[3]
+# 	alpha = float(argv[4]) # synteny weight
+# 	gamma = float(argv[5]) # gain/loss weight
+# 	gain = float(argv[6])
+# 	loss = float(argv[7])
+# 	children = argv[8:]
+# # 	NO_BREAK_EW = 0.5
+# 	beta = 0.01 # homology weight
 
 	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
 	logger = logging.getLogger()
@@ -82,22 +97,22 @@ def main(argv):
 	childrenpkls = {}
 	# print "last_tree", last_tree
 	# load locus_mapping files from children
-	for c in children:
-		mapFile = node_dir + c + "/locus_mappings.pkl"
+	for c in args.children:
+		mapFile = args.node_dir + c + "/locus_mappings.pkl"
 		pklFile = open(mapFile, 'rb')
 		pickleMaps[c] = pickle.load(pklFile)
 		pklFile.close()
-		synFile = node_dir + c + "/synteny_data.pkl"
+		synFile = args.node_dir + c + "/synteny_data.pkl"
 		pklFile = open(synFile, 'rb')
 		synteny_data[c] = pickle.load(pklFile)
 		pklFile.close()
 		if c[0] == "L":
-			with open(node_dir + c + "/" + c + ".pkl", "r") as f:
+			with open(args.node_dir + c + "/" + c + ".pkl", "r") as f:
 				childrenpkls[c] = pickle.load(f)
 		else:  # c[0] == "N"
-			with open(node_dir + c + "/pep_data.pkl", "r") as f:
+			with open(args.node_dir + c + "/pep_data.pkl", "r") as f:
 				childrenpkls[c] = pickle.load(f)
-			with open(node_dir + c + "/singletons_pep_data.pkl", "r") as f:
+			with open(args.node_dir + c + "/singletons_pep_data.pkl", "r") as f:
 				childrenpkls[c].update(pickle.load(f))
 		
 # 	old_orphans = open(tree_dir + "orphan_genes.txt", 'r').readlines()
@@ -135,17 +150,17 @@ def main(argv):
 # 			if leaf not in cluster_leaf_count[cluster]:
 # 				cluster_leaf_count[cluster][leaf] = 0
 # 			cluster_leaf_count[cluster][leaf] += 1
-	with open(repo_path + "nodes/" + node + "/trees/gene_to_cluster.pkl", "r") as f:
+	with open(repo_path + "nodes/" + args.node + "/trees/gene_to_cluster.pkl", "r") as f:
 		gene_to_cluster = pickle.load(f)
-	with open(repo_path + "nodes/" + node + "/trees/cluster_to_genes.pkl", "r") as f:
+	with open(repo_path + "nodes/" + args.node + "/trees/cluster_to_genes.pkl", "r") as f:
 		cluster_to_genes = pickle.load(f)
 # 	with open(repo_path + "nodes/" + node + "pep_data.pkl", "r") as f:
 # 		pickleSeqs = pickle.load(f)
 
-	muscle_cmd =["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
-	# muscle_cmd = ["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
-	fasttree_cmd = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
-	# fasttree_cmd = ["/home/kamigiri/tools/FastTreeDouble", "-quiet", "-nosupport"]
+# 	muscle_cmd =["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
+	muscle_cmd = ["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
+# 	fasttree_cmd = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
+	fasttree_cmd = ["/home/kamigiri/tools/FastTreeDouble", "-quiet", "-nosupport"]
 	ok_trees = []
 	
 	for cluster in cluster_to_genes:
@@ -167,15 +182,15 @@ def main(argv):
 # 			stdin_data += ">" + gene + "\n"
 			stdin_data += ">" + gene + "\n"
 			try:
-				if children[0][0] == "L":
-					stdin_data += childrenpkls[children[0]][gene] + "\n"
+				if args.children[0][0] == "L":
+					stdin_data += childrenpkls[args.children[0]][gene] + "\n"
 				else:
-					stdin_data += childrenpkls[children[0]][gene][0].split("\n")[1] + "\n"					
+					stdin_data += childrenpkls[args.children[0]][gene][0].split("\n")[1] + "\n"					
 			except KeyError:
-				if children[1][0] == "L":
-					stdin_data += childrenpkls[children[1]][gene] + "\n"
+				if args.children[1][0] == "L":
+					stdin_data += childrenpkls[args.children[1]][gene] + "\n"
 				else:
-					stdin_data += childrenpkls[children[1]][gene][0].split("\n")[1] + "\n"
+					stdin_data += childrenpkls[args.children[1]][gene][0].split("\n")[1] + "\n"
 			
 		process = subprocess.Popen(muscle_cmd, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = DEVNULL)
 		output = process.communicate(stdin_data)[0]
@@ -269,7 +284,7 @@ def main(argv):
 		unchecked_trees = []
 		# Could probably replace these lines by directly reading the distance matrix file into the list without needing to create a NJ.NJTree
 # 			myTree = NJ.NJTree(hom_mat, syn_mat, mrca, alpha, beta, gamma, gain, loss)
-		myTree = NJ.NJTree(mrca, alpha, beta, gamma, gain, loss)
+		myTree = NJ.NJTree(args.mrca, args.alpha, args.beta, args.gamma, args.gain, args.loss)
 		myTree.buildGraphFromNewDistanceMatrix(hom_matrix, syn_matrix, leaves)
 # 		myTree = NJ.NJTree(tree_file, syn_file, mrca, alpha, beta, gamma, gain, loss)
 # 			d_lines = myTree.readDistanceMatrix()  # TODO this is actually just hom_mat and the only place it is used
@@ -347,7 +362,7 @@ def main(argv):
 		ok_trees.insert(0, [o.rstrip()])
 
 	blast_pep = {}
-	for c in children:
+	for c in args.children:
 		my_blast_pep = open(my_dir + c + ".blast.fa", 'r').readlines()
 		curBlast = ""
 		curPep = ""
@@ -381,7 +396,7 @@ def main(argv):
 		clusterID = ""
 		while len(c) < 6:
 			c = "0" + c
-		clusterID = mrca + "_" + c
+		clusterID = args.mrca + "_" + c
 		newPickleMap[clusterID] = []
 		newSyntenyMap[clusterID] = {'count': 0, 'neighbors': [], 'children': []}
 
@@ -409,7 +424,7 @@ def main(argv):
 					taxa_map[lKid] = 0
 				taxa_map[lKid] += 1
 				if lKid not in pickleSeqs:
-					seqFile = node_dir + lKid + "/" + lKid + ".pkl"
+					seqFile = args.node_dir + lKid + "/" + lKid + ".pkl"
 					pklFile = open(seqFile, 'rb')
 					pickleSeqs[lKid] = pickle.load(pklFile)
 					pklFile.close()

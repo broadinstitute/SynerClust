@@ -18,7 +18,7 @@ import collections
 class Tree:
 	logger = logging.getLogger("Tree")
 
-	def __init__(self, tree_obj, flow_name, blast_eval, num_cores, alpha, gamma, gain, loss, min_best_hit, cmds_per_job, syn_dist, homScale, synScale, numHits, minSynFrac, hamming):
+	def __init__(self, tree_obj, flow_name, blast_eval, num_cores, alpha, beta, gamma, gain, loss, min_best_hit, syn_dist, homScale, synScale, numHits, minSynFrac, hamming):
 		self.tree_obj = tree_obj
 		self.genomeToLocusFile = tree_obj.genomeToLocusFile
 		self.genomeToLocus = tree_obj.genomeToLocus
@@ -29,11 +29,12 @@ class Tree:
 		self.blast_eval = blast_eval
 		self.num_cores = num_cores
 		self.alpha = alpha
+		self.beta = beta
 		self.gamma = gamma
 		self.gain = gain
 		self.loss = loss
 		self.min_best_hit = min_best_hit
-		self.cmds_per_job = cmds_per_job
+# 		self.cmds_per_job = cmds_per_job
 		self.syn_dist = int(syn_dist)
 		self.homScale = homScale
 		self.synScale = synScale
@@ -377,40 +378,40 @@ class Tree:
 		child2 = kids[1]
 
 		syn2_path = self.syn2_path
-		config_file = syn2_path + "WF_NodeFlowTemplate.ini"
+# 		config_file = syn2_path + "WF_NodeFlowTemplate.ini"
 		# config_file = syn2_path+"WF_NewNodeFlowTemplate.ini"
-		template_file = syn2_path + "WF_NodeFlowTemplate.xml"
+# 		template_file = syn2_path + "WF_NodeFlowTemplate.xml"
 		sh_file = syn2_path + "NewNodeShTemplate.sh"
 
-		my_config_file = my_dir + curNode + ".ini"
-		my_template_file = my_dir + curNode + ".xml"
+# 		my_config_file = my_dir + curNode + ".ini"
+# 		my_template_file = my_dir + curNode + ".xml"
 		my_sh_file = my_dir + curNode + ".sh"
 
-		c_file = open(config_file, 'r').read()
-		c_file = c_file.replace('#SYNERGY2_PATH', syn2_path)
-		c_file = c_file.replace('#WORKING_DIR', working_dir)
-		c_file = c_file.replace('#CHILD1', child1)
-		c_file = c_file.replace('#CHILD2', child2)
-		c_file = c_file.replace('#NODE', curNode)
-		c_file = c_file.replace('#ID', cmd_id)
-		c_file = c_file.replace('#BLAST_EVAL', str(self.blast_eval))
-		c_file = c_file.replace('#NUM_CORES', str(self.num_cores))
-		c_file = c_file.replace('#HAMMING', str(self.hamming))
-		c_file = c_file.replace('#CMDS_PER_JOB', str(self.cmds_per_job))
-		c_file = c_file.replace('#ALPHA', str(self.alpha))
-		c_file = c_file.replace('#GAMMA', str(self.gamma))
-		c_file = c_file.replace('#GAIN', str(self.gain))
-		c_file = c_file.replace('#LOSS', str(self.loss))
-		c_file = c_file.replace('#MIN_BEST_HIT', str(self.min_best_hit))
-		c_file = c_file.replace('#NUM_HITS', str(self.num_hits))
-		c_file = c_file.replace('#MIN_SYNTENIC_FRACTION', str(self.min_syn_frac))
-		c_file = c_file.replace('#HOMOLOGY_SCALE', str(self.homScale))
-		c_file = c_file.replace('#SYNTENY_SCALE', str(self.synScale))
-		c_file = c_file.replace('#WORKING_DIR', working_dir)
+# 		c_file = open(config_file, 'r').read()
+# 		c_file = c_file.replace('#SYNERGY2_PATH', syn2_path)
+# 		c_file = c_file.replace('#WORKING_DIR', working_dir)
+# 		c_file = c_file.replace('#CHILD1', child1)
+# 		c_file = c_file.replace('#CHILD2', child2)
+# 		c_file = c_file.replace('#NODE', curNode)
+# 		c_file = c_file.replace('#ID', cmd_id)
+# 		c_file = c_file.replace('#BLAST_EVAL', str(self.blast_eval))
+# 		c_file = c_file.replace('#NUM_CORES', str(self.num_cores))
+# 		c_file = c_file.replace('#HAMMING', str(self.hamming))
+# 		c_file = c_file.replace('#CMDS_PER_JOB', str(self.cmds_per_job))
+# 		c_file = c_file.replace('#ALPHA', str(self.alpha))
+# 		c_file = c_file.replace('#GAMMA', str(self.gamma))
+# 		c_file = c_file.replace('#GAIN', str(self.gain))
+# 		c_file = c_file.replace('#LOSS', str(self.loss))
+# 		c_file = c_file.replace('#MIN_BEST_HIT', str(self.min_best_hit))
+# 		c_file = c_file.replace('#NUM_HITS', str(self.num_hits))
+# 		c_file = c_file.replace('#MIN_SYNTENIC_FRACTION', str(self.min_syn_frac))
+# 		c_file = c_file.replace('#HOMOLOGY_SCALE', str(self.homScale))
+# 		c_file = c_file.replace('#SYNTENY_SCALE', str(self.synScale))
+# 		c_file = c_file.replace('#WORKING_DIR', working_dir)
 
-		my_conf = open(my_config_file, 'w')
-		my_conf.write(c_file)
-		my_conf.close()
+# 		my_conf = open(my_config_file, 'w')
+# 		my_conf.write(c_file)
+# 		my_conf.close()
 
 		s_file = open(sh_file, 'r').read()
 		s_file = s_file.replace('#SYNERGY2_PATH', syn2_path)
@@ -422,13 +423,12 @@ class Tree:
 		s_file = s_file.replace('#BLAST_EVAL', str(self.blast_eval))
 		s_file = s_file.replace('#NUM_CORES', str(self.num_cores))
 		s_file = s_file.replace('#HAMMING', str(self.hamming))
-		s_file = s_file.replace('#CMDS_PER_JOB', str(self.cmds_per_job))
 		s_file = s_file.replace('#ALPHA', str(self.alpha))
+		s_file = s_file.replace('#BETA', str(self.beta))
 		s_file = s_file.replace('#GAMMA', str(self.gamma))
 		s_file = s_file.replace('#GAIN', str(self.gain))
 		s_file = s_file.replace('#LOSS', str(self.loss))
 		s_file = s_file.replace('#MIN_BEST_HIT', str(self.min_best_hit))
-		s_file = s_file.replace('#NUM_HITS', str(self.num_hits))
 		s_file = s_file.replace('#MIN_SYNTENIC_FRACTION', str(self.min_syn_frac))
 		s_file = s_file.replace('#HOMOLOGY_SCALE', str(self.homScale))
 		s_file = s_file.replace('#SYNTENY_SCALE', str(self.synScale))
@@ -438,17 +438,17 @@ class Tree:
 		my_sh.write(s_file)
 		my_sh.close()
 
-		t_file = open(template_file, 'r').read()
-		t_file = t_file.replace('#NODE', curNode)
-		t_file = t_file.replace('#ID', cmd_id)
-		t_file = t_file.replace('#SYNERGY2_PATH', syn2_path)
-		t_file = t_file.replace('#WORKING_DIR', working_dir)
-		t_file = t_file.replace('#CHILD1', child1)
-		t_file = t_file.replace('#CHILD2', child2)
-		t_file = t_file.replace('#WORKING_DIR', working_dir)
-		my_temp = open(my_template_file, 'w')
-		my_temp.write(t_file)
-		my_temp.close()
+# 		t_file = open(template_file, 'r').read()
+# 		t_file = t_file.replace('#NODE', curNode)
+# 		t_file = t_file.replace('#ID', cmd_id)
+# 		t_file = t_file.replace('#SYNERGY2_PATH', syn2_path)
+# 		t_file = t_file.replace('#WORKING_DIR', working_dir)
+# 		t_file = t_file.replace('#CHILD1', child1)
+# 		t_file = t_file.replace('#CHILD2', child2)
+# 		t_file = t_file.replace('#WORKING_DIR', working_dir)
+# 		my_temp = open(my_template_file, 'w')
+# 		my_temp.write(t_file)
+# 		my_temp.close()
 
 	# def makeSingleConsensusFlow(self, working_dir, curNode, prev_cmd_id):
 	# 	ids = prev_cmd_id.split(".")

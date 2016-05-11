@@ -55,7 +55,7 @@ class BlastParse:
 	# hits are scored by cumulative percent identity
 	# synData is unused
 	@staticmethod
-	def scoreHits(hits, headers, min_best_hit, synData, numHits, minSynFrac):
+	def scoreHits(hits, headers, min_best_hit, synData, minSynFrac):
 		# SYN_FRAC = minSynFrac
 		# NUM_HITS = numHits
 		bestHits = nx.Graph()
@@ -120,7 +120,7 @@ class BlastParse:
 		return (bestHits, bestDirHits)
 
 	@staticmethod
-	def makePutativeClusters(bestHits, tree_dir, synData, homScale, synScale, bestDirHits, numHits):
+	def makePutativeClusters(bestHits, tree_dir, synData, bestDirHits):
 		# numThreads = 4
 		# MAX_HITS = numHits
 		BlastParse.logger.info("len(best hits nodes) %d %d" % (len(bestHits.nodes()), len(bestHits.edges())))

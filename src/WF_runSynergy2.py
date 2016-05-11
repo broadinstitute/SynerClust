@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 
-import sys, os, getopt, logging
-import COBRA_Repo_Handling, WF_Initialization, TreeLib
+import sys
+import os
+# import getopt
+import argparse
+import logging
+import COBRA_Repo_Handling
+import WF_Initialization
+import TreeLib
 import networkx as nx
 
 def usage():
@@ -65,99 +71,72 @@ def main(argv):
 	logger.addHandler(ch)
 	logger.info('Started')
 
-	cobra_repo = ""
-	cobra_repo_path = ""
-	working_dir = ""
-	species_tree = ""
-	flow_name = ""
-	genome_dir = ""
-	blast_eval = #BLAST_EVAL_DEFAULT
-	num_cores = #NUM_CORES_DEFAULT
-	cmds_per_job = 500
-	synteny_window = 6000
-	alpha = 10.0
-	gamma = 10.0
-	gain = 0.05
-	loss = 0.05
-	min_best_hit = 0.5 
-	homScale = 1.0
-	synScale = 1.0
-	numHits = 5
-	minSynFrac = 0.5
-	distribute = 1
-	hamming = 0.6
-	locus_file = ""	
-	try:
-		opts, args = getopt.getopt(argv, "r:w:t:f:g:G:L:l:m:b:c:n:s:H:S:l:T:F:D:h",["repo=","working=","tree=","flow=","gamma=","gain=","loss=","min_best_hit=","blast_eval=","cmds_per_job=","num_cores=","synteny_window=","homology_scale=","synteny_scale=","locus=","top_hits=","min_syntenic_fraction=","hamming=","help"])
+# 	cobra_repo = ""
+# 	cobra_repo_path = ""
+# 	working_dir = ""
+# 	species_tree = ""
+# 	flow_name = ""
+# 	genome_dir = ""	
+# 	blast_eval = #BLAST_EVAL_DEFAULT
+# 	num_cores = #NUM_CORES_DEFAULT
+# 	cmds_per_job = 500
+# 	synteny_window = 6000
+# 	alpha = 10.0
+# 	beta = 10.0
+# 	gamma = 10.0
+# 	gain = 0.05
+# 	loss = 0.05
+# 	min_best_hit = 0.5 
+# 	homScale = 1.0
+# 	synScale = 1.0
+# 	numHits = 5
+# 	minSynFrac = 0.5
+# 	hamming = 0.6
+# 	locus_file = ""	
+# 	try:
+# 		opts, args = getopt.getopt(argv, "r:w:t:f:g:G:L:l:m:b:c:n:s:H:S:l:T:F:D:h",["repo=","working=","tree=","flow=","gamma=","gain=","loss=","min_best_hit=","blast_eval=","cmds_per_job=","num_cores=","synteny_window=","homology_scale=","synteny_scale=","locus=","top_hits=","min_syntenic_fraction=","hamming=","help"])
+# 
+# 	except getopt.GetoptError:
+# 		usage()
+# 		sys.exit(2)
 
-	except getopt.GetoptError:
-		usage()
-		sys.exit(2)
-	for opt, arg in opts:
-		if opt in ("-t","--tree"):
-			species_tree = arg
-		elif opt in ("-r","--repo"):
-			cobra_repo = arg	
-			cobra_repo_path = "/".join(cobra_repo.split("/")[0:-1])+"/"
-		elif opt in ("-w","--working"):
-			working_dir = arg	
-			if not working_dir[-1] == "/":
-				working_dir = working_dir+"/"
-			genome_dir = working_dir + "genomes/"
-			#set up genomes folder in synergy2 directory
-			if not "genomes" in os.listdir(working_dir):
-				os.system( "mkdir "+genome_dir)
-			node_dir = working_dir + "nodes/"
-			if not "nodes" in os.listdir(working_dir):
-				os.system("mkdir "+node_dir)
-		elif opt in ("-f","--flow"):
-			flow_name = arg	
-		elif opt in ("-a","--alpha"):
-			alpha = float(arg)
-		elif opt in ("-g","--gamma"):
-			gamma = float(arg)
-		elif opt in ("-G","--gain"):
-			gain = float(arg)
-		elif opt in ("-L","--loss"):
-			loss = float(arg)
-		elif opt in ("-m","--min_best_hit"):
-			min_best_hit = float(arg)
-		elif opt in ("-b","--blast_eval"):
-			blast_eval = float(arg)
-		elif opt in ("-l","--locus"):
-			locus_file = arg
-		elif opt in ("-c","--cmds_per_job"):
-			cmds_per_job = int(arg)
-		elif opt in ("-n","--num_cores"):
-			num_cores = int(arg)	
-		elif opt in ("-F","--min_syntenic_fraction"):
-			minSynFrac = float(arg)
-		elif opt in ("-D","--hamming"):
-			hamming = float(arg)
-		elif opt in ("-T","--top_hits"):
-			numHits = int(arg)	
-		elif opt in ("-s","--synteny_window"):
-			synteny_window = int(arg)
-		elif opt in ("-H","--homology_scale"):
-			myArg = float(arg)
-			if not (myArg>0.0):
-				sys.exit("-H or --homology_scale must be greater than 0.0 and less than or equal to 1.0.")
-			else:
-				homScale = myArg
-		elif opt in ("-S","--synteny_scale"):
-			myArg = float(arg)
-			if not (myArg>0.0):
-				sys.exit("-S or --synteny_scale must be greater than 0.0 and less than or equal to 1.0.")
-			else:
-				synScale = myArg
-		elif opt in ("-h","--help"):
-			sys.exit(usage())
+	distribute = 1
+
+	usage = "usage: WF_RefineCluster_leaf_centroid_newmatrix.py [options]"
+	parser = argparse.ArgumentParser(usage)
+	parser.add_argument('-t', '--tree', dest="species_tree", required=True, help="Species tree. (Required)")
+	parser.add_argument('-r', '--repo', dest="cobra_repo", required=True, help="Cobra repository. (Required)")
+	parser.add_argument('-w', '--working', dest="working_dir", required=True, help="Working directory. (Required)")
+	parser.add_argument('-f', '--flow', dest="flow_name", default="default_flow", help="Flow Name.")
+	parser.add_argument('-a', '--alpha', type=float, dest="alpha", default=10.0, help="Synteny weight")
+	parser.add_argument('-b', '--beta', type=float, dest="beta", default=10.0, help="Homology weight")
+	parser.add_argument('-g', '--gamma', type=float, dest="gamme", default=10.0, help="Gain/Loss weight.")
+	parser.add_argument('-G', '--gain', type=float, dest="gain", default=0.05, help="Duplication rate for Poisson distribution.")
+	parser.add_argument('-L', '--loss', type=float, dest="loss", default=0.05, help="Loss rate for Poisson distribution.")
+	parser.add_argument('-m', '--min_best_hit', type=float, dest="min_best_hit", default=0.5, help="Minimal % of match length for Blastp hits compared to best one.")
+	parser.add_argument('-B', '--blast_eval', type=float, dest="blast_eval", default=#BLAST_EVAL_DEFAULT, help="Minimal e-value for Blastp hits.")
+	parser.add_argument('-l', '--locus', dest="locus_file", default="", help="Locus file.")
+	parser.add_argument('-n', '--num_cores', type=int, dest="num_cores", default=#NUM_CORE_DEFAULT, help="Locus file.")
+	parser.add_argument('-F', '--min_syntenic_fraction', type=float, dest="minSynFrac", default=0.5, help="Minimal syntenic fraction.")
+	parser.add_argument('-D', '--hamming', type=float, dest="hamming", default=0.6, help="Hamming distance for representative selection.")
+	parser.add_argument('-s', '--synteny_window', type=int, dest="synteny_window", default=6000, help="Size of the syntenic window.")
+	args = parser.parse_args()
+	
+	if not args.working_dir[-1] == "/":
+		args.working_dir = args.working_dir + "/"
+	genome_dir = args.working_dir + "genomes/"
+	#set up genomes folder in synergy2 directory
+	if not "genomes" in os.listdir(args.working_dir):
+		os.system( "mkdir " + genome_dir)
+	node_dir = args.working_dir + "nodes/"
+	if not "nodes" in os.listdir(args.working_dir):
+		os.system("mkdir " + node_dir)
 		
 	#read COBRA repository and set up file system
-	myRepo = COBRA_Repo_Handling.RepoParse(cobra_repo)
-	myRepo.parseRepoFile(cobra_repo_path)
-	if len(locus_file)>0:
-		myRepo.readLocusTagFile(locus_file)
+	myRepo = COBRA_Repo_Handling.RepoParse(args.cobra_repo)
+	myRepo.parseRepoFile(args.cobra_repo_path)
+	if len(args.locus_file)>0:
+		myRepo.readLocusTagFile(args.locus_file)
 		myRepo.assignLocusTags()
 		myRepo.writeLocusTagFile(genome_dir)
 	elif "locus_tag_file.txt" in os.listdir(genome_dir):
@@ -168,7 +147,7 @@ def main(argv):
 		myRepo.assignLocusTags()
 		myRepo.writeLocusTagFile(genome_dir)
 	
-	retVal = myRepo.makeGenomeDirectories(genome_dir,distribute,synteny_window)
+	retVal = myRepo.makeGenomeDirectories(genome_dir, distribute, args.synteny_window)
 	if retVal:
 		#currently this will never happen, but if you are doing a whole bunch of genomes it may become necessary
 		sys.exit("Launch this command file on the grid: "+ retVal)
@@ -176,7 +155,7 @@ def main(argv):
 		
 	#read species tree
 	logger.debug("init tree lib")
-	myTree = TreeLib.Tree(species_tree, genome_dir+"locus_tag_file.txt")
+	myTree = TreeLib.Tree(args.species_tree, genome_dir+"locus_tag_file.txt")
 	logger.info("reading genome to locus")
 	myTree.readGenomeToLocusFile()
 	logger.info("reading tree")
@@ -197,11 +176,10 @@ def main(argv):
 	logger.info("rooting")
 	logger.info(root_edge)
 	myTree.rootTree(root_edge)
-	#~ myTree.rootByMidpoint()
 	logger.info("initializing")
-	myInitTree = WF_Initialization.Tree(myTree, flow_name,blast_eval, num_cores, alpha, gamma, gain, loss, min_best_hit, cmds_per_job,synteny_window,homScale,synScale,numHits, minSynFrac,hamming)
+	myInitTree = WF_Initialization.Tree(myTree, args.flow_name, args.blast_eval, args.num_cores, args.alpha, args.beta, args.gamma, args.gain, args.loss, args.min_best_hit, args.synteny_window, args.homScale, args.synScale, args.minSynFrac, args.hamming)
 	logger.info("dependicizing")
-	myInitTree.calculateNodeDependencies(working_dir)
+	myInitTree.calculateNodeDependencies(args.working_dir)
 	myInitTree.writeLocusTagFile()
 
 	logger.info('Finished')
