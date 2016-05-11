@@ -18,7 +18,7 @@ import collections
 class Tree:
 	logger = logging.getLogger("Tree")
 
-	def __init__(self, tree_obj, flow_name, blast_eval, num_cores, alpha, beta, gamma, gain, loss, min_best_hit, syn_dist, numHits, minSynFrac, hamming):
+	def __init__(self, tree_obj, flow_name, blast_eval, num_cores, alpha, beta, gamma, gain, loss, min_best_hit, syn_dist, minSynFrac, hamming):
 		self.tree_obj = tree_obj
 		self.genomeToLocusFile = tree_obj.genomeToLocusFile
 		self.genomeToLocus = tree_obj.genomeToLocus
@@ -39,7 +39,7 @@ class Tree:
 # 		self.homScale = homScale
 # 		self.synScale = synScale
 		self.flow_name = flow_name
-		self.num_hits = numHits
+# 		self.num_hits = numHits
 		self.min_syn_frac = minSynFrac
 		self.hamming = hamming
 		self.syn2_path = "#SYNERGY2_PATH"
