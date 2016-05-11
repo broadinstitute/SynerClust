@@ -105,7 +105,7 @@ def main(argv):
 	usage = "usage: WF_RefineCluster_leaf_centroid_newmatrix.py [options]"
 	parser = argparse.ArgumentParser(usage)
 	parser.add_argument('-t', '--tree', dest="species_tree", required=True, help="Species tree. (Required)")
-	parser.add_argument('-r', '--repo', dest="cobra_repo_path", required=True, help="Cobra repository. (Required)")
+	parser.add_argument('-r', '--repo', dest="cobra_repo", required=True, help="Cobra repository. (Required)")
 	parser.add_argument('-w', '--working', dest="working_dir", required=True, help="Working directory. (Required)")
 	parser.add_argument('-f', '--flow', dest="flow_name", default="default_flow", help="Flow Name.")
 	parser.add_argument('-a', '--alpha', type=float, dest="alpha", default=10.0, help="Synteny weight")
