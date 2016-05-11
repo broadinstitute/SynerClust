@@ -110,7 +110,7 @@ def main(argv):
 	parser.add_argument('-f', '--flow', dest="flow_name", default="default_flow", help="Flow Name.")
 	parser.add_argument('-a', '--alpha', type=float, dest="alpha", default=10.0, help="Synteny weight")
 	parser.add_argument('-b', '--beta', type=float, dest="beta", default=10.0, help="Homology weight")
-	parser.add_argument('-g', '--gamma', type=float, dest="gamme", default=10.0, help="Gain/Loss weight.")
+	parser.add_argument('-g', '--gamma', type=float, dest="gamma", default=10.0, help="Gain/Loss weight.")
 	parser.add_argument('-G', '--gain', type=float, dest="gain", default=0.05, help="Duplication rate for Poisson distribution.")
 	parser.add_argument('-L', '--loss', type=float, dest="loss", default=0.05, help="Loss rate for Poisson distribution.")
 	parser.add_argument('-m', '--min_best_hit', type=float, dest="min_best_hit", default=0.5, help="Minimal % of match length for Blastp hits compared to best one.")
