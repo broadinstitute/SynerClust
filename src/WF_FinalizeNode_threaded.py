@@ -241,6 +241,9 @@ if __name__ == "__main__":
 	if len(argv) > 3:
 		h_dist = float(argv[3])
 
+	if "NODE_COMPLETE" in os.listdir(my_dir):
+		sys.exit(0)
+
 	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
 	logger = logging.getLogger()
 	logging.basicConfig(filename=node_dir + 'FinalizeNode_threaded.log', format=FORMAT, filemode='w', level=logging.DEBUG)
