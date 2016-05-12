@@ -29,14 +29,14 @@ import argparse
 # 	sys.exit(1)
 
 
-def main(argv):
+def main():
 	usage = "usage: WF_RefineCluster_leaf_centroid_newmatrix.py [options]"
 	parser = argparse.ArgumentParser(usage)
 	parser.add_argument('-dir', dest="node_dir", required=True, help="Path to the \"nodes\" folder. (Required)")
 	parser.add_argument('-node', dest="node", required=True, help="Current node name. (Required)")
 	parser.add_argument('-m', '--min_best_hit', type=float, dest="min_best_hit", required=True, help="Minimal % of match length for Blastp hits compared to best one.")
 	parser.add_argument('-F', '--min_syntenic_fraction', type=float, dest="minSynFrac", required=True, help="Minimal syntenic fraction.")
-	parser.add_argument('children', nargs='2', required=True, help="Children nodes. (Required)")
+	parser.add_argument('children', nargs=2, help="Children nodes. (Required)")
 	args = parser.parse_args()
 	
 # 	node_dir = argv[0]

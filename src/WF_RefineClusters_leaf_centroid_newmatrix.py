@@ -36,7 +36,7 @@ def usage():
 # 			load_leaves(leavespkls, locus_tag, leaf)
 
 
-def main(argv):
+def main():
 	usage = "usage: WF_RefineCluster_leaf_centroid_newmatrix.py [options]"
 	parser = argparse.ArgumentParser(usage)
 	parser.add_argument('-dir', dest="node_dir", required=True, help="Path to the \"nodes\" folder. (Required)")
@@ -46,11 +46,13 @@ def main(argv):
 	parser.add_argument('-gamma', type=float, dest="gamma", required=True, help="Gain/Loss weight. (Required)")
 	parser.add_argument('-gain', type=float, dest="gain", required=True, help="Duplication rate for Poisson distribution. (Required)")
 	parser.add_argument('-loss', type=float, dest="loss", required=True, help="Deletion rate for Poisson distribution. (Required)")
-	parser.add_argument('children', nargs='2', required=True, help="Children nodes. (Required)")
+	parser.add_argument('children', nargs=2, help="Children nodes. (Required)")
 	args = parser.parse_args()
 	
 	repo_path = args.node_dir[:-6]
-	my_dir = args.node_dir + args.mrca + "/"
+	mrca = args.node
+
+	my_dir = args.node_dir + mrca + "/"
 	
 # 	node_dir = argv[0]
 # # 	repo_path = argv[0][:-6]
@@ -157,10 +159,10 @@ def main(argv):
 # 	with open(repo_path + "nodes/" + node + "pep_data.pkl", "r") as f:
 # 		pickleSeqs = pickle.load(f)
 
-# 	muscle_cmd =["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
-	muscle_cmd = ["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
-# 	fasttree_cmd = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
-	fasttree_cmd = ["/home/kamigiri/tools/FastTreeDouble", "-quiet", "-nosupport"]
+ 	muscle_cmd = ["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
+#	muscle_cmd = ["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
+ 	fasttree_cmd = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
+#	fasttree_cmd = ["/home/kamigiri/tools/FastTreeDouble", "-quiet", "-nosupport"]
 	ok_trees = []
 	
 	for cluster in cluster_to_genes:
@@ -284,7 +286,7 @@ def main(argv):
 		unchecked_trees = []
 		# Could probably replace these lines by directly reading the distance matrix file into the list without needing to create a NJ.NJTree
 # 			myTree = NJ.NJTree(hom_mat, syn_mat, mrca, alpha, beta, gamma, gain, loss)
-		myTree = NJ.NJTree(args.mrca, args.alpha, args.beta, args.gamma, args.gain, args.loss)
+		myTree = NJ.NJTree(mrca, args.alpha, args.beta, args.gamma, args.gain, args.loss)
 		myTree.buildGraphFromNewDistanceMatrix(hom_matrix, syn_matrix, leaves)
 # 		myTree = NJ.NJTree(tree_file, syn_file, mrca, alpha, beta, gamma, gain, loss)
 # 			d_lines = myTree.readDistanceMatrix()  # TODO this is actually just hom_mat and the only place it is used
@@ -396,7 +398,7 @@ def main(argv):
 		clusterID = ""
 		while len(c) < 6:
 			c = "0" + c
-		clusterID = args.mrca + "_" + c
+		clusterID = mrca + "_" + c
 		newPickleMap[clusterID] = []
 		newSyntenyMap[clusterID] = {'count': 0, 'neighbors': [], 'children': []}
 
@@ -516,7 +518,4 @@ def main(argv):
 	cr.close()
 
 if __name__ == "__main__":
-	if len(sys.argv) == 1:
-		usage()
-	else:
-		main(sys.argv[1:])
+	main()
