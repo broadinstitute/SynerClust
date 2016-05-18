@@ -16,4 +16,4 @@ reuse -q Python-2.7 Java-1.7
 #SYNERGY2_PATHWF_RunBlast.py #WORKING_DIRnodes/ #NODE #BLAST_EVAL #NUM_CORES #CHILD1 #CHILD2
 #SYNERGY2_PATHWF_MakeRoughClusters.py -dir #WORKING_DIRnodes/ -node #NODE -m #MIN_BEST_HIT -F #MIN_SYNTENIC_FRACTION #CHILD1 #CHILD2
 #SYNERGY2_PATHWF_RefineClusters_leaf_centroid_newmatrix.py -dir #WORKING_DIRnodes/ -node #NODE -alpha #ALPHA -beta #BETA -gamma #GAMMA -gain #GAIN -loss #LOSS #CHILD1 #CHILD2
-#SYNERGY2_PATHWF_FinalizeNode_threaded.py #WORKING_DIRnodes/#NODE/ #NODE #NUM_CORES #HAMMING
+#SYNERGY2_PATHWF_FinalizeNode_threaded.py -dir #WORKING_DIRnodes/#NODE/ -node #NODE -t #NUM_CORES -dist #HAMMING

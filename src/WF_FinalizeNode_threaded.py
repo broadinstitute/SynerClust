@@ -11,14 +11,15 @@ import subprocess
 import networkx as nx
 import median_of_medians
 import numpy
+import argparse
 
 DEVNULL = open(os.devnull, 'w')
-DIST_THRESHOLD = 0.7
+# DIST_THRESHOLD = 0.7
 # REGEX = re.compile("(\([a-zA-Z0-9-_:;.]+,[a-zA-Z0-9-_:;.]+\))")
-MUSCLE_CMD =["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
-# MUSCLE_CMD = ["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]  # kept for debugging
-FASTTREE_CMD = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
-# FASTTREE_CMD = ["/home/kamigiri/tools/FastTreeDouble", "-quiet", "-nosupport"]
+# MUSCLE_CMD =["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
+MUSCLE_CMD = ["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]  # kept for debugging
+# FASTTREE_CMD = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
+FASTTREE_CMD = ["/home/kamigiri/tools/FastTreeDouble", "-quiet", "-nosupport"]
 OUTPUT_LOCK = RLock()
 
 
@@ -35,7 +36,7 @@ def get_fasttree(stdin_data):
 	return (output1, output2)
 
 
-def makeConsensus(tq, hamm_dist, consensus_pep):
+def makeConsensus(tq, dist_threshold, consensus_pep):
 	logger = logging.getLogger()
 	while True:
 		try:
@@ -128,12 +129,12 @@ def makeConsensus(tq, hamm_dist, consensus_pep):
 						leaves.remove(leaves[j-i])
 						i += 1
 					elif index < j:
-						if dist_matrix[(j * (j - 1) / 2) + index] < DIST_THRESHOLD:
+						if dist_matrix[(j * (j - 1) / 2) + index] < dist_threshold:
 							to_remove[i] = j
 							leaves.remove(leaves[j-i])
 							i += 1
 					else:
-						if dist_matrix[(index * (index - 1) / 2) + j] < DIST_THRESHOLD:
+						if dist_matrix[(index * (index - 1) / 2) + j] < dist_threshold:
 							to_remove[i] = j
 							leaves.remove(leaves[j-i])
 							i += 1
@@ -225,47 +226,56 @@ def makeConsensus(tq, hamm_dist, consensus_pep):
 			break
 
 if __name__ == "__main__":
-	argv = []
-	if len(sys.argv) == 1:
-		usage()
-	else:
-		argv = sys.argv[1:]
+# 	argv = []
+# 	if len(sys.argv) == 1:
+# 		usage()
+# 	else:
+# 		argv = sys.argv[1:]
+	usage = "usage: WF_FinalizeNode_threaded.py [options]"
+	parser = argparse.ArgumentParser(usage)
+	parser.add_argument('-dir', dest="node_dir", required=True, help="Path to the \"nodes\" folder. (Required)")
+	parser.add_argument('-node', dest="node", required=True, help="Current node name. (Required)")
+	parser.add_argument('-t', type=int, dest="numThreads", default=4, help="Number of threads to use. (default = 4)")
+	parser.add_argument('-dist', type=float, dest="dist", required=True, help="Branch distance threshold. (Required)")
+					
+	args = parser.parse_args()
+	
 	# after consensus sequences are generated, concatenates them into one big file, NODE.pep, and creates a NODE_COMPLETE file
-	node_dir = argv[0]
-	node = argv[1]
-	fileDir = node_dir + "clusters/"
-	nThreads = int(argv[2])
-	numThreads = min(nThreads, 4)
-	chunk = 25
-	h_dist = 0.6
-	if len(argv) > 3:
-		h_dist = float(argv[3])
+# 	node_dir = argv[0]
+# 	node = argv[1]
+	fileDir = args.node_dir + "clusters/"
+# 	nThreads = int(argv[2])
+# 	numThreads = min(nThreads, 4)
+# 	chunk = 25
+# 	h_dist = 0.6
+# 	if len(argv) > 3:
+# 		h_dist = float(argv[3])
 
-	if "NODE_COMPLETE" in os.listdir(node_dir):
+	if "NODE_COMPLETE" in os.listdir(args.node_dir):
 		sys.exit(0)
 
 	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
 	logger = logging.getLogger()
-	logging.basicConfig(filename=node_dir + 'FinalizeNode_threaded.log', format=FORMAT, filemode='w', level=logging.DEBUG)
+	logging.basicConfig(filename=args.node_dir + 'FinalizeNode_threaded.log', format=FORMAT, filemode='w', level=logging.DEBUG)
 	# add a new Handler to print all INFO and above messages to stdout
 	ch = logging.StreamHandler(sys.stdout)
 	ch.setLevel(logging.INFO)
 	logger.addHandler(ch)
 	logger.info('Started')
 
-	pklPep = node_dir + "pep_data.pkl"
+	pklPep = args.node_dir + "pep_data.pkl"
 	sdat = open(pklPep, 'rb')
 	pickleSeqs = pickle.load(sdat)
 	sdat.close()
 
 	notOKQ = Queue(0)
-	consensus_pep = node_dir + node + ".pep"
+	consensus_pep = args.node_dir + args.node + ".pep"
 	os.system("rm " + consensus_pep)  # since the file is opened in append mode every time, we need to delete anything from a previous run
 
 # 	with open("all_clusters_cons_pep_data.pkl") as f:
 # 		all_pep_pkl = pickle.load(f)
 
-	processes = [Process(target=makeConsensus, args=(notOKQ, h_dist, consensus_pep)) for i in range(numThreads)]
+	processes = [Process(target=makeConsensus, args=(notOKQ, args.dist, consensus_pep)) for i in range(args.numThreads)]
 
 	for clusterID in pickleSeqs:
 		notOKQ.put((pickleSeqs[clusterID], clusterID))
@@ -280,10 +290,10 @@ if __name__ == "__main__":
 		logger.info("Finished %s" % (p.pid))
 
 	logger.info("All consensus sequences accounted for.")
-	os.system("cat " + node_dir + "clusters/singletons.cons.pep >> " + consensus_pep)  # ">>" to append
+	os.system("cat " + args.node_dir + "clusters/singletons.cons.pep >> " + consensus_pep)  # ">>" to append
 	logger.info("Made pep file")
 
-	node_done_file = node_dir + "NODE_COMPLETE"
+	node_done_file = args.node_dir + "NODE_COMPLETE"
 	cr = open(node_done_file, 'w')
 	cr.write("Way to go!\n")
 	cr.close()

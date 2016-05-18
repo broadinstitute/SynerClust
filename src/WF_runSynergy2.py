@@ -118,7 +118,7 @@ def main(argv):
 	parser.add_argument('-l', '--locus', dest="locus_file", default="", help="Locus file.")
 	parser.add_argument('-n', '--num_cores', type=int, dest="num_cores", default=#NUM_CORES_DEFAULT, help="Locus file.")
 	parser.add_argument('-F', '--min_syntenic_fraction', type=float, dest="minSynFrac", default=0.5, help="Minimal syntenic fraction.")
-	parser.add_argument('-D', '--hamming', type=float, dest="hamming", default=0.6, help="Hamming distance for representative selection.")
+	parser.add_argument('-D', '--hamming', type=float, dest="hamming", default=1.2, help="Hamming distance for representative selection.")
 	parser.add_argument('-s', '--synteny_window', type=int, dest="synteny_window", default=6000, help="Size of the syntenic window.")
 	args = parser.parse_args()
 	
