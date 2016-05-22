@@ -34,7 +34,9 @@ class BlastSegment:
 	# lower means more identity
 	def setAdjPID(self):
 		# percent of the shortest sequence that the blast result represents
-		percent = float(self.length) / float(min(self.qLength, self.tLength))  # mod for big BLAST
+# 		percent = float(self.length) / float(min(self.qLength, self.tLength))  # mod for big BLAST
+		# changed to having an adjustement based on the size of the biggest sequence because ~100aa protein could have high match to ~2000aa protein, which is probably an artifact
+		percent = float(self.length) / float(max(self.qLength, self.tLength))
 		self.adjPID = self.pID * percent
 		self.score = (2.0 - self.adjPID) * 100000.0
 
