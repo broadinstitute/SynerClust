@@ -323,15 +323,17 @@ class Tree:
 				queue.append([e[1], count, []])  # add child to the queue (~breadth first search)
 				current[2].append(count)  # add child to parent dependency
 				count += 1
-		with open(working_dir + "uger_jobs.sh", "w") as out:
-			out.write("#! /bin/bash\n\nTIME=$(date +%s)\n")
-			while len(stack) > 0:
-				current = stack.pop()
-				if current[0][0] != "L":  # not a leaf
-					out.write("qsub -N j${TIME}" + str(current[1]))
-					if len(current[2]) != 0:
-						out.write(" -hold_jid j${TIME}" + str(current[2][0]) + ",j${TIME}" + str(current[2][1]))
-					out.write(" " + working_dir + "nodes/" + str(current[0]) + "/" + str(current[0]) + ".sh\n")
+		with open(working_dir + "uger_jobs.sh", "w") as uge_out:
+			with open(working_dir + "jobs.sh", "w") as out:
+				uge_out.write("#! /bin/bash\n\nTIME=$(date +%s)\n")
+				while len(stack) > 0:
+					current = stack.pop()
+					if current[0][0] != "L":  # not a leaf
+						uge_out.write("qsub -N j${TIME}" + str(current[1]))
+						if len(current[2]) != 0:
+							uge_out.write(" -hold_jid j${TIME}" + str(current[2][0]) + ",j${TIME}" + str(current[2][1]))
+						uge_out.write(" " + working_dir + "nodes/" + str(current[0]) + "/" + str(current[0]) + "_uge.sh\n")
+						out.write(working_dir + "nodes/" + str(current[0]) + "/" + str(current[0]) + ".sh\n")
 		os.chmod(working_dir + "uger_jobs.sh", 0775)
 		all_proc_nodes = []
 		serial_sets = {}
@@ -381,10 +383,12 @@ class Tree:
 # 		config_file = syn2_path + "WF_NodeFlowTemplate.ini"
 		# config_file = syn2_path+"WF_NewNodeFlowTemplate.ini"
 # 		template_file = syn2_path + "WF_NodeFlowTemplate.xml"
-		sh_file = syn2_path + "NewNodeShTemplate.sh"
+		sh_uge_file = syn2_path + "NewNodeShTemplate.sh"
+		sh_file = syn2_path + "NewNodeTemplate.sh"
 
 # 		my_config_file = my_dir + curNode + ".ini"
 # 		my_template_file = my_dir + curNode + ".xml"
+		my_sh_uge_file = my_dir + curNode + "_uge.sh"
 		my_sh_file = my_dir + curNode + ".sh"
 
 # 		c_file = open(config_file, 'r').read()
@@ -412,6 +416,31 @@ class Tree:
 # 		my_conf = open(my_config_file, 'w')
 # 		my_conf.write(c_file)
 # 		my_conf.close()
+
+		s_file = open(sh_uge_file, 'r').read()
+		s_file = s_file.replace('#SYNERGY2_PATH', syn2_path)
+		s_file = s_file.replace('#WORKING_DIR', working_dir)
+		s_file = s_file.replace('#CHILD1', child1)
+		s_file = s_file.replace('#CHILD2', child2)
+		s_file = s_file.replace('#NODE', curNode)
+		s_file = s_file.replace('#ID', cmd_id)
+		s_file = s_file.replace('#BLAST_EVAL', str(self.blast_eval))
+		s_file = s_file.replace('#NUM_CORES', str(self.num_cores))
+		s_file = s_file.replace('#HAMMING', str(self.hamming))
+		s_file = s_file.replace('#ALPHA', str(self.alpha))
+		s_file = s_file.replace('#BETA', str(self.beta))
+		s_file = s_file.replace('#GAMMA', str(self.gamma))
+		s_file = s_file.replace('#GAIN', str(self.gain))
+		s_file = s_file.replace('#LOSS', str(self.loss))
+		s_file = s_file.replace('#MIN_BEST_HIT', str(self.min_best_hit))
+		s_file = s_file.replace('#MIN_SYNTENIC_FRACTION', str(self.min_syn_frac))
+# 		s_file = s_file.replace('#HOMOLOGY_SCALE', str(self.homScale))
+# 		s_file = s_file.replace('#SYNTENY_SCALE', str(self.synScale))
+		s_file = s_file.replace('#WORKING_DIR', working_dir)
+
+		my_sh = open(my_sh_uge_file, 'w')
+		my_sh.write(s_file)
+		my_sh.close()
 
 		s_file = open(sh_file, 'r').read()
 		s_file = s_file.replace('#SYNERGY2_PATH', syn2_path)
