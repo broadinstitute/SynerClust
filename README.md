@@ -22,8 +22,22 @@ default number of treads to use  </code></pre>
 	
 
 You can then install SynerClust by running the following command from the root folder :
-	python INSTALL.py < commands.install
+<code><pre>python INSTALL.py < commands.install</code></pre>
 
+
+#Input Data#
+data_catalog.txt should be formatted as the following example :
+<code><pre>
+//
+Genome	Esch_coli_H296
+Sequence	Esch_coli_H296/Esch_coli_H296.genome
+Annotation	Esch_coli_H296/Esch_coli_H296_PRODIGAL_2.annotation.gff3
+//
+Genome	Esch_coli_H378_V1
+Sequence	Esch_coli_H378_V1/Esch_coli_H378_V1.genome
+Annotation	Esch_coli_H378_V1/Esch_coli_H378_V1_PRODIGAL_2.annotation.gff3
+//
+</code></pre>
 
 	
 #Running#
