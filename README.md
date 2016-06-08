@@ -9,7 +9,7 @@ SynerClust README
 
 - FastTree http://meta.microbesonline.org/fasttree/#Install  
 	For FastTree, it is best to download the C source code and compile it using the following command line :  
-		gcc -DUSE_DOUBLE -O3 -finline-functions -funroll-loops -Wall -o FastTree FastTree.c -lm  
+<pre><code>gcc -DUSE_DOUBLE -O3 -finline-functions -funroll-loops -Wall -o FastTree FastTree.c -lm </pre></code>
 
 
 #Installation#
@@ -61,13 +61,16 @@ You can optionally add settings as in this example with default values :
 <pre><code>-a 1.0 -b 0.01 -g 5.0 -G 0.05 -L 0.05 -D 1.2</pre></code>
 
 You then need to run the script indicated :
-<pre><code>python uger_auto_submit_simple.py -f genomes/needed_extractions.cmd.txt -t TMP_FOLDER</pre></code>
+<pre><code>python path/to/SynerClust/uger_auto_submit_simple.py -f genomes/needed_extractions.cmd.txt -t TMP_FOLDER</pre></code>
 
 Then re-run the first command
 <pre><code>path/to/SynerClust/bin/WF_runSynergy2.py -r path/to/data_catalog.txt -w working/directory/ -t path/to/newick/tree.nwk</pre></code>
 
 You can then start the actual computation (in part parallelizable on the grid) :
 <pre><code>./uger_jobs.sh</pre></code>
+
+If they are more jobs than your queue allows, run :
+<pre><code>path/to/SynerClust/uger_auto_submit.py -f ./uger_jobs.sh -l queue_size_limit</pre></code>
 
 Once all jobs are finished, to have an easy to read output of the clusters, run :
 <pre><code>path/to/SynerClust/bin/ClusterPostProcessing.py genomes/ nodes/N_**********_***************/locus_mappings.pkl n</pre></code>
