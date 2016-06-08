@@ -2,7 +2,7 @@ SynerClust README
 
 
 Dependencies
-- Python-2.6 or higher
+- Python-2.7 or higher
 - NetworkX (Python package) http://networkx.github.io/
 - MUSCLE http://www.drive5.com/muscle/downloads.htm
 - Blast+ ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/
