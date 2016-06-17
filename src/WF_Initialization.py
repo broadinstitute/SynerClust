@@ -10,7 +10,7 @@ import pickle
 # import re
 import logging
 # import TreeLib
-import networkx as nx
+# import networkx as nx
 import traceback
 import collections
 
@@ -18,7 +18,7 @@ import collections
 class Tree:
 	logger = logging.getLogger("Tree")
 
-	def __init__(self, tree_obj, flow_name, blast_eval, num_cores, alpha, beta, gamma, gain, loss, min_best_hit, syn_dist, minSynFrac, hamming):
+	def __init__(self, tree_obj, blast_eval, num_cores, alpha, beta, gamma, gain, loss, min_best_hit, syn_dist, minSynFrac, hamming):
 		self.tree_obj = tree_obj
 		self.genomeToLocusFile = tree_obj.genomeToLocusFile
 		self.genomeToLocus = tree_obj.genomeToLocus
@@ -38,7 +38,7 @@ class Tree:
 		self.syn_dist = int(syn_dist)
 # 		self.homScale = homScale
 # 		self.synScale = synScale
-		self.flow_name = flow_name
+		# self.flow_name = flow_name
 # 		self.num_hits = numHits
 		self.min_syn_frac = minSynFrac
 		self.hamming = hamming
@@ -372,7 +372,7 @@ class Tree:
 			set_cmd_count = 1
 		Tree.logger.info(serial_sets)
 		# print serial_sets
-		self.makeNodeFlowLauncher(working_dir, serial_sets)
+		# self.makeNodeFlowLauncher(working_dir, serial_sets)
 
 	def makeSingleNodeFlow(self, working_dir, curNode, cmd_id, kids):
 		my_dir = working_dir + "nodes/" + curNode + "/"
@@ -543,69 +543,69 @@ class Tree:
 	# 	my_temp.write(t_file)
 	# 	my_temp.close()
 
-	def makeNodeFlowLauncher(self, working_dir, serial_sets):
-		ini_file = open(working_dir + self.flow_name + ".ini", 'w')
-		xml_file = open(working_dir + self.flow_name + ".xml", 'w')
-		xml_file.write("""<?xml version="1.0" encoding="utf-8"?>""" + "\n")
-		xml_file.write("""<commandSetRoot>""" + "\n")
-		xml_file.write("""\t<commandSet type="parallel">""" + "\n")
-		xml_file.write("""\t\t<name>""" + self.flow_name + """</name>""" + "\n")
-		ini_file.write("[1]\nname=" + self.flow_name + "\n")
-		instance_commands = []
+	# def makeNodeFlowLauncher(self, working_dir, serial_sets):
+	# 	ini_file = open(working_dir + self.flow_name + ".ini", 'w')
+	# 	xml_file = open(working_dir + self.flow_name + ".xml", 'w')
+	# 	xml_file.write("""<?xml version="1.0" encoding="utf-8"?>""" + "\n")
+	# 	xml_file.write("""<commandSetRoot>""" + "\n")
+	# 	xml_file.write("""\t<commandSet type="parallel">""" + "\n")
+	# 	xml_file.write("""\t\t<name>""" + self.flow_name + """</name>""" + "\n")
+	# 	ini_file.write("[1]\nname=" + self.flow_name + "\n")
+	# 	instance_commands = []
 
-		for s in serial_sets:
-			sub_s = 1
-			xml_file.write("""\t\t<commandSet type="serial">""" + "\n")
-			xml_file.write("""\t\t\t<configMapId>1.""" + str(s) + """</configMapId>""" + "\n")
-			xml_file.write("""\t\t\t<name>subflow1.""" + str(s) + """</name>""" + "\n")
-			ini_file.write("[1." + str(s) + "]\n")
-			ini_file.write("name=subflow1." + str(s) + "\n\n")
+	# 	for s in serial_sets:
+	# 		sub_s = 1
+	# 		xml_file.write("""\t\t<commandSet type="serial">""" + "\n")
+	# 		xml_file.write("""\t\t\t<configMapId>1.""" + str(s) + """</configMapId>""" + "\n")
+	# 		xml_file.write("""\t\t\t<name>subflow1.""" + str(s) + """</name>""" + "\n")
+	# 		ini_file.write("[1." + str(s) + "]\n")
+	# 		ini_file.write("name=subflow1." + str(s) + "\n\n")
 
-			for n in serial_sets[s]:
-				ini_id = n[0]
-				if len(n) == 3 and n[1] == "wait":
-					# wait command
-					xml_file.write("\t\t\t<command>\n")
-					xml_file.write("\t\t\t\t<name>WaitForNode</name>\n")
-					xml_file.write("\t\t\t\t<configMapId>" + ini_id + "</configMapId>\n")
-					xml_file.write("\t\t\t</command>\n")
-					ini_file.write("[" + ini_id + "]\n")
-					ini_file.write("name=WaitForNode\n")
-					ini_file.write("type=RunUnixCommand\n")
-					ini_file.write("executable=" + self.syn2_path + "WF_WaitForFile.py\n")
-					ini_file.write("arg=" + working_dir + "nodes/" + n[2] + "/\n")
-					ini_file.write("arg=NODE_COMPLETE\n\n")
-				else:
-					# node flow command
-					node = n[1]
-					path_to_node_dir = working_dir + "nodes/" + node + "/"
-					instance_cmd = "RunWorkflow -t " + path_to_node_dir + node + ".xml -c " + path_to_node_dir + node + ".ini -i " + path_to_node_dir + node + "_instance.xml\n"
-					# tier = int(ini_id.split(".")[-1])
-					dist_to_root = len(nx.shortest_path(self.rooted_tree, self.tree_obj.root, node))
-					instance_commands.append((instance_cmd, dist_to_root))
-					xml_file.write("\t\t\t<command>\n")
-					xml_file.write("\t\t\t\t<name>" + node + "</name>\n")
-					xml_file.write("\t\t\t\t<configMapId>" + ini_id + "</configMapId>\n")
-					xml_file.write("\t\t\t</command>\n")
-					ini_file.write("[" + ini_id + "]\n")
-					ini_file.write("name=" + node + "\n")
-					ini_file.write("type=RunUnixCommand\n")
-					ini_file.write("executable=" + self.syn2_path + "WF_WaitForFile.py\n")
-					ini_file.write("arg=" + working_dir + "nodes/" + n[1] + "/\n")
-					ini_file.write("arg=NODE_COMPLETE\n\n")
+	# 		for n in serial_sets[s]:
+	# 			ini_id = n[0]
+	# 			if len(n) == 3 and n[1] == "wait":
+	# 				# wait command
+	# 				xml_file.write("\t\t\t<command>\n")
+	# 				xml_file.write("\t\t\t\t<name>WaitForNode</name>\n")
+	# 				xml_file.write("\t\t\t\t<configMapId>" + ini_id + "</configMapId>\n")
+	# 				xml_file.write("\t\t\t</command>\n")
+	# 				ini_file.write("[" + ini_id + "]\n")
+	# 				ini_file.write("name=WaitForNode\n")
+	# 				ini_file.write("type=RunUnixCommand\n")
+	# 				ini_file.write("executable=" + self.syn2_path + "WF_WaitForFile.py\n")
+	# 				ini_file.write("arg=" + working_dir + "nodes/" + n[2] + "/\n")
+	# 				ini_file.write("arg=NODE_COMPLETE\n\n")
+	# 			else:
+	# 				# node flow command
+	# 				node = n[1]
+	# 				path_to_node_dir = working_dir + "nodes/" + node + "/"
+	# 				instance_cmd = "RunWorkflow -t " + path_to_node_dir + node + ".xml -c " + path_to_node_dir + node + ".ini -i " + path_to_node_dir + node + "_instance.xml\n"
+	# 				# tier = int(ini_id.split(".")[-1])
+	# 				dist_to_root = len(nx.shortest_path(self.rooted_tree, self.tree_obj.root, node))
+	# 				instance_commands.append((instance_cmd, dist_to_root))
+	# 				xml_file.write("\t\t\t<command>\n")
+	# 				xml_file.write("\t\t\t\t<name>" + node + "</name>\n")
+	# 				xml_file.write("\t\t\t\t<configMapId>" + ini_id + "</configMapId>\n")
+	# 				xml_file.write("\t\t\t</command>\n")
+	# 				ini_file.write("[" + ini_id + "]\n")
+	# 				ini_file.write("name=" + node + "\n")
+	# 				ini_file.write("type=RunUnixCommand\n")
+	# 				ini_file.write("executable=" + self.syn2_path + "WF_WaitForFile.py\n")
+	# 				ini_file.write("arg=" + working_dir + "nodes/" + n[1] + "/\n")
+	# 				ini_file.write("arg=NODE_COMPLETE\n\n")
 
-				sub_s += 1
-			xml_file.write("""\t\t</commandSet>""" + "\n")
+	# 			sub_s += 1
+	# 		xml_file.write("""\t\t</commandSet>""" + "\n")
 
-		xml_file.write("""\t</commandSet>""" + "\n")
-		xml_file.write("""</commandSetRoot>""")
-		xml_file.close()
+	# 	xml_file.write("""\t</commandSet>""" + "\n")
+	# 	xml_file.write("""</commandSetRoot>""")
+	# 	xml_file.close()
 
-		instance_command_out = open("instance_commands.txt", 'w')
-		instance_commands = sorted(instance_commands, key=lambda tup: tup[1], reverse=True)
-		for ic in instance_commands:
-			instance_command_out.write(ic[0])
-		instance_command_out.close()
+	# 	instance_command_out = open("instance_commands.txt", 'w')
+	# 	instance_commands = sorted(instance_commands, key=lambda tup: tup[1], reverse=True)
+	# 	for ic in instance_commands:
+	# 		instance_command_out.write(ic[0])
+	# 	instance_command_out.close()
 
 	def toNewick(self, graph):
 		up = []  # unprocessed

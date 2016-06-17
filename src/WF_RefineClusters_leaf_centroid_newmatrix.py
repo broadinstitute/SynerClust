@@ -41,19 +41,19 @@ def main():
 	parser = argparse.ArgumentParser(usage)
 	parser.add_argument('-dir', dest="node_dir", required=True, help="Path to the \"nodes\" folder. (Required)")
 	parser.add_argument('-node', dest="node", required=True, help="Current node name. (Required)")
-	parser.add_argument('-alpha', type=float, dest="alpha", required=True, help="Synteny weight. (Required)")
-	parser.add_argument('-beta', type=float, dest="beta", required=True,help="Homology weight. (Required)")
+	parser.add_argument('-alpha', type=float, dest="alpha", required=True, help="Homology weight. (Required)")
+	parser.add_argument('-beta', type=float, dest="beta", required=True, help="Synteny weight. (Required)")
 	parser.add_argument('-gamma', type=float, dest="gamma", required=True, help="Gain/Loss weight. (Required)")
 	parser.add_argument('-gain', type=float, dest="gain", required=True, help="Duplication rate for Poisson distribution. (Required)")
 	parser.add_argument('-loss', type=float, dest="loss", required=True, help="Deletion rate for Poisson distribution. (Required)")
 	parser.add_argument('children', nargs=2, help="Children nodes. (Required)")
 	args = parser.parse_args()
-	
+
 	repo_path = args.node_dir[:-6]
 	mrca = args.node
 
 	my_dir = args.node_dir + mrca + "/"
-	
+
 # 	node_dir = argv[0]
 # # 	repo_path = argv[0][:-6]
 # 	mrca = argv[3]
@@ -116,12 +116,12 @@ def main():
 				childrenpkls[c] = pickle.load(f)
 			with open(args.node_dir + c + "/singletons_pep_data.pkl", "r") as f:
 				childrenpkls[c].update(pickle.load(f))
-		
+
 # 	old_orphans = open(tree_dir + "orphan_genes.txt", 'r').readlines()
 # 	orphans = open(tree_dir + "orphan_genes.txt", 'r').readlines()
 	orphans = []
 	ok_trees = []
-# 
+
 	locus_tag = {}
 	with open(repo_path + "genomes/locus_tag_file.txt", "r") as f:
 		for line in f:
@@ -159,22 +159,21 @@ def main():
 # 	with open(repo_path + "nodes/" + node + "pep_data.pkl", "r") as f:
 # 		pickleSeqs = pickle.load(f)
 
- 	muscle_cmd = ["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
+	muscle_cmd = ["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
 #	muscle_cmd = ["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
- 	fasttree_cmd = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
+	fasttree_cmd = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
 #	fasttree_cmd = ["/home/kamigiri/tools/FastTreeDouble", "-quiet", "-nosupport"]
 	ok_trees = []
-	
-	for cluster in cluster_to_genes:
+
 # 	for clusterID in pickleSeqs:
+	for cluster in cluster_to_genes:
 		if len(cluster_to_genes[cluster]) == 1:
 			orphans.append(cluster_to_genes[cluster][0])
 			continue
 # 		if len(pickleSeqs[clusterID]) == 1:
 # 			orphans.append(pickleSeqs[clusterID][0].split(";")[0][1:])
 # 			continue
-		
-			
+
 		stdin_data = ""
 # 		add_to_stdin = ""
 # 		for gene in cluster_to_genes[cluster]:
@@ -187,16 +186,16 @@ def main():
 				if args.children[0][0] == "L":
 					stdin_data += childrenpkls[args.children[0]][gene] + "\n"
 				else:
-					stdin_data += childrenpkls[args.children[0]][gene][0].split("\n")[1] + "\n"					
+					stdin_data += childrenpkls[args.children[0]][gene][0].split("\n")[1] + "\n"
 			except KeyError:
 				if args.children[1][0] == "L":
 					stdin_data += childrenpkls[args.children[1]][gene] + "\n"
 				else:
 					stdin_data += childrenpkls[args.children[1]][gene][0].split("\n")[1] + "\n"
-			
-		process = subprocess.Popen(muscle_cmd, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = DEVNULL)
+
+		process = subprocess.Popen(muscle_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
 		output = process.communicate(stdin_data)[0]
-		process = subprocess.Popen(fasttree_cmd, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = DEVNULL)
+		process = subprocess.Popen(fasttree_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
 		output = process.communicate(output)[0]
 		# if (len(locus_mapping[cluster]) > 5):
 		print(output + "\n\n")
@@ -242,7 +241,6 @@ def main():
 
 		syn = {}
 		for n in leaves:  # genes
-# 		for n in children:
 			syn[n] = []
 			leaf = "_".join(n.split("_")[:-1])
 			for m in synteny_data[leaf][n]['neighbors']:
@@ -309,7 +307,7 @@ def main():
 				continue
 			# multiple node trees continue
 			else:
-# 					bigNode = myTree.buildGraphFromDistanceMatrix(uTree)
+# 				bigNode = myTree.buildGraphFromDistanceMatrix(uTree)
 				myleaves = myTree.bigNode.split(";")
 				mysources = set([])  # sources are the child species contributing to this tree
 				for m in myleaves:
@@ -336,14 +334,13 @@ def main():
 							unchecked_trees.append((NJ.NJTree.toNewick(myTree.graph).split("\n"), myTree.OK))
 # 								unchecked_trees.append((NJ.NJTree.splitNewTree(myTree), myTree.OK)) # need to return both subtrees + myTree.OK in list
 						else:
-# 								(myNewicks, myMatrices) = myTree.splitTree(root)
+# 							(myNewicks, myMatrices) = myTree.splitTree(root)
 							(new_trees, new_root_edges) = myTree.splitNewTree(root)
 # 								for m in myMatrices:
 							for new_tree in new_trees:
 								unchecked_trees.append((new_tree, myTree.OK))
 # 			hom_mat = []
 # 			syn_mat = []
-# 		
 # 			hom_mat.append(hom_line)
 # 			syn_mat.append(syn_line)
 # 		hom_line = hom_file.readline()

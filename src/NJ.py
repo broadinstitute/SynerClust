@@ -445,14 +445,14 @@ class NJTree:
 		gl_factor = self.gamma * my_poisson
 # 		dist_factor = (-self.beta) * h_var
 		if h_var > 0:
-			dist_factor = (-self.beta) * math.log10(h_var)
-		else:  # if var = 0, it means we're right in the middle 
-			dist_factor = (-self.beta) * -2.0
+			dist_factor = (-self.alpha) * math.log10(h_var)
+		else:  # if var = 0, it means we're right in the middle
+			dist_factor = (-self.alpha) * -2.0
 # 		syn_factor = (-self.alpha) * s_var
 		if s_var > 0:
-			syn_factor = (-self.alpha) * math.log10(s_var)
+			syn_factor = (-self.beta) * math.log10(s_var)
 		else:
-			syn_factor = (-self.alpha) * -2.0
+			syn_factor = (-self.beta) * -2.0
 		score = math.exp(gl_factor) * math.exp(dist_factor) * math.exp(syn_factor)
 		score2 = gl_factor + dist_factor + syn_factor
 		# score = math.exp(gl_factor + dist_factor + syn_factor) should be the same
