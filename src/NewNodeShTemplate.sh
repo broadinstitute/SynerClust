@@ -9,7 +9,7 @@
 #$ -o /cil/shed/sandboxes/cgeorges/uger/out.log
 
 source /broad/software/scripts/useuse
-reuse -q Python-2.7 Java-1.7
+reuse -q Python-2.7 BLAST+
 
 #SYNERGY2_PATHWF_ClusterPostProcessing.py #WORKING_DIRgenomes/ #WORKING_DIRnodes/#CHILD1/locus_mappings.pkl
 #SYNERGY2_PATHWF_ClusterPostProcessing.py #WORKING_DIRgenomes/ #WORKING_DIRnodes/#CHILD2/locus_mappings.pkl
