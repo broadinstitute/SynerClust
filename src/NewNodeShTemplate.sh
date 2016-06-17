@@ -5,8 +5,8 @@
 #$ -P gscid
 
 #$ -l m_mem_free=2g
-#$ -e /cil/shed/sandboxes/cgeorges/uger/error.err
-#$ -o /cil/shed/sandboxes/cgeorges/uger/out.log
+#$ -e #WORKING_DIRerror.err
+#$ -o #WORKING_DIRout.log
 
 source /broad/software/scripts/useuse
 reuse -q Python-2.7 BLAST+
