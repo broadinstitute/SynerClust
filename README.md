@@ -75,7 +75,7 @@ You can optionally add settings as in this example with default values:
 <pre><code>-a 0.01 -b 1.0 -g 5.0 -G 0.05 -L 0.05 -D 1.2</pre></code>
 
 You then need to run the script indicated:
-<pre><code>python path/to/SynerClust/uger_auto_submit_simple.py -f genomes/needed_extractions.cmd.txt -t TMP_FOLDER</pre></code>
+<pre><code>python path/to/SynerClust/uger_auto_submit_simple.py -f genomes/needed_extractions.cmd.txt -tmp TMP_FOLDER</pre></code>
 
 Then re-run the first command
 <pre><code>path/to/SynerClust/bin/WF_runSynergy2.py -r path/to/data_catalog.txt -w working/directory/ -t path/to/newick/tree.nwk</pre></code>

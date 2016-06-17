@@ -51,7 +51,8 @@ class Tree:
 			self.locusToGenome[tag] = genome
 		else:
 			if genome.count(";") > 0:
-				children = genome.split(";").sort()
+				children = genome.split(";")
+				children.sort()
 				# max node degree between children nodes
 				degree = max(int(children[0].split("_")[1]), int(children[1].split("_")[1])) + 1
 			else:
