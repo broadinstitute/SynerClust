@@ -228,7 +228,9 @@ def main():
 
 		leaves.sort()
 		cluster_to_genes[cluster].sort()
-		assert leaves == cluster_to_genes[cluster]  # if good, can replace leaves list by graph.nodes()
+		if leaves != cluster_to_genes[cluster]:
+			logger.critical("leaves:\n%s\ngenes:\n%s\n" % (leaves, cluster_to_genes[cluster]))
+		# assert leaves == cluster_to_genes[cluster]  # if good, can replace leaves list by graph.nodes()
 # 		if 'L_0000000_9VzQfBUR7laObXloLMne2g_000709' not in graph.nodes():
 # 			continue
 # 		if 'L_0000000_9VzQfBUR7laObXloLMne2g_001369' not in graph.nodes():
