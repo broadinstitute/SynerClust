@@ -126,7 +126,8 @@ def main(argv):
 	if "nodes" not in os.listdir(args.working_dir):
 		os.system("mkdir " + node_dir)
 
-	cobra_repo_path = "/".join(args.cobra_repo.split("/")[0:-1]) + "/"
+	# cobra_repo_path = "/".join(args.cobra_repo.split("/")[0:-1]) + "/"
+	cobra_repo_path = args.cobra_repo[0:args.cobra_repo.rfind("/")+1]
 
 	# read COBRA repository and set up file system
 	myRepo = COBRA_Repo_Handling.RepoParse(args.cobra_repo)
