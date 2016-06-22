@@ -107,7 +107,7 @@ def main(argv):
 	parser.add_argument('-g', '--gamma', type=float, dest="gamma", default=5.0, help="Gain/Loss weight in the rooting equation. (default = 5.0")
 	parser.add_argument('-G', '--gain', type=float, dest="gain", default=0.05, help="Probability of a duplication event occurring for Poisson distribution, range (0.0, 1.0], default = 0.05")
 	parser.add_argument('-L', '--loss', type=float, dest="loss", default=0.05, help="Probability of a loss event occurring for Poisson distribution, range (0.0, 1.0], default = 0.05")
-	parser.add_argument('-m', '--min_best_hit', type=float, dest="min_best_hit", default=0.5, help="Minimal % of match length for Blastp hits compared to best one.")
+	parser.add_argument('-m', '--min_best_hit', type=float, dest="min_best_hit", default=0.5, help="Minimal %% of match length for Blastp hits compared to best one.")
 	parser.add_argument('-B', '--blast_eval', type=float, dest="blast_eval", default=#BLAST_EVAL_DEFAULT, help="Minimal e-value for Blastp hits. (default = #BLAST_EVAL_DEFAULT)")
 	parser.add_argument('-l', '--locus', dest="locus_file", default="", help="A locus_tag_file.txt that corresponds to the data in this repository")
 	parser.add_argument('-n', '--num_cores', type=int, dest="num_cores", default=#NUM_CORES_DEFAULT, help="The number of cores used for blast analysis (-a flag), (default = #NUM_CORES_DEFAULT)")
@@ -127,7 +127,7 @@ def main(argv):
 		os.system("mkdir " + node_dir)
 
 	# cobra_repo_path = "/".join(args.cobra_repo.split("/")[0:-1]) + "/"
-	cobra_repo_path = args.cobra_repo[0:args.cobra_repo.rfind("/")+1]
+	cobra_repo_path = args.cobra_repo[0:args.cobra_repo.rfind("/") + 1]
 
 	# read COBRA repository and set up file system
 	myRepo = COBRA_Repo_Handling.RepoParse(args.cobra_repo)
@@ -181,7 +181,4 @@ def main(argv):
 	logger.info('Finished')
 
 if __name__ == "__main__":
-	# if len(sys.argv) == 1:
-	# 	sys.exit(usage())
-	# else:
-	main(sys.argv)
+	main()
