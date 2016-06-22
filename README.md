@@ -16,9 +16,9 @@ SynerClust README
 You create a file (commands.install in this example) containing the install settings for ease of use. It should contain the following information in this order :  
 <pre><code>/absolute/path/to/FastTree_executable
 /absolute/path/to/Muscle_executable
-path/to/blast+/bin/
+path/to/blast+/bin/   can be left blank if already in the PATH
 default e-value threshold
-default number of treads to use  </code></pre>
+default number of threads to use  </code></pre>
 	
 
 You can then install SynerClust by running the following command from the root folder:
