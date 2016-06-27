@@ -6,7 +6,7 @@ import NJ
 import pickle
 import networkx as nx
 import numpy
-from collections import Counter
+# from collections import Counter
 import logging
 import subprocess
 import argparse
@@ -79,7 +79,7 @@ def main():
 		sys.exit(0)
 
 	# read trees, resolve clusters
-	tree_dir = my_dir + "trees/"
+	# tree_dir = my_dir + "trees/"
 	cluster_dir = my_dir + "clusters"
 	if "clusters" in os.listdir(my_dir):
 		if "old" not in os.listdir(my_dir):
@@ -95,7 +95,7 @@ def main():
 	pickleToCons = {}
 	singletons_pep = {}
 	pickleMaps = {}
-	picklePeps = {}
+	# picklePeps = {}
 	childrenpkls = {}
 	# print "last_tree", last_tree
 	# load locus_mapping files from children
@@ -131,7 +131,7 @@ def main():
 
 # 	load_leaves(childrenpkls, locus_tag, node)
 
-	pklfile = None
+	# pklfile = None
 # 	syntable = {}
 # 	for leaf in childrenpkls.keys():
 # 		with open(repo_path + "nodes/" + leaf + "/" + leaf + ".pkl", "r") as pklfile:
@@ -160,9 +160,9 @@ def main():
 # 		pickleSeqs = pickle.load(f)
 
 	muscle_cmd = ["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
-#	muscle_cmd = ["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
+	# muscle_cmd = ["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
 	fasttree_cmd = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
-#	fasttree_cmd = ["/home/kamigiri/tools/FastTreeDouble", "-quiet", "-nosupport"]
+	# fasttree_cmd = ["/home/kamigiri/tools/FastTreeDouble", "-quiet", "-nosupport"]
 	ok_trees = []
 
 # 	for clusterID in pickleSeqs:
@@ -180,7 +180,7 @@ def main():
 # 			stdin_data += ">" + gene + "\n"
 # 			stdin_data += childrenpkls[gene] + "\n"
 		for gene in cluster_to_genes[cluster]:
-# 			stdin_data += ">" + gene + "\n"
+			# stdin_data += ">" + gene + "\n"
 			stdin_data += ">" + gene + "\n"
 			try:
 				if args.children[0][0] == "L":
@@ -309,7 +309,7 @@ def main():
 				continue
 			# multiple node trees continue
 			else:
-# 				bigNode = myTree.buildGraphFromDistanceMatrix(uTree)
+				# bigNode = myTree.buildGraphFromDistanceMatrix(uTree)
 				myleaves = myTree.bigNode.split(";")
 				mysources = set([])  # sources are the child species contributing to this tree
 				for m in myleaves:
@@ -325,20 +325,21 @@ def main():
 					# tree is valid, added to resolved clusters
 					if myTree.OK == "true":
 						format_nodes = []
+						#### TODO store rooted tree as newick string from graph
 						for n in myTree.graph.nodes():
 							if n.count(";") == 0:
 								format_nodes.append(n)
-						ok_trees.append(format_nodes)
+						ok_trees.append([format_nodes, myTree.getNewick()])
 					# tree is invalid, added to unchecked trees unless it is an orphan
 					else:
 						# additional orphan exit
 						if myTree.OK == "orphan":
 							unchecked_trees.append((NJ.NJTree.toNewick(myTree.graph).split("\n"), myTree.OK))
-# 								unchecked_trees.append((NJ.NJTree.splitNewTree(myTree), myTree.OK)) # need to return both subtrees + myTree.OK in list
+								# unchecked_trees.append((NJ.NJTree.splitNewTree(myTree), myTree.OK)) # need to return both subtrees + myTree.OK in list
 						else:
-# 							(myNewicks, myMatrices) = myTree.splitTree(root)
+							# (myNewicks, myMatrices) = myTree.splitTree(root)
 							(new_trees, new_root_edges) = myTree.splitNewTree(root)
-# 								for m in myMatrices:
+							# for m in myMatrices:
 							for new_tree in new_trees:
 								unchecked_trees.append((new_tree, myTree.OK))
 # 			hom_mat = []
@@ -351,16 +352,16 @@ def main():
 # 	hom_file.close()
 # 	syn_file.close()
 
-
 	newPickleMap = {}  # this will turn into the locus mappings for this node
 	newSyntenyMap = {}
+	newNewickMap = {}
 	childToCluster = {}  # child gene/og --> og.id for this node
 
 # 	for o in old_orphans:
 # 		orphans.append(o)
 
 	for o in orphans:
-		ok_trees.insert(0, [o.rstrip()])
+		ok_trees.insert(0, [o.rstrip(), o.rstrip()])  #### TODO add tree here
 
 	blast_pep = {}
 	for c in args.children:
@@ -408,7 +409,7 @@ def main():
 		child_leaves = {}
 		taxa = set([])
 		taxa_map = {}
-		for g in ok:
+		for g in ok[0]:
 			child = "_".join(g.split("_")[:-1])
 			newSyntenyMap[clusterID]['children'].append(g)
 			childToCluster[g] = clusterID
@@ -435,6 +436,7 @@ def main():
 				treeSeqs[seq].append(l)
 				tree_seq_count += 1
 				newSyntenyMap[clusterID]['count'] += 1
+		newNewickMap[clusterID] = ok[1]
 
 		my_lengths = []
 		min_taxa = len(taxa)
@@ -509,6 +511,9 @@ def main():
 	sdat = open(pklMap, 'wb')
 	pickle.dump(newPickleMap, sdat)
 	sdat.close()
+
+	with open(my_dir + "clusters_newick.pkl", "r") as f:
+		pickle.dump(newNewickMap, f)
 
 	# script complete call
 	clusters_done_file = my_dir + "CLUSTERS_REFINED"
