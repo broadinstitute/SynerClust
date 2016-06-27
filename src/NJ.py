@@ -323,7 +323,7 @@ class NJTree:
 	def getNewick(self):
 		if self.rootTree:
 			processed = ['root']
-			current_leaves = self.rootedTree['root']
+			current_leaves = [l for l in self.rootedTree['root']]
 			# nwk = "(" + ",".join(current_leaves) + ");"
 			nwk = ",".join(current_leaves)
 			while current_leaves:
