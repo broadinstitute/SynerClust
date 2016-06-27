@@ -334,6 +334,7 @@ class NJTree:
 						if neighbor in processed:
 							neighbors.remove(neighbor)
 							break
+					processed.extend(n)
 					new_nwk = ",".join(neighbors)
 					nwk.replace(n, "(" + new_nwk + ")")
 					current_leaves.extend(neighbors)
