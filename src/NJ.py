@@ -323,12 +323,12 @@ class NJTree:
 	def getNewick(self):
 		if self.rootTree:
 			processed = ['root']
-			current_leaves = [l for l in self.rootedTree['root']]
+			current_leaves = list(self.rootedTree['root'])
 			# nwk = "(" + ",".join(current_leaves) + ");"
 			nwk = ",".join(current_leaves)
 			while current_leaves:
 				n = current_leaves.pop()
-				neighbors = self.rootedTree[n]
+				neighbors = list(self.rootedTree[n])
 				if len(neighbors) > 1:  # if not a leaf
 					for neighbor in neighbors:
 						if neighbor in processed:
