@@ -321,7 +321,7 @@ class NJTree:
 # 		return (nodes, extinct)
 
 	def getNewick(self):
-		if self.rootTree:
+		if self.rootedTree:
 			processed = ['root']
 			current_leaves = list(self.rootedTree['root'])
 			# nwk = "(" + ",".join(current_leaves) + ");"
@@ -334,9 +334,9 @@ class NJTree:
 						if neighbor in processed:
 							neighbors.remove(neighbor)
 							break
-					processed.extend(n)
+					processed.append(n)
 					new_nwk = ",".join(neighbors)
-					nwk.replace(n, "(" + new_nwk + ")")
+					nwk = nwk.replace(n, "(" + new_nwk + ")")
 					current_leaves.extend(neighbors)
 			return nwk
 		else:
