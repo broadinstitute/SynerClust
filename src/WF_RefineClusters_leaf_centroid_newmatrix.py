@@ -512,7 +512,7 @@ def main():
 	pickle.dump(newPickleMap, sdat)
 	sdat.close()
 
-	with open(my_dir + "clusters_newick.pkl", "r") as f:
+	with open(my_dir + "clusters_newick.pkl", "w") as f:
 		pickle.dump(newNewickMap, f)
 
 	# script complete call
