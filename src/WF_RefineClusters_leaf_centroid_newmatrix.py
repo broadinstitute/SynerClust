@@ -361,7 +361,7 @@ def main():
 # 		orphans.append(o)
 
 	for o in orphans:
-		ok_trees.insert(0, [o.rstrip(), o.rstrip()])  #### TODO add tree here
+		ok_trees.insert(0, [[o.rstrip()], o.rstrip()])  #### TODO add tree here
 
 	blast_pep = {}
 	for c in args.children:
