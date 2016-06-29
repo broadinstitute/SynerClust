@@ -46,7 +46,7 @@ def main(argv):
 	nwksMap = {}
 	tmp = os.path.realpath(locus_mapping)
 	tmp2 = tmp.rfind('/')
-	current_root = tmp[tmp.rfind("/", 0, tmp2):tmp2]
+	current_root = tmp[tmp.rfind("/", 0, tmp2) + 1:tmp2]
 	nodes_path = genome_path[:genome_path.rfind('/') + 1]
 	nodes = os.listdir(nodes_path)
 	for n in nodes:
