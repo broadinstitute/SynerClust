@@ -58,7 +58,7 @@ def main(argv):
 	modified = True
 	while(modified):
 		modified = False
-		for k nwksMap[current_root].keys():
+		for k in nwksMap[current_root].keys():
 			for s in query.findall(nwksMap[current_root][k]):
 				if len(s) == 39:
 					if s[0] == "N":
