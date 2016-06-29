@@ -47,7 +47,7 @@ def main(argv):
 	tmp = os.path.realpath(locus_mapping)
 	tmp2 = tmp.rfind('/')
 	current_root = tmp[tmp.rfind("/", 0, tmp2) + 1:tmp2]
-	nodes_path = genome_path[:genome_path.rfind('/') + 1]
+	nodes_path = tmp[:tmp.rfind("/", 0, tmp2)]
 	nodes = os.listdir(nodes_path)
 	for n in nodes:
 		if n[0] == "N":
@@ -77,7 +77,7 @@ def main(argv):
 	clusters = {}
 	cluster_noOrphan = 0
 	for l in locusMap:
-# 		counter = "_".join(l.split("_")[:-1])
+		# counter = "_".join(l.split("_")[:-1])
 		counter = l[33:]
 		clusters[counter] = {'leaves': {}, 'transcripts': []}
 		leafKids = locusMap[l]
