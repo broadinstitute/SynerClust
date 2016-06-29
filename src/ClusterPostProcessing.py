@@ -106,14 +106,14 @@ def main(argv):
 	cTt_out = "/".join(dir_split)
 	cout = open(cluster_out, 'w')
 	ct_out = open(cTt_out, 'w')
-	nwk_out = open(nodes_path + "/newicks_full.txt", "w")
+	nwk_out = open(nodes_path + current_root + "/newicks_full.txt", "w")
 	for c in clusters:
 		transcripts = clusters[c]['transcripts']
 		# cid = "Cluster" + str(c)
 		cid = "Cluster" + c
 		t_out = cid + " (taxa: " + str(len(clusters[c]['leaves'])) + ", genes: " + str(len(transcripts)) + ")\t" + " ".join(transcripts) + "\n"
 		cout.write(t_out)
-		nwk_out.write(cid + ": " + nwksMap[current_root][current_root + "_" + c])
+		nwk_out.write(cid + ": " + nwksMap[current_root][current_root + "_" + c] + ";\n")
 		for t in transcripts:
 			ct_out.write(cid + "\t" + t + "\n")
 		if len(transcripts) == 1:
