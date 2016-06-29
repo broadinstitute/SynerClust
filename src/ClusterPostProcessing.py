@@ -3,6 +3,7 @@ import sys
 import os
 import pickle
 import logging
+import re
 
 
 def usage():
@@ -42,12 +43,42 @@ def main(argv):
 			l_t[line[1]] = line[0]
 			l_s[line[1]] = line[7]
 
+	nwksMap = {}
+	tmp = os.path.realpath(locus_mapping)
+	tmp2 = tmp.rfind('/')
+	current_root = tmp[tmp.rfind("/", 0, tmp2) + 1:tmp2]
+	nodes_path = tmp[:tmp.rfind("/", 0, tmp2) + 1]
+	nodes = os.listdir(nodes_path)
+	for n in nodes:
+		if n[0] == "N":
+			with open(nodes_path + n + "/clusters_newick.pkl", "r") as f:
+				nwksMap[n] = pickle.load(f)
+
+	query = re.compile("[a-zA-Z0-9-_]+")
+	modified = True
+	while(modified):
+		modified = False
+		for k in nwksMap[current_root].keys():
+			for s in query.findall(nwksMap[current_root][k]):
+				if len(s) == 39:
+					if s[0] == "N":
+						if nwksMap[s[:32]][s].count(",") > 0:
+							nwksMap[current_root][k] = nwksMap[current_root][k].replace(s, "(" + nwksMap[s[:32]][s] + ")")
+						else:
+							nwksMap[current_root][k] = nwksMap[current_root][k].replace(s, nwksMap[s[:32]][s])
+					elif s[0] == "L":
+						nwksMap[current_root][k] = nwksMap[current_root][k].replace(s, l_t[s])
+					else:
+						continue
+					modified = True
+
 	totalGenes = 0
-	counter = 1
+	# counter = 1
 	clusters = {}
 	cluster_noOrphan = 0
 	for l in locusMap:
-# 		counter = "_".join(l.split("_")[:-1])
+		# counter = "_".join(l.split("_")[:-1])
+		counter = l[33:]
 		clusters[counter] = {'leaves': {}, 'transcripts': []}
 		leafKids = locusMap[l]
 		for k in leafKids:
@@ -59,7 +90,7 @@ def main(argv):
 		totalGenes += len(clusters[counter]['transcripts'])
 		if len(clusters[counter]['transcripts']) > 1:
 			cluster_noOrphan += 1
-		counter += 1
+		# counter += 1
 	print "total genes: ", totalGenes
 
 	pairs = set([])
@@ -75,11 +106,14 @@ def main(argv):
 	cTt_out = "/".join(dir_split)
 	cout = open(cluster_out, 'w')
 	ct_out = open(cTt_out, 'w')
+	nwk_out = open(nodes_path + current_root + "/newicks_full.txt", "w")
 	for c in clusters:
 		transcripts = clusters[c]['transcripts']
-		cid = "Cluster" + str(c)
+		# cid = "Cluster" + str(c)
+		cid = "Cluster" + c
 		t_out = cid + " (taxa: " + str(len(clusters[c]['leaves'])) + ", genes: " + str(len(transcripts)) + ")\t" + " ".join(transcripts) + "\n"
 		cout.write(t_out)
+		nwk_out.write(cid + ": (" + nwksMap[current_root][current_root + "_" + c] + ");\n")
 		for t in transcripts:
 			ct_out.write(cid + "\t" + t + "\n")
 		if len(transcripts) == 1:
@@ -115,6 +149,7 @@ def main(argv):
 	print "non-orphan clusters:", count
 	cout.close()
 	ct_out.close()
+	nwk_out.close()
 
 	ds = locus_mapping.split("/")
 	ds.pop()

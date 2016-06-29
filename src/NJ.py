@@ -320,6 +320,28 @@ class NJTree:
 # 		extinct = sorted(extinct_nodes, key=lambda tup: tup[0])
 # 		return (nodes, extinct)
 
+	def getNewick(self):
+		if self.rootedTree:
+			processed = ['root']
+			current_leaves = list(self.rootedTree['root'])
+			# nwk = "(" + ",".join(current_leaves) + ");"
+			nwk = ",".join(current_leaves)
+			while current_leaves:
+				n = current_leaves.pop()
+				neighbors = list(self.rootedTree[n])
+				if len(neighbors) > 1:  # if not a leaf
+					for neighbor in neighbors:
+						if neighbor in processed:
+							neighbors.remove(neighbor)
+							break
+					processed.append(n)
+					new_nwk = ",".join(neighbors)
+					nwk = nwk.replace(n, "(" + new_nwk + ")")
+					current_leaves.extend(neighbors)
+			return nwk
+		else:
+			NJTree.logger.critical("Tried to get Newick from a tree that has no rootTree: %s" % (self.bigNode))
+
 	@staticmethod
 	def toNewick(graph):
 		up = []  # unprocessed
