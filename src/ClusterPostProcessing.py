@@ -113,7 +113,7 @@ def main(argv):
 		cid = "Cluster" + c
 		t_out = cid + " (taxa: " + str(len(clusters[c]['leaves'])) + ", genes: " + str(len(transcripts)) + ")\t" + " ".join(transcripts) + "\n"
 		cout.write(t_out)
-		nwk_out.write(cid + ": " + nwksMap[current_root][current_root + "_" + c] + ";\n")
+		nwk_out.write(cid + ": (" + nwksMap[current_root][current_root + "_" + c] + ");\n")
 		for t in transcripts:
 			ct_out.write(cid + "\t" + t + "\n")
 		if len(transcripts) == 1:
