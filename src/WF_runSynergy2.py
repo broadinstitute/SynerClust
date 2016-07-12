@@ -54,7 +54,7 @@ def main():
 
 	# cobra_repo_path = "/".join(args.cobra_repo.split("/")[0:-1]) + "/"
 	cobra_repo_path = args.cobra_repo[0:args.cobra_repo.rfind("/") + 1]
-	args.cobra_repo = os.path.abspath(args.cobra_repo) + "/"
+	args.cobra_repo = os.path.abspath(args.cobra_repo)
 	cobra_repo_path = os.path.abspath(cobra_repo_path) + "/"
 
 	# read COBRA repository and set up file system
