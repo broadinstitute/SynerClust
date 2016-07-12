@@ -63,7 +63,7 @@ def main(argv):
 				for s in query.findall(nwksMap[current_root][k][0]):
 					if len(s) == 39:
 						if s[0] == "N":
-							if nwksMap[s[:32]][s].count(",") > 0:
+							if nwksMap[s[:32]][s][0].count(",") > 0:
 								nwksMap[current_root][k][0] = nwksMap[current_root][k][0].replace(s, "(" + nwksMap[s[:32]][s][0] + ")")
 							else:
 								nwksMap[current_root][k][0] = nwksMap[current_root][k][0].replace(s, nwksMap[s[:32]][s][0])
@@ -114,7 +114,7 @@ def main(argv):
 		cid = "Cluster" + c
 		t_out = cid + " (taxa: " + str(len(clusters[c]['leaves'])) + ", genes: " + str(len(transcripts)) + ")\t" + " ".join(transcripts) + "\n"
 		cout.write(t_out)
-		nwk_out.write(cid + ": (" + nwksMap[current_root][current_root + "_" + c] + ");\n")
+		nwk_out.write(cid + ": (" + nwksMap[current_root][current_root + "_" + c][0] + ");\n")
 		for t in transcripts:
 			ct_out.write(cid + "\t" + t + "\n")
 		if len(transcripts) == 1:
