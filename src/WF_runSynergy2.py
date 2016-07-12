@@ -41,8 +41,9 @@ def main():
 	parser.add_argument('-s', '--synteny_window', type=int, dest="synteny_window", default=6000, help="Distance in base pairs that will contribute to upstream and downstream to syntenic fraction. The total window size is [int]*2. (default = 6000")
 	args = parser.parse_args()
 
-	if not args.working_dir[-1] == "/":
-		args.working_dir = args.working_dir + "/"
+	args.working_dir = os.path.abspath(args.working_dir) + "/"
+	# if not args.working_dir[-1] == "/":
+	# 	args.working_dir = args.working_dir + "/"
 	genome_dir = args.working_dir + "genomes/"
 	# set up genomes folder in synergy2 directory
 	if "genomes" not in os.listdir(args.working_dir):
@@ -53,6 +54,8 @@ def main():
 
 	# cobra_repo_path = "/".join(args.cobra_repo.split("/")[0:-1]) + "/"
 	cobra_repo_path = args.cobra_repo[0:args.cobra_repo.rfind("/") + 1]
+	args.cobra_repo = os.path.abspath(args.cobra_repo)
+	cobra_repo_path = os.path.abspath(cobra_repo_path)
 
 	# read COBRA repository and set up file system
 	myRepo = COBRA_Repo_Handling.RepoParse(args.cobra_repo)
