@@ -206,6 +206,8 @@ class Genome:
 			os.mkdir(myNodeDir)
 		myNodeFiles = os.listdir(myNodeDir)
 		pickles = " 0 "
+
+		myDir = os.path.abspath(myDir)
 		if "PICKLES_COMPLETE" in myNodeFiles:
 			pass
 			# print self.locus+" pickles are complete!"

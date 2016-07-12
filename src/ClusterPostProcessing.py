@@ -59,15 +59,15 @@ def main(argv):
 	while(modified):
 		modified = False
 		for k in nwksMap[current_root].keys():
-			for s in query.findall(nwksMap[current_root][k]):
+			for s in query.findall(nwksMap[current_root][k][0]):
 				if len(s) == 39:
 					if s[0] == "N":
 						if nwksMap[s[:32]][s].count(",") > 0:
-							nwksMap[current_root][k] = nwksMap[current_root][k].replace(s, "(" + nwksMap[s[:32]][s] + ")")
+							nwksMap[current_root][k][0] = nwksMap[current_root][k][0].replace(s, "(" + nwksMap[s[:32]][s][0] + ")")
 						else:
-							nwksMap[current_root][k] = nwksMap[current_root][k].replace(s, nwksMap[s[:32]][s])
+							nwksMap[current_root][k][0] = nwksMap[current_root][k][0].replace(s, nwksMap[s[:32]][s][0])
 					elif s[0] == "L":
-						nwksMap[current_root][k] = nwksMap[current_root][k].replace(s, l_t[s])
+						nwksMap[current_root][k][0] = nwksMap[current_root][k][0].replace(s, l_t[s])
 					else:
 						continue
 					modified = True

@@ -129,35 +129,10 @@ def main():
 				s = line.rstrip().split("\t")
 				locus_tag[s[1]] = s[0].split(";")
 
-# 	load_leaves(childrenpkls, locus_tag, node)
-
-	# pklfile = None
-# 	syntable = {}
-# 	for leaf in childrenpkls.keys():
-# 		with open(repo_path + "nodes/" + leaf + "/" + leaf + ".pkl", "r") as pklfile:
-# 			childrenpkls.update(pickle.load(pklfile))
-# 		with open(repo_path + "nodes/" + leaf + "/synteny_table.pkl", "r") as syntablefile:
-# 			syntable[leaf] = pickle.load(syntablefile)
-
-# 	with open(repo_path + "nodes/" + node + "/locus_mappings.pkl", 'r') as pklfile:
-# 		locus_mapping = pickle.load(pklfile)
-
-# 	cluster_leaf_count = {}
-# 	gene_to_cluster = {}
-# 	for cluster in locus_mapping:
-# 		cluster_leaf_count[cluster] = {}
-# 		for gene in locus_mapping[cluster]:
-# 			leaf = "_".join(gene.split("_")[:-1])
-# 			gene_to_cluster[gene] = cluster
-# 			if leaf not in cluster_leaf_count[cluster]:
-# 				cluster_leaf_count[cluster][leaf] = 0
-# 			cluster_leaf_count[cluster][leaf] += 1
 	with open(repo_path + "nodes/" + args.node + "/trees/gene_to_cluster.pkl", "r") as f:
 		gene_to_cluster = pickle.load(f)
 	with open(repo_path + "nodes/" + args.node + "/trees/cluster_to_genes.pkl", "r") as f:
 		cluster_to_genes = pickle.load(f)
-# 	with open(repo_path + "nodes/" + node + "pep_data.pkl", "r") as f:
-# 		pickleSeqs = pickle.load(f)
 
 	muscle_cmd = ["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
 	# muscle_cmd = ["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
@@ -230,17 +205,8 @@ def main():
 		cluster_to_genes[cluster].sort()
 		if leaves != cluster_to_genes[cluster]:
 			logger.critical("leaves:\n%s\ngenes:\n%s\n" % (leaves, cluster_to_genes[cluster]))
-		# assert leaves == cluster_to_genes[cluster]  # if good, can replace leaves list by graph.nodes()
-# 		if 'L_0000000_9VzQfBUR7laObXloLMne2g_000709' not in graph.nodes():
-# 			continue
-# 		if 'L_0000000_9VzQfBUR7laObXloLMne2g_001369' not in graph.nodes():
-# 			continue
-		# get distance matrix from this tree, then add synteny distances to it with a certain ratio
-# 		matrix = {}
-# 		nodes = graph.nodes()  # nodes are headers/gene references
-# 		nodes.sort()
-		leaves.sort()
 
+		leaves.sort()
 		syn = {}
 		for n in leaves:  # genes
 			syn[n] = []
@@ -273,24 +239,13 @@ def main():
 				syn_matrix[pos] = 1.0 - synFrac
 				pos += 1
 			i += 1
-	# Root, evaluate and split every tree until all trees are OK
-# 	hom_file = open(tree_dir + "homology_matrices.dat", "r")
-# 	syn_file = open(tree_dir + "synteny_matrices.dat", "r")
-# 	hom_line = hom_file.readline()
-# 	syn_line = syn_file.readline()
-# 	hom_mat = []
-# 	syn_mat = []
-# 	while hom_line != "":
-# 		if hom_line == "//\n":
-# 		while(True):
+		# Root, evaluate and split every tree until all trees are OK
 		unchecked_trees = []
 		# Could probably replace these lines by directly reading the distance matrix file into the list without needing to create a NJ.NJTree
 # 			myTree = NJ.NJTree(hom_mat, syn_mat, mrca, alpha, beta, gamma, gain, loss)
 		myTree = NJ.NJTree(mrca, args.alpha, args.beta, args.gamma, args.gain, args.loss)
 		myTree.buildGraphFromNewDistanceMatrix(hom_matrix, syn_matrix, leaves)
 # 		myTree = NJ.NJTree(tree_file, syn_file, mrca, alpha, beta, gamma, gain, loss)
-# 			d_lines = myTree.readDistanceMatrix()  # TODO this is actually just hom_mat and the only place it is used
-# 			unchecked_trees.append((d_lines, "false"))  # False refers to orphan status
 		# If "false" refers to orphan status, why are there also both "true" and "orphan"?
 		unchecked_trees.append((myTree, False))
 		while len(unchecked_trees) > 0:
@@ -323,13 +278,16 @@ def main():
 					root = myTree.rootTree()
 					myTree.checkTree(root)
 					# tree is valid, added to resolved clusters
-					if myTree.OK == "true":
+					if myTree.OK == "true" or myTree.OK == "parcimony":
 						format_nodes = []
 						#### TODO store rooted tree as newick string from graph
 						for n in myTree.graph.nodes():
 							if n.count(";") == 0:
 								format_nodes.append(n)
-						ok_trees.append([format_nodes, myTree.getNewick()])
+						if myTree.OK == "true":
+							ok_trees.append([format_nodes, myTree.getNewick(), True])
+						else:  # parcimony
+							ok_trees.append([format_nodes, myTree.getNewick(), False])
 					# tree is invalid, added to unchecked trees unless it is an orphan
 					else:
 						# additional orphan exit
@@ -342,26 +300,15 @@ def main():
 							# for m in myMatrices:
 							for new_tree in new_trees:
 								unchecked_trees.append((new_tree, myTree.OK))
-# 			hom_mat = []
-# 			syn_mat = []
-# 			hom_mat.append(hom_line)
-# 			syn_mat.append(syn_line)
-# 		hom_line = hom_file.readline()
-# 		syn_line = syn_file.readline()
-# # 	for t in os.listdir(tree_dir):
-# 	hom_file.close()
-# 	syn_file.close()
 
 	newPickleMap = {}  # this will turn into the locus mappings for this node
 	newSyntenyMap = {}
-	newNewickMap = {}
+	newNewickMap = {"children": [set(args.children)]}
+	# special_pep = {}
 	childToCluster = {}  # child gene/og --> og.id for this node
 
-# 	for o in old_orphans:
-# 		orphans.append(o)
-
 	for o in orphans:
-		ok_trees.insert(0, [[o.rstrip()], o.rstrip()])  #### TODO add tree here
+		ok_trees.insert(0, [[o.rstrip()], o.rstrip(), True])  #### TODO add tree here
 
 	blast_pep = {}
 	for c in args.children:
@@ -393,7 +340,7 @@ def main():
 	singles = open(singletons, 'w')
 	sum_stats = my_dir + "summary_stats.txt"
 	sstats = open(sum_stats, 'w')
-	for ok in ok_trees:
+	for ok in ok_trees:  #### TODO check ok[2] for True (solved) or False (3 gene node to solve at next node)
 		c = str(cluster_counter)
 		clusterID = ""
 		while len(c) < 6:
@@ -436,7 +383,7 @@ def main():
 				treeSeqs[seq].append(l)
 				tree_seq_count += 1
 				newSyntenyMap[clusterID]['count'] += 1
-		newNewickMap[clusterID] = ok[1]
+		newNewickMap[clusterID] = [ok[1], ok[2]]
 
 		my_lengths = []
 		min_taxa = len(taxa)
@@ -464,21 +411,23 @@ def main():
 				singles.write(">" + clusterID + ";" + seqlen + "\n" + seq + "\n")
 			seq = treeSeqs.keys()[0]
 			singletons_pep[clusterID] = [">" + clusterID + ";" + str(len(seq)) + "\n" + seq + "\n"]
-		elif len(ok) == 1:
-			for bseq in blast_pep[ok[0]]:
+		elif len(ok[0]) == 1:
+			for bseq in blast_pep[ok[0][0]]:
 				seqlen = str(len(bseq))
 				singles.write(">" + clusterID + ";" + seqlen + "\n" + bseq + "\n")
-			bseq = blast_pep[ok[0]][0]
+			bseq = blast_pep[ok[0][0]][0]
 			singletons_pep[clusterID] = [">" + clusterID + ";" + str(len(bseq)) + "\n" + bseq + "\n"]
 		else:
 			#  temp_pep = cluster_dir + clusterID + ".pep"
 			#  pepOut = open(temp_pep, 'w')
 			pickleToCons[clusterID] = []
+			newNewickMap[clusterID].append([])
 			for seq in treeSeqs:
 				seqlen = str(len(seq))
 				identifier = treeSeqs[seq][0]  # TODO output ALL IDs from seq because there might be more than a single ID, and this is NOT a .cons.pep file, just a .pep file
 # 				pepOut.write(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
 				pickleToCons[clusterID].append(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
+				newNewickMap[clusterID][2].append(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
 # 			pepOut.close()
 		cluster_counter += 1
 	singles.close()

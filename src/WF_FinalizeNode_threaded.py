@@ -6,7 +6,6 @@ import pickle
 import logging
 from multiprocessing import Process, Queue, RLock
 from Queue import Empty
-import scipy.spatial.distance as distance
 import subprocess
 import networkx as nx
 import median_of_medians
@@ -21,11 +20,6 @@ MUSCLE_CMD = ["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", 
 # FASTTREE_CMD = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
 FASTTREE_CMD = ["/home/kamigiri/tools/FastTreeDouble", "-quiet", "-nosupport"]
 OUTPUT_LOCK = RLock()
-
-
-def usage():
-	print "After consensus sequences are generated, concatenates them into one big file, NODE.pep, and creates a NODE_COMPLETE file."
-	sys.exit(1)
 
 
 def get_fasttree(stdin_data):
@@ -72,7 +66,7 @@ def makeConsensus(tq, dist_threshold, consensus_pep):
 						leaves.append(child[0])
 					graph.add_edge(group, child[0], dist=float(child[1]))
 				output = output[:l] + group + output[r + 1:]
-			
+
 			logger.info("Built graph for cluster " + clusterID)
 			matrix_size = len(leaves) * (len(leaves) - 1) / 2
 			leaves_length = len(leaves)
@@ -86,28 +80,18 @@ def makeConsensus(tq, dist_threshold, consensus_pep):
 					dist_matrix[j] = nx.shortest_path_length(graph, n, m, "dist")
 					j += 1
 				i += 1
-			
+
 			while (matrix_size > 0):
 				# n rows, 2 columns
 				# 1st column = values, 2nd column = index
 				# average_dist is actually a sum of dist
 				# but since dividing all of its values by len(leaves) wouldn't change the median and we don't use these values elsewhere there is no need to do it
 				average_dist = numpy.zeros((len(leaves), 2), float)
-				# for i in xrange(len(nodes)):
-				# 	average_dist[i][1] = i
-				# 	for j in xrange(len(nodes)):  # still reads each cell twice, can try to see if more efficient to find to which 2 average_dist to add each cell
-				# 		if i == j:
-				# 			continue
-				# 		elif i < j:
-				# 			average_dist[i][0] += dist_matrix[(j * (j - 1) / 2) + i]
-				# 		else:
-				# 			average_dist[i][0] += dist_matrix[(i * (i - 1) / 2) + j]
-
 				# read through the matrix only once to fill average_dist
 				imax = 1
 				pos = 0
 				while(pos < matrix_size):
-					average_dist[imax-1][1] = imax-1
+					average_dist[imax - 1][1] = imax - 1
 					for i in xrange(imax):
 						average_dist[i][0] += dist_matrix[pos]
 						average_dist[imax][0] += dist_matrix[pos]
@@ -126,17 +110,17 @@ def makeConsensus(tq, dist_threshold, consensus_pep):
 				for j in xrange(leaves_length):
 					if index == j:
 						to_remove[i] = j
-						leaves.remove(leaves[j-i])
+						leaves.remove(leaves[j - i])
 						i += 1
 					elif index < j:
 						if dist_matrix[(j * (j - 1) / 2) + index] < dist_threshold:
 							to_remove[i] = j
-							leaves.remove(leaves[j-i])
+							leaves.remove(leaves[j - i])
 							i += 1
 					else:
 						if dist_matrix[(index * (index - 1) / 2) + j] < dist_threshold:
 							to_remove[i] = j
-							leaves.remove(leaves[j-i])
+							leaves.remove(leaves[j - i])
 							i += 1
 
 				logger.debug("Distance check with " + str(i) + " represented sequences done for " + clusterID)
@@ -158,26 +142,6 @@ def makeConsensus(tq, dist_threshold, consensus_pep):
 						k = 0
 						l += 1
 
-				# i = 0
-				# while(i < len(to_remove) and to_remove[i] != -1):
-				# 	t = to_remove[i] * (to_remove[i] - 1) / 2
-				# 	step = to_remove[i]
-				# 	for j in xrange(t, t + step):
-				# 		dist_matrix[j] = -float('Inf')
-				# 	pos = t + step - 1
-				# 	while (step < old_length - 1):
-				# 		step += 1
-				# 		pos += step
-				# 		dist_matrix[pos] = -float('Inf')
-				# 	i += 1
-
-				# i = 0
-				# for d in numpy.nditer(dist_matrix):
-				# 	if d != -float('Inf'):
-				# 		new_dist_matrix[i] = d
-				# 		i += 1
-
-				# dist_matrix = new_dist_matrix
 				matrix_size = leaves_length * (leaves_length - 1) / 2
 				logger.debug("Matrix updated for " + clusterID)
 			# -float('Inf')
@@ -206,7 +170,7 @@ def makeConsensus(tq, dist_threshold, consensus_pep):
 					for i in l:
 						mus_seqs[seqID].append(i)
 					total_length += len(l)
-			
+
 			logger.debug("Trying to acquire lock for " + clusterID)
 			OUTPUT_LOCK.acquire()
 			logger.debug("Acquired lock for " + clusterID)
@@ -226,30 +190,17 @@ def makeConsensus(tq, dist_threshold, consensus_pep):
 			break
 
 if __name__ == "__main__":
-# 	argv = []
-# 	if len(sys.argv) == 1:
-# 		usage()
-# 	else:
-# 		argv = sys.argv[1:]
 	usage = "usage: WF_FinalizeNode_threaded.py [options]"
 	parser = argparse.ArgumentParser(usage)
 	parser.add_argument('-dir', dest="node_dir", required=True, help="Path to the \"nodes\" folder. (Required)")
 	parser.add_argument('-node', dest="node", required=True, help="Current node name. (Required)")
 	parser.add_argument('-t', type=int, dest="numThreads", default=4, help="Number of threads to use. (default = 4)")
 	parser.add_argument('-dist', type=float, dest="dist", required=True, help="Branch distance threshold. (Required)")
-					
+
 	args = parser.parse_args()
-	
+
 	# after consensus sequences are generated, concatenates them into one big file, NODE.pep, and creates a NODE_COMPLETE file
-# 	node_dir = argv[0]
-# 	node = argv[1]
 	fileDir = args.node_dir + "clusters/"
-# 	nThreads = int(argv[2])
-# 	numThreads = min(nThreads, 4)
-# 	chunk = 25
-# 	h_dist = 0.6
-# 	if len(argv) > 3:
-# 		h_dist = float(argv[3])
 
 	if "NODE_COMPLETE" in os.listdir(args.node_dir):
 		sys.exit(0)
@@ -272,9 +223,6 @@ if __name__ == "__main__":
 	consensus_pep = args.node_dir + args.node + ".pep"
 	os.system("rm " + consensus_pep)  # since the file is opened in append mode every time, we need to delete anything from a previous run
 
-# 	with open("all_clusters_cons_pep_data.pkl") as f:
-# 		all_pep_pkl = pickle.load(f)
-
 	processes = [Process(target=makeConsensus, args=(notOKQ, args.dist, consensus_pep)) for i in range(args.numThreads)]
 
 	for clusterID in pickleSeqs:
@@ -283,9 +231,7 @@ if __name__ == "__main__":
 	for p in processes:
 		p.start()
 		logger.info("Starting %s" % (p.pid))
-		# print "Starting",p.pid
 	for p in processes:
-		# print "Stopping",p.pid
 		p.join()
 		logger.info("Finished %s" % (p.pid))
 
