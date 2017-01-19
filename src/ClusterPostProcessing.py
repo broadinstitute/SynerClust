@@ -90,7 +90,7 @@ def main(argv):
 							else:
 								nwksMap[current_root][k][0] = nwksMap[current_root][k][0].replace(s, nwksMap[s[:32]][s][0])
 						elif s[0] == "L":
-							nwksMap[current_root][k][0] = nwksMap[current_root][k][0].replace(s, l_t[s])
+							nwksMap[current_root][k][0] = nwksMap[current_root][k][0].replace(s, tagToGenome[s[:32]] + "_" + l_t[s])
 						else:
 							continue
 						modified = True
