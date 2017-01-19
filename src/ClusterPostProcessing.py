@@ -4,6 +4,7 @@ import os
 import pickle
 import logging
 import re
+from collections import Counter
 
 
 def usage():
@@ -31,17 +32,30 @@ def main(argv):
 
 	l_t = {}  # locus to transcript
 	l_s = {}  # locus to sequence
+	t_n = {}  # transcript to IDs: mRNA, alias, name
+	tagToGenome = {}  # encoded genome name (tag) to genome name
+	genomeToAnnot = {}  # encoded genome name (tag) to annotation file
 	genomes = os.listdir(genome_path)
 	for g in genomes:
 		if g.find("locus_tag_file.txt") > -1:
-			continue
-		dataFile = genome_path + g + "/annotation.txt"
-		data = open(dataFile, 'r').readlines()
-		for d in data:
-			d = d.rstrip()
-			line = d.split()
-			l_t[line[1]] = line[0]
-			l_s[line[1]] = line[7]
+			with open(genome_path + "locus_tag_file.txt", 'r') as f:
+				for t in f:
+					t.rstrip()
+					line = t.split()
+					tagToGenome[line[1]] = line[0]
+		else:
+			with open(genome_path + g + "/annotation.txt", "r") as f:
+				d = f.readline().rstrip().split("\t")
+				genomeToAnnot[d[0]] = d[1]
+				for d in f:
+					# dataFile = genome_path + g + "/annotation.txt"
+					# data = open(dataFile, 'r').readlines()
+					# for d in data:
+					d = d.rstrip()
+					line = d.split()
+					l_t[line[1]] = line[0]
+					l_s[line[1]] = line[10]
+					t_n[line[0]] = [line[7], line[8], line[9]]
 
 	nwksMap = {}
 	tmp = os.path.realpath(locus_mapping)
@@ -49,10 +63,18 @@ def main(argv):
 	current_root = tmp[tmp.rfind("/", 0, tmp2) + 1:tmp2]
 	nodes_path = tmp[:tmp.rfind("/", 0, tmp2) + 1]
 	nodes = os.listdir(nodes_path)
+	distrib_out = open(nodes_path + current_root + "/cluster_dist_per_genome.txt", "w")
+	clusters_out = open(nodes_path + current_root + "/clusters.txt", "w")
+	distrib_out.write("#cluster_id\tname")
+	leaves = []
 	for n in nodes:
 		if n[0] == "N":
 			with open(nodes_path + n + "/clusters_newick.pkl", "r") as f:
 				nwksMap[n] = pickle.load(f)
+		else:
+			distrib_out.write("\t" + tagToGenome[n])
+			leaves.append(n)
+	distrib_out.write("\n")
 
 	query = re.compile("[a-zA-Z0-9-_]+")
 	modified = True
@@ -83,8 +105,8 @@ def main(argv):
 		clusters[counter] = {'leaves': {}, 'transcripts': []}
 		leafKids = locusMap[l]
 		for k in leafKids:
-			clusters[counter]['transcripts'].append(l_t[k])
 			prefix = "_".join(k.split("_")[:-1])
+			clusters[counter]['transcripts'].append([l_t[k], prefix])  # [gene_id, genome_tag]
 			if prefix not in clusters[counter]['leaves']:
 				clusters[counter]['leaves'][prefix] = 0
 			clusters[counter]['leaves'][prefix] += 1
@@ -109,14 +131,29 @@ def main(argv):
 	ct_out = open(cTt_out, 'w')
 	nwk_out = open(nodes_path + current_root + "/newicks_full.txt", "w")
 	for c in clusters:
+		names = []
+		distrib_buffer = ""
+		for transcript in clusters[c]['transcripts']:
+			clusters_out.write("\t".join([c, tagToGenome[transcript[1]], genomeToAnnot[tagToGenome[transcript[1]]], t_n[transcript[0]][0], transcript[0], t_n[transcript[0]][1], t_n[transcript[0]][2] + "\n"]))  # STORE DATA CATALOG INFO: genome name and translation to encoded (locus_tag_file?), annotation file name
+			if t_n[transcript[0]][2] is not "None":
+				names.append(t_n[transcript[0]][2])
+		clusters_out.write("\n")
+		distrib_buffer += c + "\t" + Counter(names).most_common(1)[0][0]  # max count for choosing the name to print
+		for leaf in leaves:
+			if leaf in clusters[c]['leaves']:
+				distrib_buffer += "\t" + str(clusters[c]['leaves'][leaf])
+			else:
+				distrib_buffer += "\t0"
+		distrib_buffer += "\n"
+		distrib_out.write(distrib_buffer)
 		transcripts = clusters[c]['transcripts']
 		# cid = "Cluster" + str(c)
 		cid = "Cluster" + c
-		t_out = cid + " (taxa: " + str(len(clusters[c]['leaves'])) + ", genes: " + str(len(transcripts)) + ")\t" + " ".join(transcripts) + "\n"
+		t_out = cid + " (taxa: " + str(len(clusters[c]['leaves'])) + ", genes: " + str(len(transcripts)) + ")\t" + " ".join(t[0] for t in transcripts) + "\n"
 		cout.write(t_out)
 		nwk_out.write(cid + ": (" + nwksMap[current_root][current_root + "_" + c][0] + ");\n")
 		for t in transcripts:
-			ct_out.write(cid + "\t" + t + "\n")
+			ct_out.write(cid + "\t" + t[0] + "\n")
 		if len(transcripts) == 1:
 			continue
 		else:
@@ -124,19 +161,19 @@ def main(argv):
 			for t in transcripts:
 				# tNum = int(t)
 				for s in transcripts:
-					if s == t:
+					if s[0] == t[0]:
 						continue
 					# sNum = int(s)
 					# tlist = [sNum, tNum]
-					tlist = [s, t]
+					tlist = [s[0], t[0]]
 					tlist.sort()
 					tup = (tlist[0], tlist[1])
 					pairs.add(tup)
 			if not (len(clusters[c]['leaves']) == num_genomes):
 				continue
 			else:
-				mcc_count += 1
 				if not (len(transcripts) == num_genomes):
+					mcc_count += 1
 					continue
 				else:
 					scc_count += 1
@@ -144,13 +181,15 @@ def main(argv):
 	aux_count = cluster_noOrphan - mcc_count
 	print "pairs:", len(pairs)
 	print "scc:", scc_count
-	print "mcc:", mcc_count - scc_count
+	print "mcc:", mcc_count
 	print "aux:", aux_count
 	print "orphans:", orphan_count
 	print "non-orphan clusters:", count
 	cout.close()
 	ct_out.close()
 	nwk_out.close()
+	distrib_out.close()
+	clusters_out.close()
 
 	ds = locus_mapping.split("/")
 	ds.pop()
@@ -160,6 +199,7 @@ def main(argv):
 	pdat = open(pair_pkl, 'wb')
 	pickle.dump(pairs, pdat)
 	pdat.close()
+
 
 if __name__ == "__main__":
 	if len(sys.argv) == 1:

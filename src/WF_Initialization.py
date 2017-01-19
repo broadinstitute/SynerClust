@@ -83,11 +83,11 @@ class Tree:
 		# everything should be pulled out and stored in pickles after the repo files are parsed.  Whatever.
 		ndat = open(working_dir + "nodes/" + node + "/" + node + ".pep", 'w')
 		# print node
-		x = gdat[0].split()[1]
+		x = gdat[1].split()[1]
 		y = "_".join(x.split("_")[:-1])
 		if not y == node:
 			Tree.logger.warning("%s %s", (node, y))
-			Tree.logger.warning("%s" % (gdat[0]))
+			Tree.logger.warning("%s" % (gdat[1]))
 
 		# these hashes will be pickles
 		genes = {}
@@ -95,7 +95,7 @@ class Tree:
 		locusToTID = {}
 		# this dict is for synteny information, keys are scaffold IDs
 		neighbors = {}
-		for g in gdat:
+		for g in gdat[1:]:
 			g = g.rstrip()
 			l = g.split()
 			if len(l) < 8:

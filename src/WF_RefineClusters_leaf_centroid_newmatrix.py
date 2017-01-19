@@ -122,12 +122,14 @@ def main():
 	orphans = []
 	ok_trees = []
 
-	locus_tag = {}
-	with open(repo_path + "genomes/locus_tag_file.txt", "r") as f:
-		for line in f:
-			if ";" in line:
-				s = line.rstrip().split("\t")
-				locus_tag[s[1]] = s[0].split(";")
+
+####  UNUSED????
+	# locus_tag = {}
+	# with open(repo_path + "genomes/locus_tag_file.txt", "r") as f:
+	# 	for line in f:
+	# 		if ";" in line:
+	# 			s = line.rstrip().split("\t")
+	# 			locus_tag[s[1]] = s[0].split(";")
 
 	with open(repo_path + "nodes/" + args.node + "/trees/gene_to_cluster.pkl", "r") as f:
 		gene_to_cluster = pickle.load(f)

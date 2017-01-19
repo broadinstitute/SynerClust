@@ -1,8 +1,18 @@
 #!/usr/bin/env python
 
-import sys, math, getopt, random, string, os, re, logging, hashlib, base64
+import sys
+# import math
+import getopt
+# import random
+# import string
+# import os
+import re
+import logging
+import hashlib
+import base64
 import networkx as nx
-import traceback
+# import traceback
+
 
 class Tree:
 	logger = logging.getLogger("Tree")
@@ -143,7 +153,7 @@ class Tree:
 					min_pair = (child_nodes[0], child_nodes[1])
 					min_dist = child_nodes[0][1] + child_nodes[1][1]
 					# print min_pair, min_dist
-					subPaths = {}
+					# subPaths = {}
 					for c in child_nodes:
 						# print c
 						if self.tree_string.find(self.locusToGenome[c[0]]) > -1:
@@ -292,25 +302,25 @@ class Tree:
 		self.tree.add_node(self.root)
 
 		mod_root_edge = []
-		for re in root_edge:
-			print re, len(self.tree.edges(re)), self.tree.edges(re)
-			if not len(self.tree.edges(re)) == 1:
-				print "edge from root to", re
-				self.tree.add_edge(self.root, re, weight=re_weight)
-				mod_root_edge.append(re)
+		for redge in root_edge:
+			print redge, len(self.tree.edges(redge)), self.tree.edges(redge)
+			if not len(self.tree.edges(redge)) == 1:
+				print "edge from root to", redge
+				self.tree.add_edge(self.root, redge, weight=re_weight)
+				mod_root_edge.append(redge)
 			else:
-				print "single", re, self.tree.edge[re]
+				print "single", redge, self.tree.edge[redge]
 				new_rooter = ""
-				for e in self.tree.edge[re]:
-					if not e == re:
+				for e in self.tree.edge[redge]:
+					if not e == redge:
 						new_rooter = e
-				myWeight = re_weight + self.tree.edge[new_rooter][re]['weight']
-				self.tree.remove_edge(new_rooter, re)
-				self.tree.remove_node(re)
+				myWeight = re_weight + self.tree.edge[new_rooter][redge]['weight']
+				self.tree.remove_edge(new_rooter, redge)
+				self.tree.remove_node(redge)
 				self.tree.add_edge(self.root, new_rooter, weight=myWeight)
 				mod_root_edge.append(new_rooter)
-				re = new_rooter
-			print re, len(self.tree.edges(re)), self.tree.edge[re]
+				redge = new_rooter
+			print redge, len(self.tree.edges(redge)), self.tree.edge[redge]
 		self.rooted_tree = self.tree.to_directed()
 		paths = nx.shortest_path(self.rooted_tree, source=self.root)
 		for e in self.tree.edges():

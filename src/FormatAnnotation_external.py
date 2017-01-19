@@ -23,19 +23,18 @@ def makePicklesForSingleGenome(working_dir, genome, node, SYNTENIC_WINDOW):
 	# everything should be pulled out and stored in pickles after the repo files are parsed.  Whatever.
 	ndat = open(working_dir + "nodes/" + node + "/" + node + ".pep", 'w')
 	# print node
-	x = gdat[0].split()[1]
+	x = gdat[1].split()[1]
 	y = "_".join(x.split("_")[:-1])
 	if not y == node:
 		print node, y
-		print gdat[0]
-
+		print gdat[1]
 	# these hashes will be pickles
 	genes = {}
 	gene_map = {}
 	locusToTID = {}
 	# this dict is for synteny information, keys are scaffold IDs
 	neighbors = {}
-	for g in gdat:
+	for g in gdat[1:]:
 		g = g.rstrip()
 		l = g.split()
 		if len(l) < 8:
@@ -46,9 +45,9 @@ def makePicklesForSingleGenome(working_dir, genome, node, SYNTENIC_WINDOW):
 		gene_tup = (l[1], int(l[3]), int(l[4]), l[5], int(l[6]))  # scaffold -> generated locus name ,start,stop,strand,length
 		locusToTID[l[1]] = l[0]
 		neighbors[l[2]].append(gene_tup)
-		genes[l[1]] = l[7]
+		genes[l[1]] = l[10]
 		gene_map[l[1]] = [l[1]]
-		line = ">" + l[1] + ";" + l[6] + "\n" + l[7] + "\n"
+		line = ">" + l[1] + ";" + l[6] + "\n" + l[10] + "\n"
 		ndat.write(line)
 	ndat.close()
 
@@ -73,10 +72,9 @@ def makeSyntenyPickle(working_dir, genome, node, neighbors, SYNTENIC_WINDOW):
 	# make a pickle!
 	gsyn = {}
 	nsyn = {}
-	
 	# +1 in size of the array because gene id counter starts at 0, so for later it's easier to just use that id without -1, leaving tsyn[0] empty
 	# tsyn = numpy.empty(sum([len(neighbors[i]) for i in neighbors]) + 1, dtype=list)
-	tsyn = numpy.empty(int(max([g[len(g)-1][0] for g in [neighbors[n] for n in neighbors]]).split("_")[-1]) + 1, dtype=list)
+	tsyn = numpy.empty(int(max([g[len(g) - 1][0] for g in [neighbors[n] for n in neighbors]]).split("_")[-1]) + 1, dtype=list)
 	MAX_DIST = SYNTENIC_WINDOW
 	for n in neighbors:
 		# n is a scaffold ID
@@ -145,6 +143,8 @@ def extractAnnotation(gff3_file, seq_file, genome_name, locus, out_file, stat_fi
 	gff3 = open(gff3_file, 'r').readlines()
 	out = open(out_file, 'w')
 
+	out.write(genome_name + "\t" + gff3_file[gff3_file.rfind("/") + 1:] + "\n")
+
 	pep_hash = {}
 	if not peptide_file == "null":
 		peps = open(peptide_file, 'r').readlines()
@@ -165,6 +165,9 @@ def extractAnnotation(gff3_file, seq_file, genome_name, locus, out_file, stat_fi
 	gstrand = ""
 	scaffold = ""
 	scaffGeneCount = {}
+	name = "None"
+	mrna_id = None
+	alias = None
 	for g in gff3:
 		g = g.rstrip()
 		line = g.split()
@@ -195,8 +198,13 @@ def extractAnnotation(gff3_file, seq_file, genome_name, locus, out_file, stat_fi
 				locus_tag = numberFromIndex(locus, count)
 				count += 1
 
+				if mrna_id is None:
+					mrna_id = curID
+				if alias is None:
+					alias = curID
+
 				# write to file
-				outline = "\t".join([curID, locus_tag, scaffold, gstart, gstop, gstrand, length, peptide]) + "\n"
+				outline = "\t".join([curID, locus_tag, scaffold, gstart, gstop, gstrand, length, mrna_id, alias, name, peptide]) + "\n"
 				out.write(outline)
 			myCDS = ""
 			cds_tups = []
@@ -204,9 +212,14 @@ def extractAnnotation(gff3_file, seq_file, genome_name, locus, out_file, stat_fi
 			gstart = line[3]
 			gstop = line[4]
 			gstrand = line[6]
+			name = "None"
+			mrna_id = None
+			alias = None
 			for d in data:
 				if d.find("ID=") == 0:
 					curID = d.split("=")[1]
+				if d.find("Name=") == 0:
+					name = d.split("=")[1]
 		# for every subsequence "exon" after the "gene", get the CDS using SequenceParse methods
 		elif line[2] == "exon":
 			scaffold = line[0]
@@ -218,6 +231,10 @@ def extractAnnotation(gff3_file, seq_file, genome_name, locus, out_file, stat_fi
 				next_cds = myGenome.getCDS(scaffold, start, stop, strand)
 			my_tup = (scaffold, int(start), stop, strand, next_cds)
 			cds_tups.append(my_tup)
+		elif line[2] == "mRNA":
+			for d in line[8].split(";"):
+				if d.find("ID=") == 0:
+					mrna_id = d.split("=")[1]
 	if len(cds_tups) > 0:
 		# concatenate all of the CDS sequences together, then translate them with SequenceParse
 		if cds_tups[0][3] == "+":
@@ -234,8 +251,14 @@ def extractAnnotation(gff3_file, seq_file, genome_name, locus, out_file, stat_fi
 		if scaffold not in scaffGeneCount:
 			scaffGeneCount[scaffold] = 0
 		scaffGeneCount[scaffold] += 1
+
+		if mrna_id is None:
+			mrna_id = curID
+		if alias is None:
+			alias = curID
+
 		# write to file
-		outline = "\t".join([curID, locus_tag, scaffold, gstart, gstop, gstrand, length, peptide]) + "\n"
+		outline = "\t".join([curID, locus_tag, scaffold, gstart, gstop, gstrand, length, mrna_id, alias, name, peptide]) + "\n"
 		out.write(outline)
 	out.close()
 

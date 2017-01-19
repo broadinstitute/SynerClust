@@ -22,12 +22,12 @@ class RepoParse:
 	def parseRepoFile(self, repo_path):
 		RepoParse.logger.debug("Parsing repo files")
 		with open(self.repo_file) as f:
-			lines = f.readlines()
+			# lines = f.readlines()
 			# print lines
-		# lines = open(self.repo_file,'r').readlines()
 			curGenome = {}
 			curGenome["transl_table"] = '1'
-			for l in lines:
+			# for l in lines:
+			for l in f:
 				if l.find("#") > -1:
 					continue
 				if l.find("//") > -1:
