@@ -95,96 +95,73 @@ def main(argv):
 							continue
 						modified = True
 
+	cluster_out = nodes_path + current_root + "/final_clusters.txt"
+	cTt_out = nodes_path + current_root + "/clust_to_trans.txt"
+	cout = open(cluster_out, 'w')
+	ct_out = open(cTt_out, 'w')
+	nwk_out = open(nodes_path + current_root + "/newicks_full.txt", "w")
 	totalGenes = 0
-	# counter = 1
-	clusters = {}
+	pairs = set([])
+	scc_count = 0
+	mcc_count = 0
 	cluster_noOrphan = 0
 	for l in locusMap:
 		# counter = "_".join(l.split("_")[:-1])
 		counter = l[33:]
-		clusters[counter] = {'leaves': {}, 'transcripts': []}
+		cid = "Cluster" + counter
+		cout_buffer = ""
+		ct_out_buffer = ""
+		names = []
+		genomes = []
 		leafKids = locusMap[l]
 		for k in leafKids:
 			prefix = "_".join(k.split("_")[:-1])
-			clusters[counter]['transcripts'].append([l_t[k], prefix])  # [gene_id, genome_tag]
-			if prefix not in clusters[counter]['leaves']:
-				clusters[counter]['leaves'][prefix] = 0
-			clusters[counter]['leaves'][prefix] += 1
-		totalGenes += len(clusters[counter]['transcripts'])
-		if len(clusters[counter]['transcripts']) > 1:
-			cluster_noOrphan += 1
-		# counter += 1
-	print "total genes: ", totalGenes
-
-	pairs = set([])
-	scc_count = 0
-	mcc_count = 0
-	count = 0
-	dir_split = locus_mapping.split("/")
-	dir_split.pop()
-	dir_split.append("final_clusters.txt")
-	cluster_out = "/".join(dir_split)
-	dir_split.pop()
-	dir_split.append("clust_to_trans.txt")
-	cTt_out = "/".join(dir_split)
-	cout = open(cluster_out, 'w')
-	ct_out = open(cTt_out, 'w')
-	nwk_out = open(nodes_path + current_root + "/newicks_full.txt", "w")
-	for c in clusters:
-		names = []
-		distrib_buffer = ""
-		for transcript in clusters[c]['transcripts']:
-			clusters_out.write("\t".join([c, tagToGenome[transcript[1]], genomeToAnnot[tagToGenome[transcript[1]]], t_n[transcript[0]][0], transcript[0], t_n[transcript[0]][1], t_n[transcript[0]][2] + "\n"]))  # STORE DATA CATALOG INFO: genome name and translation to encoded (locus_tag_file?), annotation file name
-			if t_n[transcript[0]][2] is not "None":
-				names.append(t_n[transcript[0]][2])
+			cout_buffer += l_t[k] + " "
+			clusters_out.write("\t".join([counter, tagToGenome[prefix], genomeToAnnot[tagToGenome[prefix]], t_n[l_t[k]][0], l_t[k], t_n[l_t[k]][1], t_n[l_t[k]][2] + "\n"]))  # STORE DATA CATALOG INFO: genome name and translation to encoded (locus_tag_file?), annotation file name
+			if t_n[l_t[k]][2] is not "None":
+				names.append(t_n[l_t[k]][2])
+			ct_out_buffer += cid + "\t" + l_t[k] + "\n"
+			genomes.append(prefix)
 		clusters_out.write("\n")
-		distrib_buffer += c + "\t" + Counter(names).most_common(1)[0][0]  # max count for choosing the name to print
-		for leaf in leaves:
-			if leaf in clusters[c]['leaves']:
-				distrib_buffer += "\t" + str(clusters[c]['leaves'][leaf])
-			else:
-				distrib_buffer += "\t0"
-		distrib_buffer += "\n"
-		distrib_out.write(distrib_buffer)
-		transcripts = clusters[c]['transcripts']
-		# cid = "Cluster" + str(c)
-		cid = "Cluster" + c
-		t_out = cid + " (taxa: " + str(len(clusters[c]['leaves'])) + ", genes: " + str(len(transcripts)) + ")\t" + " ".join(t[0] for t in transcripts) + "\n"
-		cout.write(t_out)
-		nwk_out.write(cid + ": (" + nwksMap[current_root][current_root + "_" + c][0] + ");\n")
-		for t in transcripts:
-			ct_out.write(cid + "\t" + t[0] + "\n")
-		if len(transcripts) == 1:
-			continue
-		else:
-			count += 1
-			for t in transcripts:
-				# tNum = int(t)
-				for s in transcripts:
-					if s[0] == t[0]:
-						continue
-					# sNum = int(s)
-					# tlist = [sNum, tNum]
-					tlist = [s[0], t[0]]
-					tlist.sort()
-					tup = (tlist[0], tlist[1])
-					pairs.add(tup)
-			if not (len(clusters[c]['leaves']) == num_genomes):
-				continue
-			else:
-				if not (len(transcripts) == num_genomes):
-					mcc_count += 1
-					continue
+
+		for i in xrange(len(leafKids)):
+			for j in xrange(i + 1, len(leafKids)):
+				if l_t[leafKids[i]] < l_t[leafKids[j]]:
+					pairs.add((l_t[leafKids[i]], l_t[leafKids[j]]))
 				else:
-					scc_count += 1
-	orphan_count = len(clusters) - cluster_noOrphan
+					pairs.add((l_t[leafKids[j]], l_t[leafKids[i]]))
+
+		prefix_count = Counter(genomes)
+		distrib_buffer = ""
+		if names == []:
+			distrib_buffer = counter + "\tNone"  # max count for choosing the name to print when there are no names
+		else:
+			distrib_buffer = counter + "\t" + Counter(names).most_common(1)[0][0]  # max count for choosing the name to print
+		for leaf in leaves:
+			distrib_buffer += "\t" + str(prefix_count[leaf])
+		distrib_buffer += "\n"
+		if len(prefix_count) == num_genomes:
+			if prefix_count.most_common(1)[0][1] > 1:
+				mcc_count += 1
+			else:
+				scc_count += 1
+		cout.write(cid + " (taxa: " + str(len(prefix_count)) + ", genes: " + str(len(leafKids)) + ")\t" + cout_buffer[:-1] + "\n")  # removing trailing space from cout_buffer
+		ct_out.write(ct_out_buffer)
+		distrib_out.write(distrib_buffer)
+		nwk_out.write(cid + ": (" + nwksMap[current_root][current_root + "_" + counter][0] + ");\n")
+		totalGenes += len(leafKids)
+		if len(leafKids) > 1:
+			cluster_noOrphan += 1
+
+	orphan_count = len(locusMap) - cluster_noOrphan
 	aux_count = cluster_noOrphan - mcc_count
+	print "total genes: ", totalGenes
 	print "pairs:", len(pairs)
 	print "scc:", scc_count
 	print "mcc:", mcc_count
 	print "aux:", aux_count
 	print "orphans:", orphan_count
-	print "non-orphan clusters:", count
+	print "non-orphan clusters:", cluster_noOrphan  # count
 	cout.close()
 	ct_out.close()
 	nwk_out.close()
