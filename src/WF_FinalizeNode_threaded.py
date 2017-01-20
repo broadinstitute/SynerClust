@@ -22,9 +22,14 @@ FASTTREE_CMD = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
 OUTPUT_LOCK = RLock()
 
 
-def get_fasttree(stdin_data):
+def get_alignement(stdin_data):
 	process = subprocess.Popen(MUSCLE_CMD, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
 	output1 = process.communicate(stdin_data)[0]
+	return output1
+
+
+def get_fasttree(stdin_data):
+	output1 = get_alignement(stdin_data)
 	process = subprocess.Popen(FASTTREE_CMD, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
 	output2 = process.communicate(output1)[0]
 	return (output1, output2)
@@ -188,6 +193,7 @@ def makeConsensus(tq, dist_threshold, consensus_pep):
 
 		except Empty:
 			break
+
 
 if __name__ == "__main__":
 	usage = "usage: WF_FinalizeNode_threaded.py [options]"

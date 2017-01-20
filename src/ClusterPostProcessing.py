@@ -5,6 +5,7 @@ import pickle
 import logging
 import re
 from collections import Counter
+from WF_FinalizeNode_threaded import get_alignement
 
 
 def usage():
@@ -65,6 +66,7 @@ def main(argv):
 	nodes = os.listdir(nodes_path)
 	distrib_out = open(nodes_path + current_root + "/cluster_dist_per_genome.txt", "w")
 	clusters_out = open(nodes_path + current_root + "/clusters.txt", "w")
+	alignement_out = open(nodes_path + current_root + "/alignments.txt", "w")
 	distrib_out.write("#cluster_id\tname")
 	leaves = []
 	for n in nodes:
@@ -111,6 +113,7 @@ def main(argv):
 		cid = "Cluster" + counter
 		cout_buffer = ""
 		ct_out_buffer = ""
+		stdin_data = ""
 		names = []
 		genomes = []
 		leafKids = locusMap[l]
@@ -118,11 +121,13 @@ def main(argv):
 			prefix = "_".join(k.split("_")[:-1])
 			cout_buffer += l_t[k] + " "
 			clusters_out.write("\t".join([counter, tagToGenome[prefix], genomeToAnnot[tagToGenome[prefix]], t_n[l_t[k]][0], l_t[k], t_n[l_t[k]][1], t_n[l_t[k]][2] + "\n"]))  # STORE DATA CATALOG INFO: genome name and translation to encoded (locus_tag_file?), annotation file name
+			stdin_data += ">" + tagToGenome[prefix] + "_" + l_t[k] + "\n" + l_s[k] + "\n"
 			if t_n[l_t[k]][2] is not "None":
 				names.append(t_n[l_t[k]][2])
 			ct_out_buffer += cid + "\t" + l_t[k] + "\n"
 			genomes.append(prefix)
 		clusters_out.write("\n")
+		alignement_out.write(cid + "\n" + get_alignement(stdin_data) + "\n")
 
 		for i in xrange(len(leafKids)):
 			for j in xrange(i + 1, len(leafKids)):
@@ -167,6 +172,7 @@ def main(argv):
 	nwk_out.close()
 	distrib_out.close()
 	clusters_out.close()
+	alignement_out.close()
 
 	ds = locus_mapping.split("/")
 	ds.pop()
