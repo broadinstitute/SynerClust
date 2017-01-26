@@ -122,8 +122,6 @@ def main():
 	orphans = []
 	ok_trees = []
 
-
-####  UNUSED????
 	# locus_tag = {}
 	# with open(repo_path + "genomes/locus_tag_file.txt", "r") as f:
 	# 	for line in f:
@@ -262,7 +260,7 @@ def main():
 # 					o = n[1].split(":")[0]
 # 					o = o.replace("(", "")
 # 					orphans.append(o)
-					# last_tree = "orphan"
+#					last_tree = "orphan"
 				continue
 			# multiple node trees continue
 			else:
@@ -310,7 +308,7 @@ def main():
 	childToCluster = {}  # child gene/og --> og.id for this node
 
 	for o in orphans:
-		ok_trees.insert(0, [[o.rstrip()], o.rstrip(), True])  #### TODO add tree here
+		ok_trees.insert(0, [[o.rstrip()], [o.rstrip(), o.rstrip()], True])  #### TODO add tree here
 
 	blast_pep = {}
 	for c in args.children:
@@ -385,7 +383,7 @@ def main():
 				treeSeqs[seq].append(l)
 				tree_seq_count += 1
 				newSyntenyMap[clusterID]['count'] += 1
-		newNewickMap[clusterID] = [ok[1], ok[2]]
+		newNewickMap[clusterID] = [ok[1], ok[2]] ###### CHANGE ok[1] or change reading in ClusterPostProcessing
 
 		my_lengths = []
 		min_taxa = len(taxa)
@@ -471,6 +469,7 @@ def main():
 	cr = open(clusters_done_file, 'w')
 	cr.write("Way to go!\n")
 	cr.close()
+
 
 if __name__ == "__main__":
 	main()

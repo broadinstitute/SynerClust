@@ -24,7 +24,7 @@ def main():
 	# usage = "usage: WF_RefineCluster_leaf_centroid_newmatrix.py [options]"
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-t', '--tree', dest="species_tree", required=True, help="Species tree relating all of the genomes to be analyzed. (Required)")
-	parser.add_argument('-r', '--repo', dest="cobra_repo", required=True, help="Complete path to the data repository containing your genomic data. (Required)")
+	parser.add_argument('-r', '--repo', dest="cobra_repo", required=True, help="Complete path to data_catalog in the repository containing your genomic data. (Required)")
 	parser.add_argument('-w', '--working', dest="working_dir", required=True, help="Complete path to the working directory for this analysis. (Required)")
 	# parser.add_argument('-f', '--flow', dest="flow_name", default="default_flow", help="Flow Name.")
 	parser.add_argument('-a', '--alpha', type=float, dest="alpha", default=0.01, help="Homology weight in the rooting equation. (default = 0.01")

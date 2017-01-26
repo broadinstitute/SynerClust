@@ -324,8 +324,10 @@ class NJTree:
 		if self.rootedTree:
 			processed = ['root']
 			current_leaves = list(self.rootedTree['root'])
-			# nwk = "(" + ",".join(current_leaves) + ");"
-			nwk = ",".join(current_leaves)
+# 			nwk = "(" + ",".join(current_leaves) + ");"
+# 			nwk = ",".join(current_leaves)
+			nwk = "(" + current_leaves[0] + ":" + str(self.rootedTree['root'][current_leaves[0]]['homology_dist']) + ',' + current_leaves[1] + ":" + str(self.rootedTree['root'][current_leaves[1]]['homology_dist']) + ")"
+			nwk2 = "(" + current_leaves[0] + ":" + str(self.rootedTree['root'][current_leaves[0]]['synteny_dist']) + ',' + current_leaves[1] + ":" + str(self.rootedTree['root'][current_leaves[1]]['synteny_dist']) + ")"
 			while current_leaves:
 				n = current_leaves.pop()
 				neighbors = list(self.rootedTree[n])
@@ -335,10 +337,13 @@ class NJTree:
 							neighbors.remove(neighbor)
 							break
 					processed.append(n)
-					new_nwk = ",".join(neighbors)
-					nwk = nwk.replace(n, "(" + new_nwk + ")")
+# 					new_nwk = ",".join(neighbors)
+					new_nwk = neighbors[0] + ":" + str(self.rootedTree[n][neighbors[0]]['homology_dist']) + ',' + neighbors[1] + ":" + str(self.rootedTree[n][neighbors[1]]['homology_dist'])
+					new_nwk2 = neighbors[0] + ":" + str(self.rootedTree[n][neighbors[0]]['synteny_dist']) + ',' + neighbors[1] + ":" + str(self.rootedTree[n][neighbors[1]]['synteny_dist'])
+					nwk = nwk.replace(n, "(" + new_nwk + ")")  ## add distance
+					nwk2 = nwk2.replace(n, "(" + new_nwk2 + ")")
 					current_leaves.extend(neighbors)
-			return nwk
+			return [nwk, nwk2]
 		else:
 			NJTree.logger.critical("Tried to get Newick from a tree that has no rootTree: %s" % (self.bigNode))
 
@@ -540,12 +545,13 @@ class NJTree:
 		gl_total = 0
 		tGraph = self.graph.copy()
 		newWeight = tGraph[e[0]][e[1]]['homology_dist'] / 2.0
+		newWeight2 = tGraph[e[0]][e[1]]['synteny_dist'] / 2.0
 # 		newSpecies = ""
 		newID = "root"
 		tGraph.remove_edge(e[0], e[1])
 		tGraph.add_node(newID, species=self.mrca)
-		tGraph.add_edge(e[0], newID, homology_weight=newWeight)
-		tGraph.add_edge(e[1], newID, homology_weight=newWeight)
+		tGraph.add_edge(e[0], newID, homology_dist=newWeight, synteny_dist=newWeight2)
+		tGraph.add_edge(e[1], newID, homology_dist=newWeight, synteny_dist=newWeight2)
 		# TODO no modification to synteny weights??
 		up = []  # up = unprocessed, length is number of edges
 		leaf = []  # leaf nodes

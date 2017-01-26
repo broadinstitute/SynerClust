@@ -40,7 +40,10 @@ class RepoParse:
 							RepoParse.logger.debug("Creating genome entry with %s %s %s %s" % (curGenome["Genome"], curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"]))
 							myG = Genome(curGenome["Genome"], curGenome["Annotation"], curGenome["Sequence"], curGenome["Peptide"], curGenome["transl_table"])
 							self.genomes.append(myG)
-						# else if "Genome" in curGenome and "Peptide" in curGenome:
+						elif "Genome" in curGenome and "Peptide" in curGenome and curGenome["Peptide"] is not "null":  # might need to swap last 2 conditions position based on direction of evaluation
+							RepoParse.logger.debug("Creating genome entry with %s %s" % (curGenome["Genome"], curGenome["Peptide"]))
+							myG = Genome(curGenome["Genome"], "", "", curGenome["Peptide"], "")
+							self.genomes.append(myG)
 						curGenome = {}
 						curGenome["transl_table"] = '1'
 					continue
@@ -108,7 +111,14 @@ class RepoParse:
 							sys.exit("Specified sequence file not found : %s" % (dat[1]))
 					curGenome["Sequence"] = dat[1]
 				elif dat[0].find("Peptide") > -1:
-					curGenome["Peptide"] = dat[1]
+					if not os.path.isabs(dat[1]):
+						if os.path.isfile(repo_path + dat[1]):
+							dat[1] = repo_path + dat[1]
+						elif os.path.isfile(repo_path + curGenome["Genome"] + "/" + dat[1]):
+							dat[1] = repo_path + curGenome["Genome"] + "/" + dat[1]
+						curGenome["Peptide"] = dat[1]
+					else:
+						sys.exit("Specified peptide file not found : %s" % (dat[1]))
 				elif dat[0].find("transl_table") > -1:
 					curGenome["transl_table"] = dat[1]
 			if len(curGenome) > 1:
@@ -216,7 +226,10 @@ class Genome:
 		if pickles == " 0 " and annot == " 0 ":
 			return False
 		if distribute == 1:
-			cmd = "#SYNERGY2_PATHFormatAnnotation_external.py -gff " + self.annotation + " -seq " + self.sequence + " -name " + self.genome + " --pep " + self.peptide + " -locus " + self.locus + " -out " + myDir + "annotation.txt -synteny " + str(synteny_window) + " --annot " + annot + " --pickle " + pickles + " --transl_table " + self.transl_table + "\n"
+			if self.annotation is not "" and self.sequence is not "":
+				cmd = "#SYNERGY2_PATHFormatAnnotation_external.py -gff " + self.annotation + " -seq " + self.sequence + " -name " + self.genome + " --pep " + self.peptide + " -locus " + self.locus + " -out " + myDir + "annotation.txt -synteny " + str(synteny_window) + " --annot " + annot + " --pickle " + pickles + " --transl_table " + self.transl_table + "\n"
+			elif self.peptide is not "":
+				cmd = "#SYNERGY2_PATHFormatAnnotation_external.py -name " + self.genome + " --pep " + self.peptide + " -locus " + self.locus + " -out " + myDir + "annotation.txt --annot " + annot + " --pickle " + pickles + "\n"
 			return cmd
 		else:
 			cmd = "#SYNERGY2_PATHFormatAnnotation_external.py -gff " + self.annotation + " -seq " + self.sequence + " -name " + self.genome + " --pep " + self.peptide + " -locus " + self.locus + " -out " + myDir + "annotation.txt -synteny " + str(synteny_window) + " --annot " + annot + " --pickle " + pickles + " --transl_table " + self.transl_table + "\n"
