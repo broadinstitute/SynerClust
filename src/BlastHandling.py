@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import operator
-import math
 import logging
 import networkx as nx
 import numpy
@@ -61,7 +60,8 @@ class BlastParse:
 		# SYN_FRAC = minSynFrac
 		# NUM_HITS = numHits
 		bestHits = nx.Graph()
-		bestDirHits = nx.DiGraph()
+		bestReciprocalHits = nx.Graph()
+# 		bestDirHits = nx.DiGraph()
 		head = open(headers, 'r').readlines()
 		myHead = set([])
 		for h in head:
@@ -70,63 +70,71 @@ class BlastParse:
 			myHead.add(line)  # mod for big BLAST
 		head = None
 		bestHits.add_nodes_from(myHead)
-		bestDirHits.add_nodes_from(myHead)
+		bestReciprocalHits.add_nodes_from(myHead)
+# 		bestDirHits.add_nodes_from(myHead)
 
 		for q in hits:
-			q_node = "_".join(q.split("_")[:-1])
-			q_hits_species = {}
-			for t in hits[q]:
-				t_spec = "_".join(t.split("_")[:-1])
-				if t_spec not in q_hits_species:
-					q_hits_species[t_spec] = []
-				q_hits_species[t_spec].append(hits[q][t])
-			for species in q_hits_species:
-				q_hits = q_hits_species[species]
-				q_best = []
-				qd_best = []
-				bestAdjPID = 0.0
-				best_evalue = 1.0
-				q_hits.sort(key=operator.attrgetter('bitScore'), reverse=True)
-				# q_best_hash = {}
-				for ts in q_hits:
-					ts_score = ts.getScore()
-					t = ts.target.split(";")[0]
-					if ts.evalue < float(BlastParse.EVALUE_THRESHOLD):
-						if best_evalue == 1.0:  # and ts.evalue < float(1e-3):  # TODO change hardcoded evalue threshold
-							bestAdjPID = ts.getAdjPID()
-							best_evalue = ts.evalue
-							qd_best.append((q, t, ts_score))
-							q_best.append((q, t, ts_score))
-						elif (ts.getAdjPID() > bestAdjPID * min_best_hit):  # and best_evalue < 1.0:
-						# TODO find out why using these hard coded values, and maybe change them?
-						# this condition prevents matches that have anything more than 1e-150 evalue if a previous match had 0 evalue
+# 			if "L_0000000_t4ucZvbygVF5ikvl7c4Rdg_006257" != q and "L_0000000_t4ucZvbygVF5ikvl7c4Rdg_000429" != q:
+# 				continue
+# 			q_node = "_".join(q.split("_")[:-1])
+# 			q_hits_species = {}
+# 			for t in hits[q]:
+# 				t_spec = "_".join(t.split("_")[:-1])
+# 				if t_spec not in q_hits_species:
+# 					q_hits_species[t_spec] = []
+# 				q_hits_species[t_spec].append(hits[q][t])
+# 			for species in q_hits_species:
+			bestAdjPID = 0.0
+			best_evalue = 1.0
+# 			for species in [q_node, t_node]:
+# 			q_hits = q_hits_species[species]
+			q_best = []
+# 			qd_best = []
+			q_hits = hits[q]
+			q_hits.sort(key=operator.attrgetter('bitScore'), reverse=True)
+			# q_best_hash = {}
+			for ts in q_hits:
+				ts_score = ts.getScore()
+				t = ts.target.split(";")[0]
+				if ts.evalue < float(BlastParse.EVALUE_THRESHOLD):
+					if best_evalue == 1.0:  # and ts.evalue < float(1e-3):  # TODO change hardcoded evalue threshold
+						bestAdjPID = ts.getAdjPID()
+						best_evalue = ts.evalue
+# 						qd_best.append((q, t, ts_score))
+						q_best.append((q, t, ts_score))
+					elif (ts.getAdjPID() > bestAdjPID * min_best_hit):  # and best_evalue < 1.0:
+					# TODO find out why using these hard coded values, and maybe change them?
+					# this condition prevents matches that have anything more than 1e-150 evalue if a previous match had 0 evalue
 # 						if (ts.evalue < float(1.0e-150)) or (best_evalue > 0.0 and (math.log10(best_evalue) + 30.0 > math.log10(ts.evalue))):
-							qd_best.append((q, t, ts_score))
-							q_best.append((q, t, ts_score))
-				q_best = sorted(q_best, key=lambda tup: tup[2])
-				qd_best = sorted(qd_best, key=lambda tup: tup[2])
-				i = 0
-				qbi = 1
-				qdbi = 1
-				# weights given are the match score calculated with the adjusted percentage of identity (alignement length/shortest length)*pID
-				while i < len(q_best) or i < len(qd_best):
-					if (i < len(q_best)): # and q_node != species:  # query species != target species, but why only in the not directed graph?
-						if not bestHits.has_edge(q_best[i][0], q_best[i][1]):  # why only verify in the not directed graph?
-							bestHits.add_edge(q_best[i][0], q_best[i][1], weight=q_best[i][2], rank=qbi)
-							qbi += 1
-					if i < len(qd_best):
-						bestDirHits.add_edge(qd_best[i][0], qd_best[i][1], weight=qd_best[i][2], rank=qdbi)
-						# print qd_best[i]
-						qdbi += 1
-					i += 1
-		return (bestHits, bestDirHits)
+# 						qd_best.append((q, t, ts_score))
+						q_best.append((q, t, ts_score))
+			q_best = sorted(q_best, key=lambda tup: tup[2])
+# 			qd_best = sorted(qd_best, key=lambda tup: tup[2])
+			i = 0
+
+# 			qdbi = 1
+			# weights given are the match score calculated with the adjusted percentage of identity (alignement length/longest length)*pID
+# 			while i < len(q_best) or i < len(qd_best):
+			while i < len(q_best):
+				if (i < len(q_best)): # and q_node != species:  # query species != target species, but why only in the not directed graph?
+					if not bestHits.has_edge(q_best[i][0], q_best[i][1]):
+						bestHits.add_edge(q_best[i][0], q_best[i][1], weight=q_best[i][2])
+					else:
+						bestReciprocalHits.add_edge(q_best[i][0], q_best[i][1], weight=q_best[i][2])
+# 				if i < len(qd_best):
+# 					bestDirHits.add_edge(qd_best[i][0], qd_best[i][1], weight=qd_best[i][2], rank=qdbi)
+# 					# print qd_best[i]
+# 					qdbi += 1
+				i += 1
+# 		return (bestHits, bestDirHits)
+		return bestReciprocalHits
 
 	@staticmethod
-	def makePutativeClusters(bestHits, tree_dir, synData, bestDirHits):
+	def makePutativeClusters(tree_dir, synData, bestReciprocalHits):
 		# numThreads = 4
 		# MAX_HITS = numHits
-		BlastParse.logger.info("len(best hits nodes) %d %d" % (len(bestHits.nodes()), len(bestHits.edges())))
-		subs = list(nx.connected_component_subgraphs(bestHits))
+		BlastParse.logger.info("len(best hits nodes) %d %d" % (len(bestReciprocalHits.nodes()), len(bestReciprocalHits.edges())))
+		subs = list(nx.connected_component_subgraphs(bestReciprocalHits))
 		count = 1
 		orphan_file = tree_dir + "orphan_genes.txt"
 		orphans = open(orphan_file, 'w')
@@ -137,9 +145,11 @@ class BlastParse:
 		clusterToSub = {}
 		gene_count = 0
 		for s in subs:  # each subgraph is an initial cluster
+# 			if "L_0000000_t4ucZvbygVF5ikvl7c4Rdg_006257" not in s.nodes():
+# 				continue
 			# why are the subgraphs defined from the undirected graph and then used on the directed graph? Isn't RBH used?
-			my_sub = bestDirHits.subgraph(s.nodes())
-			bd_sub = my_sub.copy()
+# 			my_sub = bestDirHits.subgraph(s.nodes())
+# 			bd_sub = my_sub.copy()
 			# my_edges = [e for e in bd_sub.edges_iter()]
 # 			my_edges = bd_sub.edges()
 # 			edges_to_remove = []
@@ -152,31 +162,31 @@ class BlastParse:
 # # 					edges_to_remove.append(med)
 # 			bd_sub.remove_edges_from(edges_to_remove)
 
-			while len(bd_sub.nodes()) > 0:
-				clusterID = "cluster_" + str(count)
-				sccs = list(nx.strongly_connected_component_subgraphs(bd_sub))
-				# if len(sccs) > 1:
-				# 	BlastParse.logger.warning("More than 1 strongly connected component in this graph!!!")
-				# 	BlastParse.logger.debug(sccs[1].nodes())
-				scc = sccs[0]  # TODO verify : always only 1 possible, even when clustering more than 2 genomes?
-				if len(scc.nodes()) == 1:
-					locus = scc.nodes()[0]
-					orphans.write(locus + "\n")
+# 			while len(s.nodes()) > 0:
+			clusterID = "cluster_" + str(count)
+# 				sccs = list(nx.strongly_connected_component_subgraphs(s))
+			# if len(sccs) > 1:
+			# 	BlastParse.logger.warning("More than 1 strongly connected component in this graph!!!")
+			# 	BlastParse.logger.debug(sccs[1].nodes())
+# 				scc = sccs[0]  # TODO verify : always only 1 possible, even when clustering more than 2 genomes?
+			if len(s.nodes()) == 1:
+				locus = s.nodes()[0]
+				orphans.write(locus + "\n")
+				geneToCluster[locus] = clusterID
+				if clusterID not in clusterToGenes:
+					clusterToGenes[clusterID] = []
+				clusterToGenes[clusterID].append(locus)
+			else:
+				clusterToSub[clusterID] = s  # s is a graph object
+				for locus in s.nodes():
 					geneToCluster[locus] = clusterID
 					if clusterID not in clusterToGenes:
 						clusterToGenes[clusterID] = []
 					clusterToGenes[clusterID].append(locus)
-				else:
-					clusterToSub[clusterID] = scc  # scc is a graph object
-					for locus in scc.nodes():
-						geneToCluster[locus] = clusterID
-						if clusterID not in clusterToGenes:
-							clusterToGenes[clusterID] = []
-						clusterToGenes[clusterID].append(locus)
-				for NO in scc.nodes():
-					bd_sub.remove_node(NO)
-				count += 1
-				gene_count += len(scc.nodes())
+# 			for NO in s.nodes():
+# 				s.remove_node(NO)
+			count += 1
+			gene_count += len(s.nodes())
 		orphans.close()
 		BlastParse.logger.info("gene count = %d" % (gene_count))
 		BlastParse.logger.info("count = %d" % (count))

@@ -30,7 +30,7 @@ import argparse
 
 
 def main():
-	usage = "usage: WF_RefineCluster_leaf_centroid_newmatrix.py [options]"
+	usage = "usage: WF_MakeRoughClusters.py [options]"
 	parser = argparse.ArgumentParser(usage)
 	parser.add_argument('-dir', dest="node_dir", required=True, help="Path to the \"nodes\" folder. (Required)")
 	parser.add_argument('-node', dest="node", required=True, help="Current node name. (Required)")
@@ -75,7 +75,7 @@ def main():
 	hits = bp.readBlastM8()
 	# hits = bp.readBlat()
 
-	(bestHits, bestDirHits) = bp.scoreHits(hits, n_head, args.min_best_hit, pickleSyn, args.minSynFrac)
+	bestReciprocalHits = bp.scoreHits(hits, n_head, args.min_best_hit, pickleSyn, args.minSynFrac)
 	tree_dir = my_dir + "trees"
 	# if "trees" in os.listdir(my_dir):
 	if os.path.exists(tree_dir):
@@ -87,7 +87,7 @@ def main():
 	# os.system("mkdir "+tree_dir)
 	os.mkdir(tree_dir)
 	tree_dir = tree_dir + os.sep
-	retval = bp.makePutativeClusters(bestHits, tree_dir, pickleSyn, bestDirHits)
+	retval = bp.makePutativeClusters(tree_dir, pickleSyn, bestReciprocalHits)
 # 	sys.exit()
 	if retval > 0:
 		sys.exit(retval)
