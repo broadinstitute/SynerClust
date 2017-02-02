@@ -5,6 +5,8 @@
 #$ -P gscid
 
 #$ -l m_mem_free=2g
+#$ -binding linear:2
+#$ -pe smp 2
 #$ -e #WORKING_DIRerror.err
 #$ -o #WORKING_DIRout.log
 
