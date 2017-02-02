@@ -7,7 +7,7 @@ import time
 
 
 parser = argparse.ArgumentParser("usage : Use this script to automatically launch new SynerClust jobs on UGER from a file containing the list of jobs.\nYou need to have ran \"use UGER\" before using this script")
-parser.add_argument("-l", dest="limit", type=int, default=90, help="Maximum number of slots that can be used (including those taken by other jobs). default = 90")
+parser.add_argument("-l", dest="limit", type=int, default=800, help="Maximum number of slots that can be used (including those taken by other jobs). default = 90")
 parser.add_argument("-f", dest="file", default="uger_list.txt", help="File containing the commands to run. default = \"uger_list.txt\"")
 parser.add_argument("-t", dest="wait", type=int, default=300, help="Interval of time at which to check the number of available slots (in seconds). default = 300 (5 minutes)")
 parser.add_argument("-p", dest="project", default="gscid", help="Project on which to submit for priority.")
