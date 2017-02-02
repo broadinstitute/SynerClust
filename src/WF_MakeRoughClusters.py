@@ -11,12 +11,12 @@ import argparse
 
 # def usage():
 # 	print """Creates rough clusters based on the BLAST output.
-# 
+#
 # 	WF_MakeRoughClusters.py [node dir] [node name] [min best hit] [child1] [child2]
-# 
+#
 # 	where [node dir] contains data pertinent to [node name], which has children [child1] and [child2].
 # 	Tightness of intra-rough-cluster relationships can be regulated by [min best hit].
-# 
+#
 # 	[node dir], dir path
 # 	full path to directory
 # 	[node name], string
@@ -38,15 +38,7 @@ def main():
 	parser.add_argument('-F', '--min_syntenic_fraction', type=float, dest="minSynFrac", required=True, help="Minimal syntenic fraction.")
 	parser.add_argument('children', nargs=2, help="Children nodes. (Required)")
 	args = parser.parse_args()
-	
-# 	node_dir = argv[0]
-# 	node = argv[1]
-# 	min_best_hit = float(argv[2])
-# 	homScale = float(argv[3])
-# 	synScale = float(argv[4])
-# 	numHits = int(argv[5])
-# 	minSynFrac = float(argv[6])
-# 	children = argv[7:]
+
 	my_dir = args.node_dir + args.node + "/"
 	blast_out = my_dir + "blast.m8"
 	n_head = my_dir + "blast_headers.txt"

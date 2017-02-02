@@ -6,11 +6,9 @@ import NJ
 import pickle
 import networkx as nx
 import numpy
-# from collections import Counter
 import logging
 import subprocess
 import argparse
-# import scipy.spatial.distance as distance
 
 DEVNULL = open(os.devnull, 'w')
 
@@ -53,18 +51,6 @@ def main():
 	mrca = args.node
 
 	my_dir = args.node_dir + mrca + "/"
-
-# 	node_dir = argv[0]
-# # 	repo_path = argv[0][:-6]
-# 	mrca = argv[3]
-# 	node = argv[3]
-# 	alpha = float(argv[4]) # synteny weight
-# 	gamma = float(argv[5]) # gain/loss weight
-# 	gain = float(argv[6])
-# 	loss = float(argv[7])
-# 	children = argv[8:]
-# # 	NO_BREAK_EW = 0.5
-# 	beta = 0.01 # homology weight
 
 	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
 	logger = logging.getLogger()
@@ -138,10 +124,10 @@ def main():
 	with open(repo_path + "nodes/" + args.node + "/trees/cluster_to_genes.pkl", "r") as f:
 		cluster_to_genes = pickle.load(f)
 
-# 	muscle_cmd = ["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
-	muscle_cmd = ["/Users/cgeorges/Work/Tools/muscle3.8.31_i86darwin64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
-# 	fasttree_cmd = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
-	fasttree_cmd = ["/Users/cgeorges/Work/Tools/FastTreeDouble", "-quiet", "-nosupport"]
+	muscle_cmd = ["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
+	# muscle_cmd = ["/Users/cgeorges/Work/Tools/muscle3.8.31_i86darwin64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
+	fasttree_cmd = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
+	# fasttree_cmd = ["/Users/cgeorges/Work/Tools/FastTreeDouble", "-quiet", "-nosupport"]
 	ok_trees = []
 
 # 	for clusterID in pickleSeqs:
@@ -337,7 +323,6 @@ def main():
 		if len(curPep) > 0:
 			blast_pep[curBlast].append(curPep)
 
-	# sys.exit()
 	# make control files for consensus sequence formation
 	# cons_cmds = []
 	cons_pkl = {}

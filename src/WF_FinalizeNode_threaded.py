@@ -4,7 +4,7 @@ import sys
 import os
 import pickle
 import logging
-from multiprocessing import Process, Queue, RLock, Manager
+from multiprocessing import Process, Queue, RLock
 from Queue import Empty
 import subprocess
 import networkx as nx
@@ -15,10 +15,10 @@ import argparse
 DEVNULL = open(os.devnull, 'w')
 # DIST_THRESHOLD = 0.7
 # REGEX = re.compile("(\([a-zA-Z0-9-_:;.]+,[a-zA-Z0-9-_:;.]+\))")
-# MUSCLE_CMD = ["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
-MUSCLE_CMD = ["/Users/cgeorges/Work/Tools/muscle3.8.31_i86darwin64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]  # kept for debugging
-# FASTTREE_CMD = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
-FASTTREE_CMD = ["/Users/cgeorges/Work/Tools/FastTreeDouble", "-quiet", "-nosupport"]
+MUSCLE_CMD = ["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
+# MUSCLE_CMD = ["/Users/cgeorges/Work/Tools/muscle3.8.31_i86darwin64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]  # kept for debugging
+FASTTREE_CMD = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
+# FASTTREE_CMD = ["/Users/cgeorges/Work/Tools/FastTreeDouble", "-quiet", "-nosupport"]
 OUTPUT_LOCK = RLock()
 
 
@@ -40,7 +40,6 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 	cons_res = {}
 	while True:
 		try:
-# 			nos = tq.get(block=True, timeout=3)
 			nos = tq.get(block=False)
 			pep_data = nos[0]
 			clusterID = nos[1]
@@ -241,7 +240,7 @@ if __name__ == "__main__":
 	cons_out = open(consensus_pep, "a")
 	with open(args.node_dir + "consensus_data.pkl", "r") as f:
 		cons_pkl = pickle.load(f)
-	
+
 	processes = [Process(target=makeConsensus, args=(notOKQ, resultsQueue, args.dist, cons_out)) for i in xrange(args.numThreads)]
 
 	for clusterID in pickleSeqs:
@@ -250,20 +249,15 @@ if __name__ == "__main__":
 	for p in processes:
 		p.start()
 		logger.info("Starting %s" % (p.pid))
-	
-	for i in xrange(args.numThreads): 
+
+	for i in xrange(args.numThreads):
 		cons_pkl.update(resultsQueue.get())
-	
-# 	for p in processes:
-# 		p.join()
-# 		logger.info("Finished %s" % (p.pid))
 
 	cons_out.close()
-	
 
 	with open(args.node_dir + "consensus_data.pkl", "w") as f:
 		pickle.dump(cons_pkl, f)
-	
+
 	logger.info("All consensus sequences accounted for.")
 	os.system("cat " + args.node_dir + "clusters/singletons.cons.pep >> " + consensus_pep)  # ">>" to append
 	logger.info("Made pep file")
