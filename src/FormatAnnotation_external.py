@@ -244,7 +244,10 @@ def extractAnnotation(gff3_file, seq_file, genome_name, locus, out_file, stat_fi
 				start = int(line[3])
 				stop = int(line[4])
 				strand = line[6]
-				phase = int(line[7])
+				if line[7] == ".":
+					phase = 0
+				else:
+					phase = int(line[7])
 				next_cds = "junk!"
 				if curID not in pep_hash:
 					next_cds = myGenome.getCDS(scaffold, start, stop, strand, phase)

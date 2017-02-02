@@ -90,7 +90,7 @@ class BlastParse:
 # 			q_hits = q_hits_species[species]
 			q_best = []
 # 			qd_best = []
-			q_hits = hits[q]
+			q_hits = [hits[q][t] for t in hits[q]]
 			q_hits.sort(key=operator.attrgetter('bitScore'), reverse=True)
 			# q_best_hash = {}
 			for ts in q_hits:
@@ -119,7 +119,7 @@ class BlastParse:
 				if (i < len(q_best)): # and q_node != species:  # query species != target species, but why only in the not directed graph?
 					if not bestHits.has_edge(q_best[i][0], q_best[i][1]):
 						bestHits.add_edge(q_best[i][0], q_best[i][1], weight=q_best[i][2], query="_".join(q.split("_")[:-1]))
-					elif bestHits[q_best[i][0]][q_best[i][1]["query"]] != "_".join(q.split("_")[:-1]):  # not to add an edge in the reciprocal graph if there are simply multiple matches between same query and target
+					elif bestHits[q_best[i][0]][q_best[i][1]]["query"] != "_".join(q.split("_")[:-1]):  # not to add an edge in the reciprocal graph if there are simply multiple matches between same query and target
 						bestReciprocalHits.add_edge(q_best[i][0], q_best[i][1], weight=q_best[i][2])
 # 				if i < len(qd_best):
 # 					bestDirHits.add_edge(qd_best[i][0], qd_best[i][1], weight=qd_best[i][2], rank=qdbi)

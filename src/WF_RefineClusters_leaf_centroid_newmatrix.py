@@ -97,6 +97,7 @@ def main():
 	pickleMaps = {}
 	# picklePeps = {}
 	childrenpkls = {}
+	children_cons = {}
 	# print "last_tree", last_tree
 	# load locus_mapping files from children
 	for c in args.children:
@@ -111,11 +112,14 @@ def main():
 		if c[0] == "L":
 			with open(args.node_dir + c + "/" + c + ".pkl", "r") as f:
 				childrenpkls[c] = pickle.load(f)
+			children_cons[c] = childrenpkls[c]
 		else:  # c[0] == "N"
 			with open(args.node_dir + c + "/pep_data.pkl", "r") as f:
 				childrenpkls[c] = pickle.load(f)
 			with open(args.node_dir + c + "/singletons_pep_data.pkl", "r") as f:
 				childrenpkls[c].update(pickle.load(f))
+			with open(args.node_dir + c + "/consensus_data.pkl", "r") as f:
+				children_cons[c] = pickle.load(f)
 
 # 	old_orphans = open(tree_dir + "orphan_genes.txt", 'r').readlines()
 # 	orphans = open(tree_dir + "orphan_genes.txt", 'r').readlines()
@@ -134,10 +138,10 @@ def main():
 	with open(repo_path + "nodes/" + args.node + "/trees/cluster_to_genes.pkl", "r") as f:
 		cluster_to_genes = pickle.load(f)
 
-	muscle_cmd = ["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
-	# muscle_cmd = ["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
-	fasttree_cmd = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
-	# fasttree_cmd = ["/home/kamigiri/tools/FastTreeDouble", "-quiet", "-nosupport"]
+# 	muscle_cmd = ["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
+	muscle_cmd = ["/Users/cgeorges/Work/Tools/muscle3.8.31_i86darwin64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
+# 	fasttree_cmd = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
+	fasttree_cmd = ["/Users/cgeorges/Work/Tools/FastTreeDouble", "-quiet", "-nosupport"]
 	ok_trees = []
 
 # 	for clusterID in pickleSeqs:
@@ -173,7 +177,7 @@ def main():
 		process = subprocess.Popen(fasttree_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
 		output = process.communicate(output)[0]
 		# if (len(locus_mapping[cluster]) > 5):
-		print(output + "\n\n")
+		logger.debug(output + "\n\n")
 		# tree = NJ.NJTree("", "", node, alpha, beta, gamma, gain, loss)
 
 		graph = nx.Graph()
@@ -293,7 +297,7 @@ def main():
 						# additional orphan exit
 						if myTree.OK == "orphan":
 							unchecked_trees.append((NJ.NJTree.toNewick(myTree.graph).split("\n"), myTree.OK))
-								# unchecked_trees.append((NJ.NJTree.splitNewTree(myTree), myTree.OK)) # need to return both subtrees + myTree.OK in list
+							# unchecked_trees.append((NJ.NJTree.splitNewTree(myTree), myTree.OK)) # need to return both subtrees + myTree.OK in list
 						else:
 							# (myNewicks, myMatrices) = myTree.splitTree(root)
 							(new_trees, new_root_edges) = myTree.splitNewTree(root)
@@ -336,6 +340,7 @@ def main():
 	# sys.exit()
 	# make control files for consensus sequence formation
 	# cons_cmds = []
+	cons_pkl = {}
 	singletons = cluster_dir + "singletons.cons.pep"
 	singles = open(singletons, 'w')
 	sum_stats = my_dir + "summary_stats.txt"
@@ -383,7 +388,7 @@ def main():
 				treeSeqs[seq].append(l)
 				tree_seq_count += 1
 				newSyntenyMap[clusterID]['count'] += 1
-		newNewickMap[clusterID] = [ok[1], ok[2]] ###### CHANGE ok[1] or change reading in ClusterPostProcessing
+		newNewickMap[clusterID] = [ok[1], ok[2]]  ###### CHANGE ok[1] or change reading in ClusterPostProcessing
 
 		my_lengths = []
 		min_taxa = len(taxa)
@@ -405,29 +410,78 @@ def main():
 # 		sys.exit()
 		sstats.write("\t".join(out_dat) + "\n")
 
-		if tree_seq_count == 1:
-			for seq in treeSeqs:
-				seqlen = str(len(seq))
-				singles.write(">" + clusterID + ";" + seqlen + "\n" + seq + "\n")
-			seq = treeSeqs.keys()[0]
-			singletons_pep[clusterID] = [">" + clusterID + ";" + str(len(seq)) + "\n" + seq + "\n"]
-		elif len(ok[0]) == 1:
-			for bseq in blast_pep[ok[0][0]]:
-				seqlen = str(len(bseq))
-				singles.write(">" + clusterID + ";" + seqlen + "\n" + bseq + "\n")
-			bseq = blast_pep[ok[0][0]][0]
-			singletons_pep[clusterID] = [">" + clusterID + ";" + str(len(bseq)) + "\n" + bseq + "\n"]
+		if len(ok[0]) == 1:
+			child = "_".join(ok[0][0].split("_")[:-1])
+# 			seq = children_cons[child][ok[0][0]]
+			seqs = {}
+			if child[0] == "L":
+				seqs[g] = children_cons[child][g]
+			else:
+				for seq in children_cons[child][g]:
+					i = 0
+					identifier = None
+					for s in seq.rstrip().split("\n"):
+						if not i % 2:
+							identifier = s[1:].split(";")[0]
+						else:
+							seqs[identifier] = s
+						i += 1
+# 			else:
+				# need to get list of sequences to write them all
+			for k, s in seqs.iteritems():
+				cons_pkl[clusterID] = [">" + clusterID + ";" + str(len(s)) + "\n" + seq + "\n"]
+				singletons_pep[clusterID] = [">" + clusterID + ";" + str(len(s)) + "\n" + s + "\n"]
+				singles.write(">" + clusterID + ";" + str(len(s)) + "\n" + s + "\n")
 		else:
-			#  temp_pep = cluster_dir + clusterID + ".pep"
-			#  pepOut = open(temp_pep, 'w')
 			pickleToCons[clusterID] = []
 			newNewickMap[clusterID].append([])
-			for seq in treeSeqs:
-				seqlen = str(len(seq))
-				identifier = treeSeqs[seq][0]  # TODO output ALL IDs from seq because there might be more than a single ID, and this is NOT a .cons.pep file, just a .pep file
-# 				pepOut.write(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
-				pickleToCons[clusterID].append(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
-				newNewickMap[clusterID][2].append(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
+			for g in ok[0]:
+				child = "_".join(g.split("_")[:-1])
+				seqs = {}
+				if child[0] == "L":
+					seqs[g] = children_cons[child][g]
+				else:
+					for seq in children_cons[child][g]:
+# 						if seq[0] == ">":  # else its a leaf so only sequence is present
+						i = 0
+						identifier = None
+						for s in seq.rstrip().split("\n"):
+							if not i % 2:  # not so that 0 is True
+								identifier = s[1:].split(";")[0]
+							else:
+								seqs[identifier] = s
+							i += 1
+# 						else:
+# 							seqs = [seq]
+				i = 0
+				for k, s in seqs.iteritems():
+					pickleToCons[clusterID].append(">" + k + ";" + str(i) + ";" + str(len(s)) + "\n" + s + "\n")  # str(i) is a unique part in name so that all different names for muscle/fasttree
+					newNewickMap[clusterID][2].append(">" + k + ";" + str(len(s)) + "\n" + s + "\n")
+					i += 1
+# 		if tree_seq_count == 1:
+# 			for seq in treeSeqs:
+# 				seqlen = str(len(seq))
+# 				singles.write(">" + clusterID + ";" + seqlen + "\n" + seq + "\n")
+# 			seq = treeSeqs.keys()[0]
+# 			singletons_pep[clusterID] = [">" + clusterID + ";" + str(len(seq)) + "\n" + seq + "\n"]
+# 		elif len(ok[0]) == 1:
+# 			for bseq in blast_pep[ok[0][0]]:
+# 				seqlen = str(len(bseq))
+# 				singles.write(">" + clusterID + ";" + seqlen + "\n" + bseq + "\n")
+# 			bseq = blast_pep[ok[0][0]][0]
+# 			singletons_pep[clusterID] = [">" + clusterID + ";" + str(len(bseq)) + "\n" + bseq + "\n"]
+# 		else:
+# 			#  temp_pep = cluster_dir + clusterID + ".pep"
+# 			#  pepOut = open(temp_pep, 'w')
+# 			pickleToCons[clusterID] = []
+# 			newNewickMap[clusterID].append([])
+# 			for seq in treeSeqs:
+# 				seqlen = str(len(seq))
+# 				identifier = treeSeqs[seq][0]  # TODO output ALL IDs from seq because there might be more than a single ID, and this is NOT a .cons.pep file, just a .pep file
+# # 				pepOut.write(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
+# # 				pickleToCons[clusterID].append(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
+# 				pickleToCons[clusterID].append(children_cons[child][g])
+# 				newNewickMap[clusterID][2].append(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
 # 			pepOut.close()
 		cluster_counter += 1
 	singles.close()
@@ -464,6 +518,8 @@ def main():
 	with open(my_dir + "clusters_newick.pkl", "w") as f:
 		pickle.dump(newNewickMap, f)
 
+	with open(my_dir + "consensus_data.pkl", "w") as f:
+		pickle.dump(cons_pkl, f)
 	# script complete call
 	clusters_done_file = my_dir + "CLUSTERS_REFINED"
 	cr = open(clusters_done_file, 'w')

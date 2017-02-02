@@ -4,7 +4,7 @@ import sys
 import os
 import pickle
 import logging
-from multiprocessing import Process, Queue, RLock
+from multiprocessing import Process, Queue, RLock, Manager
 from Queue import Empty
 import subprocess
 import networkx as nx
@@ -15,10 +15,10 @@ import argparse
 DEVNULL = open(os.devnull, 'w')
 # DIST_THRESHOLD = 0.7
 # REGEX = re.compile("(\([a-zA-Z0-9-_:;.]+,[a-zA-Z0-9-_:;.]+\))")
-MUSCLE_CMD = ["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
-# MUSCLE_CMD = ["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]  # kept for debugging
-FASTTREE_CMD = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
-# FASTTREE_CMD = ["/home/kamigiri/tools/FastTreeDouble", "-quiet", "-nosupport"]
+# MUSCLE_CMD = ["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
+MUSCLE_CMD = ["/Users/cgeorges/Work/Tools/muscle3.8.31_i86darwin64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]  # kept for debugging
+# FASTTREE_CMD = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
+FASTTREE_CMD = ["/Users/cgeorges/Work/Tools/FastTreeDouble", "-quiet", "-nosupport"]
 OUTPUT_LOCK = RLock()
 
 
@@ -35,14 +35,16 @@ def get_fasttree(stdin_data):
 	return (output1, output2)
 
 
-def makeConsensus(tq, dist_threshold, consensus_pep):
+def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 	logger = logging.getLogger()
+	cons_res = {}
 	while True:
 		try:
-			nos = tq.get(block=True, timeout=3)
+# 			nos = tq.get(block=True, timeout=3)
+			nos = tq.get(block=False)
 			pep_data = nos[0]
 			clusterID = nos[1]
-			logger.info("Processing cluster " + clusterID)
+			logger.debug("Processing cluster " + clusterID)
 			(mus_out, output) = get_fasttree("".join(pep_data))
 
 			graph = nx.Graph()
@@ -72,7 +74,7 @@ def makeConsensus(tq, dist_threshold, consensus_pep):
 					graph.add_edge(group, child[0], dist=float(child[1]))
 				output = output[:l] + group + output[r + 1:]
 
-			logger.info("Built graph for cluster " + clusterID)
+			logger.debug("Built graph for cluster " + clusterID)
 			matrix_size = len(leaves) * (len(leaves) - 1) / 2
 			leaves_length = len(leaves)
 			# nodes are headers/gene references
@@ -107,7 +109,7 @@ def makeConsensus(tq, dist_threshold, consensus_pep):
 				# for_med = numpy.copy(average_dist)  # the median of medians search reorders elements
 				index = int(average_dist[median_of_medians.for2DArray(average_dist)][1])
 				representative_sequences.append(leaves[index])
-				logger.info("Added representative to cluster " + clusterID)
+				logger.debug("Added representative to cluster " + clusterID)
 				# n = math.floor((math.sqrt(8 * index + 1) - 1) / 2)
 				# check which sequences are more distant to it than the threshold
 				to_remove = numpy.full(leaves_length, -1, int)
@@ -179,19 +181,25 @@ def makeConsensus(tq, dist_threshold, consensus_pep):
 			logger.debug("Trying to acquire lock for " + clusterID)
 			OUTPUT_LOCK.acquire()
 			logger.debug("Acquired lock for " + clusterID)
-			cons_out = open(consensus_pep, "a")
+# 			cons_out = open(consensus_pep, "a")
+			out_buffer = ""
+			cons_res[clusterID] = []
 			for s in representative_sequences:
 				cons_seq = "".join(mus_seqs[s])
 				cons_seq = cons_seq.replace("-", "")
-				cons_out.write(">" + clusterID + ";" + str(len(cons_seq)) + "\n")
-				cons_out.write(cons_seq + "*\n")
+				out_buffer += ">" + clusterID + ";" + str(len(cons_seq)) + "\n"
+				out_buffer += cons_seq + "*\n"
+				cons_res[clusterID].append(out_buffer)
+				cons_out.write(out_buffer)
 				logger.debug("Wrote sequence for " + clusterID)
-			cons_out.close
+			cons_out.flush()
+# 			cons_out.close
 			logger.debug("Trying to release lock for " + clusterID)
 			OUTPUT_LOCK.release()
 			logger.debug("Released lock for " + clusterID)
 
 		except Empty:
+			resultsQueue.put(cons_res)
 			break
 
 
@@ -226,10 +234,15 @@ if __name__ == "__main__":
 	sdat.close()
 
 	notOKQ = Queue(0)
+	resultsQueue = Queue(0)
 	consensus_pep = args.node_dir + args.node + ".pep"
 	os.system("rm " + consensus_pep)  # since the file is opened in append mode every time, we need to delete anything from a previous run
 
-	processes = [Process(target=makeConsensus, args=(notOKQ, args.dist, consensus_pep)) for i in range(args.numThreads)]
+	cons_out = open(consensus_pep, "a")
+	with open(args.node_dir + "consensus_data.pkl", "r") as f:
+		cons_pkl = pickle.load(f)
+	
+	processes = [Process(target=makeConsensus, args=(notOKQ, resultsQueue, args.dist, cons_out)) for i in xrange(args.numThreads)]
 
 	for clusterID in pickleSeqs:
 		notOKQ.put((pickleSeqs[clusterID], clusterID))
@@ -237,10 +250,20 @@ if __name__ == "__main__":
 	for p in processes:
 		p.start()
 		logger.info("Starting %s" % (p.pid))
-	for p in processes:
-		p.join()
-		logger.info("Finished %s" % (p.pid))
+	
+	for i in xrange(args.numThreads): 
+		cons_pkl.update(resultsQueue.get())
+	
+# 	for p in processes:
+# 		p.join()
+# 		logger.info("Finished %s" % (p.pid))
 
+	cons_out.close()
+	
+
+	with open(args.node_dir + "consensus_data.pkl", "w") as f:
+		pickle.dump(cons_pkl, f)
+	
 	logger.info("All consensus sequences accounted for.")
 	os.system("cat " + args.node_dir + "clusters/singletons.cons.pep >> " + consensus_pep)  # ">>" to append
 	logger.info("Made pep file")
