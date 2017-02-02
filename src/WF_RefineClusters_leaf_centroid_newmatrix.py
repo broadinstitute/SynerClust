@@ -414,7 +414,7 @@ def main():
 # 			else:
 				# need to get list of sequences to write them all
 			for k, s in seqs.iteritems():
-				cons_pkl[clusterID] = [">" + clusterID + ";" + str(len(s)) + "\n" + seq + "\n"]
+				cons_pkl[clusterID] = [">" + clusterID + ";" + str(len(s)) + "\n" + s + "\n"]
 				singletons_pep[clusterID] = [">" + clusterID + ";" + str(len(s)) + "\n" + s + "\n"]
 				singles.write(">" + clusterID + ";" + str(len(s)) + "\n" + s + "\n")
 		else:
