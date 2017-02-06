@@ -9,6 +9,7 @@ import numpy
 import logging
 import subprocess
 import argparse
+import time
 
 DEVNULL = open(os.devnull, 'w')
 
@@ -63,6 +64,8 @@ def main():
 
 	if "CLUSTERS_REFINED" in os.listdir(my_dir):
 		sys.exit(0)
+
+	TIMESTAMP = time.time()
 
 	# read trees, resolve clusters
 	# tree_dir = my_dir + "trees/"
@@ -130,6 +133,9 @@ def main():
 	# fasttree_cmd = ["/Users/cgeorges/Work/Tools/FastTreeDouble", "-quiet", "-nosupport"]
 	ok_trees = []
 
+	logger.debug("Loading files took " + str(time.time() - TIMESTAMP))
+	TIMESTAMP = time.time()
+
 # 	for clusterID in pickleSeqs:
 	for cluster in cluster_to_genes:
 		if len(cluster_to_genes[cluster]) == 1:
@@ -163,6 +169,9 @@ def main():
 		process = subprocess.Popen(fasttree_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
 		output = process.communicate(output)[0]
 		# if (len(locus_mapping[cluster]) > 5):
+
+		logger.debug("Built fasttree for " + cluster + " in " + str(time.time() - TIMESTAMP))
+		TIMESTAMP = time.time()
 		logger.debug(output + "\n\n")
 		# tree = NJ.NJTree("", "", node, alpha, beta, gamma, gain, loss)
 
@@ -195,6 +204,9 @@ def main():
 		cluster_to_genes[cluster].sort()
 		if leaves != cluster_to_genes[cluster]:
 			logger.critical("leaves:\n%s\ngenes:\n%s\n" % (leaves, cluster_to_genes[cluster]))
+
+		logger.debug("Read fasttree for " + cluster + " in " + str(time.time() - TIMESTAMP))
+		TIMESTAMP = time.time()
 
 		leaves.sort()
 		syn = {}
@@ -229,12 +241,20 @@ def main():
 				syn_matrix[pos] = 1.0 - synFrac
 				pos += 1
 			i += 1
+
+		logger.debug("Built matrices for " + cluster + " in " + str(time.time() - TIMESTAMP))
+		TIMESTAMP = time.time()
+
 		# Root, evaluate and split every tree until all trees are OK
 		unchecked_trees = []
 		# Could probably replace these lines by directly reading the distance matrix file into the list without needing to create a NJ.NJTree
 # 			myTree = NJ.NJTree(hom_mat, syn_mat, mrca, alpha, beta, gamma, gain, loss)
 		myTree = NJ.NJTree(mrca, args.alpha, args.beta, args.gamma, args.gain, args.loss)
 		myTree.buildGraphFromNewDistanceMatrix(hom_matrix, syn_matrix, leaves)
+
+		logger.debug("Built NJtree for " + cluster + " in " + str(time.time() - TIMESTAMP))
+		TIMESTAMP = time.time()
+
 # 		myTree = NJ.NJTree(tree_file, syn_file, mrca, alpha, beta, gamma, gain, loss)
 		# If "false" refers to orphan status, why are there also both "true" and "orphan"?
 		unchecked_trees.append((myTree, False))
@@ -278,6 +298,8 @@ def main():
 							ok_trees.append([format_nodes, myTree.getNewick(), True])
 						else:  # parcimony
 							ok_trees.append([format_nodes, myTree.getNewick(), False])
+						logger.debug("Got some OKtree for " + cluster + " in " + str(time.time() - TIMESTAMP))
+						TIMESTAMP = time.time()
 					# tree is invalid, added to unchecked trees unless it is an orphan
 					else:
 						# additional orphan exit
@@ -290,6 +312,11 @@ def main():
 							# for m in myMatrices:
 							for new_tree in new_trees:
 								unchecked_trees.append((new_tree, myTree.OK))
+							logger.debug("Split NJtree for " + cluster + " in " + str(time.time() - TIMESTAMP))
+							TIMESTAMP = time.time()
+
+	logger.debug("Finished processing " + cluster + " in " + str(time.time() - TIMESTAMP))
+	TIMESTAMP = time.time()
 
 	newPickleMap = {}  # this will turn into the locus mappings for this node
 	newSyntenyMap = {}
