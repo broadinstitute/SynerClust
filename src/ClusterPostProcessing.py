@@ -73,7 +73,7 @@ def main():
 	nodes = os.listdir(nodes_path)
 	distrib_out = open(nodes_path + current_root + "/cluster_dist_per_genome.txt", "w")
 	clusters_out = open(nodes_path + current_root + "/clusters.txt", "w")
-	if parser.alignement:
+	if args.alignement:
 		alignement_out = open(nodes_path + current_root + "/alignments.txt", "w")
 	distrib_out.write("#cluster_id\tname")
 	leaves = []
@@ -132,14 +132,14 @@ def main():
 			prefix = "_".join(k.split("_")[:-1])
 			cout_buffer += l_t[k] + " "
 			clusters_out.write("\t".join([counter, tagToGenome[prefix], genomeToAnnot[tagToGenome[prefix]], t_n[l_t[k]][0], l_t[k], t_n[l_t[k]][1], t_n[l_t[k]][2] + "\n"]))  # STORE DATA CATALOG INFO: genome name and translation to encoded (locus_tag_file?), annotation file name
-			if parser.alignement:
+			if args.alignement:
 				stdin_data += ">" + tagToGenome[prefix] + "_" + l_t[k] + "\n" + l_s[k] + "\n"
 			if t_n[l_t[k]][2] is not "None":
 				names.append(t_n[l_t[k]][2])
 			ct_out_buffer += cid + "\t" + l_t[k] + "\n"
 			genomes.append(prefix)
 		clusters_out.write("\n")
-		if parser.alignement:
+		if args.alignement:
 			alignement_out.write(cid + "\n" + get_alignement(stdin_data) + "\n")
 
 		for i in xrange(len(leafKids)):
@@ -186,7 +186,7 @@ def main():
 	nwk_out.close()
 	distrib_out.close()
 	clusters_out.close()
-	if parser.alignement:
+	if args.alignement:
 		alignement_out.close()
 
 	ds = locus_mapping.split("/")
