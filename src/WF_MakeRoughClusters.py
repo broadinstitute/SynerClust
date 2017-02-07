@@ -61,13 +61,17 @@ def main():
 		pklFile = open(synFile, 'rb')
 		pickleSyn[c] = pickle.load(pklFile)
 		pklFile.close()
+	logger.debug("Loaded synteny_data")
 
 	# Create rough clusters with trees
 	bp = BlastHandling.BlastParse(blast_out)
+	logger.debug("Parsed Blast")
 	hits = bp.readBlastM8()
+	logger.debug("Read Blast")
 	# hits = bp.readBlat()
 
 	bestReciprocalHits = bp.scoreHits(hits, n_head, args.min_best_hit, pickleSyn, args.minSynFrac)
+	logger.debug("Scored Hits")
 	tree_dir = my_dir + "trees"
 	# if "trees" in os.listdir(my_dir):
 	if os.path.exists(tree_dir):
@@ -80,6 +84,7 @@ def main():
 	os.mkdir(tree_dir)
 	tree_dir = tree_dir + os.sep
 	retval = bp.makePutativeClusters(tree_dir, pickleSyn, bestReciprocalHits)
+	logger.debug("Made Putative Clusters")
 # 	sys.exit()
 	if retval > 0:
 		sys.exit(retval)
@@ -90,6 +95,7 @@ def main():
 	tf.close()
 
 	sys.exit(0)
+
 
 if __name__ == "__main__":
 	main()
