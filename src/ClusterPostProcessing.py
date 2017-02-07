@@ -13,7 +13,7 @@ def usage():
 	print "USAGE: ClusterPostProcessing.py [path to genomes/ in synergy2 working dir] [path to locus_mapping.pkl of node to be processed] [number of leaf genomes descendent of node to be processed]"
 
 
-def main(argv):
+def main():
 	usage = "usage: ClusterPostProcessing [options] genomes_directory specific_node_directory number_of_genomes"
 	parser = argparse.ArgumentParser(usage)
 	parser.add_argument('-a', dest="alignement", type=bool, default=False, help="Whether to output whole cluster alignements (slow) (Default=False)")
