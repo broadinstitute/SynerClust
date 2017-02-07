@@ -6,6 +6,7 @@ import logging
 import re
 from collections import Counter
 from WF_FinalizeNode_threaded import get_alignement
+import argparse
 
 
 def usage():
@@ -13,6 +14,11 @@ def usage():
 
 
 def main(argv):
+	usage = "usage: ClusterPostProcessing [options] genomes_directory specific_node_directory number_of_genomes"
+	parser = argparse.ArgumentParser(usage)
+	parser.add_argument('-a', dest="alignement", type=bool, default=False, help="Whether to output whole cluster alignements (slow) (Default=False)")
+	parser.add_argument('folders', nargs=3, help="genome_directory specific_node_directory number_of_genomes (Required)")
+
 	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
 	logger = logging.getLogger()
 	logging.basicConfig(filename='ClusterPostProcessing.log', format=FORMAT, filemode='w', level=logging.DEBUG)
@@ -23,9 +29,9 @@ def main(argv):
 	logger.info('Started')
 
 	# node_path = argv[0]
-	locus_mapping = argv[1]
-	genome_path = argv[0]
-	num_genomes = int(argv[2])
+	locus_mapping = parser.folders[1]
+	genome_path = parser.folders[0]
+	num_genomes = int(parser.folders[2])
 
 	pklFile = open(locus_mapping, 'rb')
 	locusMap = pickle.load(pklFile)
@@ -66,7 +72,8 @@ def main(argv):
 	nodes = os.listdir(nodes_path)
 	distrib_out = open(nodes_path + current_root + "/cluster_dist_per_genome.txt", "w")
 	clusters_out = open(nodes_path + current_root + "/clusters.txt", "w")
-	alignement_out = open(nodes_path + current_root + "/alignments.txt", "w")
+	if parser.alignement:
+		alignement_out = open(nodes_path + current_root + "/alignments.txt", "w")
 	distrib_out.write("#cluster_id\tname")
 	leaves = []
 	for n in nodes:
@@ -124,13 +131,15 @@ def main(argv):
 			prefix = "_".join(k.split("_")[:-1])
 			cout_buffer += l_t[k] + " "
 			clusters_out.write("\t".join([counter, tagToGenome[prefix], genomeToAnnot[tagToGenome[prefix]], t_n[l_t[k]][0], l_t[k], t_n[l_t[k]][1], t_n[l_t[k]][2] + "\n"]))  # STORE DATA CATALOG INFO: genome name and translation to encoded (locus_tag_file?), annotation file name
-			stdin_data += ">" + tagToGenome[prefix] + "_" + l_t[k] + "\n" + l_s[k] + "\n"
+			if parser.alignement:
+				stdin_data += ">" + tagToGenome[prefix] + "_" + l_t[k] + "\n" + l_s[k] + "\n"
 			if t_n[l_t[k]][2] is not "None":
 				names.append(t_n[l_t[k]][2])
 			ct_out_buffer += cid + "\t" + l_t[k] + "\n"
 			genomes.append(prefix)
 		clusters_out.write("\n")
-		alignement_out.write(cid + "\n" + get_alignement(stdin_data) + "\n")
+		if parser.alignement:
+			alignement_out.write(cid + "\n" + get_alignement(stdin_data) + "\n")
 
 		for i in xrange(len(leafKids)):
 			for j in xrange(i + 1, len(leafKids)):
@@ -176,7 +185,8 @@ def main(argv):
 	nwk_out.close()
 	distrib_out.close()
 	clusters_out.close()
-	alignement_out.close()
+	if parser.alignement:
+		alignement_out.close()
 
 	ds = locus_mapping.split("/")
 	ds.pop()
@@ -189,7 +199,8 @@ def main(argv):
 
 
 if __name__ == "__main__":
-	if len(sys.argv) == 1:
-		sys.exit(usage())
-	else:
-		main(sys.argv[1:])
+	main()
+	# if len(sys.argv) == 1:
+	# 	sys.exit(usage())
+	# else:
+	# 	main(sys.argv[1:])
