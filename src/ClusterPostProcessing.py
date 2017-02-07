@@ -17,7 +17,8 @@ def main():
 	usage = "usage: ClusterPostProcessing [options] genomes_directory specific_node_directory number_of_genomes"
 	parser = argparse.ArgumentParser(usage)
 	parser.add_argument('-a', dest="alignement", type=bool, default=False, help="Whether to output whole cluster alignements (slow) (Default=False)")
-	parser.add_argument('folders', nargs=3, help="genome_directory specific_node_directory number_of_genomes (Required)")
+	parser.add_argument('folders', nargs=3, help="genome_directory specific_node_directory/locus_mappings.pkl number_of_genomes (Required)")
+	args = parser.parse_args()
 
 	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
 	logger = logging.getLogger()
@@ -29,9 +30,9 @@ def main():
 	logger.info('Started')
 
 	# node_path = argv[0]
-	locus_mapping = parser.folders[1]
-	genome_path = parser.folders[0]
-	num_genomes = int(parser.folders[2])
+	locus_mapping = args.folders[1]
+	genome_path = args.folders[0]
+	num_genomes = int(args.folders[2])
 
 	pklFile = open(locus_mapping, 'rb')
 	locusMap = pickle.load(pklFile)
