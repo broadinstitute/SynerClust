@@ -221,7 +221,7 @@ def extractAnnotation(gff3_file, seq_file, genome_name, locus, out_file, stat_fi
 					out.write(outline)
 				myCDS = ""
 				cds_tups = []
-				data = line[8].split(";")
+				data = "-".join(line[8:]).split(";")   # join to read the whole attributes even if spaces
 				gstart = line[3]
 				gstop = line[4]
 				gstrand = line[6]
