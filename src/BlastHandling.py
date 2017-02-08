@@ -108,6 +108,11 @@ class BlastParse:
 		gene_count = 0
 		for s in subs:  # each subgraph is an initial cluster
 			clusterID = "cluster_" + str(count)
+			if 'L_0000000_vpfkc0x3-cBWYIYFcmcPqA_019882' in s.nodes():
+				debug_buffer = ''
+				for e in s.edges():
+					debug_buffer += e[0] + " " + e[1] + "\n"
+				BlastParse.logger.debug("edges:\n" + debug_buffer + "\n\n")
 			if len(s.nodes()) == 1:
 				locus = s.nodes()[0]
 				orphans.write(locus + "\n")
