@@ -203,7 +203,7 @@ def main():
 		leaves.sort()
 		cluster_to_genes[cluster].sort()
 		if leaves != cluster_to_genes[cluster]:
-			logger.critical("leaves:\n%s\ngenes:\n%s\n" % (leaves, cluster_to_genes[cluster]))
+			logger.critical("leaves:\n%s\ngenes:\n%s\nstdin_data:\n%s\n" % (leaves, cluster_to_genes[cluster]; stdin_data))
 
 		logger.debug("Read fasttree for " + cluster + " in " + str(time.time() - TIMESTAMP))
 		TIMESTAMP = time.time()
