@@ -50,8 +50,8 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 			leaves = []
 			for line in pep_data:
 				if line[0] == ">":
-					lengths[";".join(line.split(";")[:-1])] = line.split(";")[-1]
-					leaves.append(";".join(line.split(";")[:-1]))
+					lengths[line] = line.split(";")[-1]
+					leaves.append(line)
 			graph = nx.Graph()
 			counter = 1
 			representative_sequences = []
