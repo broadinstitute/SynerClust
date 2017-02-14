@@ -87,7 +87,7 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 			i = 1
 			for n in leaves[1:]:
 				for m in leaves[:i]:
-					dist_matrix[j] = nx.shortest_path_length(graph, n, m, "dist")	
+					dist_matrix[j] = nx.shortest_path_length(graph, n, m, "dist")
 					j += 1
 				i += 1
 
@@ -95,7 +95,7 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 				# select longest by reading dict once and keeping track of k,v for longest
 				max_len = 0
 				max_key = None
-				for (key, value) in lengths:
+				for key, value in lengths.iteritems():
 					if value > max_len:
 						max_len = value
 						max_key = key
