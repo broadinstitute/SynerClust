@@ -108,20 +108,20 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 				for j in xrange(leaves_length):
 					if index == j:
 						to_remove[i] = j
+						del lengths[leaves[j - i]]
 						leaves.remove(leaves[j - i])
-						del(lengths[leaves[j - i]])
 						i += 1
 					elif index < j:
 						if dist_matrix[(j * (j - 1) / 2) + index] < dist_threshold:
 							to_remove[i] = j
+							del lengths[leaves[j - i]]
 							leaves.remove(leaves[j - i])
-							del(lengths[leaves[j - i]])
 							i += 1
 					else:
 						if dist_matrix[(index * (index - 1) / 2) + j] < dist_threshold:
 							to_remove[i] = j
+							del lengths[leaves[j - i]]
 							leaves.remove(leaves[j - i])
-							del(lengths[leaves[j - i]])
 							i += 1
 				logger.debug("Distance check with " + str(i) + " represented sequences done for " + clusterID)
 
