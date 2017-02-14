@@ -50,7 +50,7 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 			leaves = []
 			for line in pep_data:
 				if line[0] == ">":
-					header = line.split("\n")[0]
+					header = line[1:].split("\n")[0]
 					lengths[header] = int(header.split(";")[-1])
 					leaves.append(header)
 			graph = nx.Graph()
@@ -87,7 +87,7 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 			i = 1
 			for n in leaves[1:]:
 				for m in leaves[:i]:
-					dist_matrix[j] = nx.shortest_path_length(graph, n, m, "dist")
+					dist_matrix[j] = nx.shortest_path_length(graph, n, m, "dist")	
 					j += 1
 				i += 1
 
