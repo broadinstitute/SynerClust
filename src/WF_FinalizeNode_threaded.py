@@ -47,12 +47,14 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 			(mus_out, output) = get_fasttree("".join(pep_data))
 
 			lengths = {}
+			seqs = {}
 			leaves = []
 			for line in pep_data:
 				if line[0] == ">":
-					header = line[1:].split("\n")[0]
-					lengths[header] = int(header.split(";")[-1])
-					leaves.append(header)
+					pep = line[1:].split("\n")
+					seqs[pep[0]] = pep[1]  # could most likely use this dict instead of recreating one from mus_out
+					lengths[pep[0]] = int(pep[0].split(";")[-1])
+					leaves.append(pep[0])
 			graph = nx.Graph()
 			counter = 1
 			representative_sequences = []
@@ -76,6 +78,8 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 					if child[0] not in graph.nodes():
 						graph.add_node(child[0])
 					graph.add_edge(group, child[0], dist=float(child[1]))
+				if "node" not in children[0] and "node" not in children[1] and children[0].split(":")[1] == 0.0 and seqs[children[0].split(":")[0]] != seqs[children[1].split(":")[0]]:
+					logger.critical("0.0 distance in fasttree:\n" + output + "\n" + children[0].split(":")[0] + "\n" + seqs[children[0].split(":")[0]] + "\n" + children[1].split(":")[0] + "\n" + seqs[children[1].split(":")[0]])
 				output = output[:l] + group + output[r + 1:]
 
 			logger.debug("Built graph for cluster " + clusterID)
