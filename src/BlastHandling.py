@@ -31,6 +31,7 @@ class BlastSegment:
 		# percent = float(self.length) / float(min(self.qLength, self.tLength))  # mod for big BLAST
 		# changed to having an adjustement based on the size of the biggest sequence because ~100aa protein could have high match to ~2000aa protein, which is probably an artifact
 		percent = float(self.length) / float(max(self.qLength, self.tLength))
+		percent = float(self.length) / float(self.qLength)
 		self.adjPID = self.pID * percent
 		self.score = (2.0 - self.adjPID) * 100000.0
 
@@ -45,8 +46,9 @@ class BlastParse:
 	logger = logging.getLogger("BlastParse")
 	EVALUE_THRESHOLD = 1e-4
 
-	def __init__(self, m8_file):
+	def __init__(self, m8_file, max_size_diff):
 		self.m8_file = m8_file
+		BlastParse.max_size_diff = max_size_diff
 
 	# hits are scored by cumulative percent identity
 	# synData is unused
@@ -108,11 +110,11 @@ class BlastParse:
 		gene_count = 0
 		for s in subs:  # each subgraph is an initial cluster
 			clusterID = "cluster_" + str(count)
-			if 'L_0000000_vpfkc0x3-cBWYIYFcmcPqA_019882' in s.nodes():
-				debug_buffer = ''
-				for e in s.edges():
-					debug_buffer += e[0] + " " + e[1] + "\n"
-				BlastParse.logger.debug("edges:\n" + debug_buffer + "\n\n")
+			# if 'L_0000000_vpfkc0x3-cBWYIYFcmcPqA_019882' in s.nodes():
+			# 	debug_buffer = ''
+			# 	for e in s.edges():
+			# 		debug_buffer += e[0] + " " + e[1] + "\n"
+			# 	BlastParse.logger.debug("edges:\n" + debug_buffer + "\n\n")
 			if len(s.nodes()) == 1:
 				locus = s.nodes()[0]
 				orphans.write(locus + "\n")
@@ -224,7 +226,8 @@ class BlastParse:
 			T = t.split(";")[0]
 			if q == t:  # self hit
 				continue
-
+			elif q.split(";")[1] > BlastParse.max_size_diff * t.split(";")[1] or t.split(";")[1] > BlastParse.max_size_diff * q.split(";")[1]:  # size difference too big
+				continue
 			mySeg = BlastSegment(q, t, line[2], line[3], line[11], line[10])  # query,target,pID,length,bitScore,evalue
 			mySeg.setAdjPID()
 			if Q not in hits:

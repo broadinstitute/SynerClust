@@ -36,6 +36,7 @@ def main():
 	parser.add_argument('-node', dest="node", required=True, help="Current node name. (Required)")
 	parser.add_argument('-m', '--min_best_hit', type=float, dest="min_best_hit", required=True, help="Minimal % of match length for Blastp hits compared to best one.")
 	parser.add_argument('-F', '--min_syntenic_fraction', type=float, dest="minSynFrac", required=True, help="Minimal syntenic fraction.")
+	parser.add_argument('-diff', '--max_size_diff', type=float, default=3.0, dest="max_size_diff", required=False, help="Maximal ratio difference in size between query and target sequence for Blast.")
 	parser.add_argument('children', nargs=2, help="Children nodes. (Required)")
 	args = parser.parse_args()
 
@@ -64,7 +65,7 @@ def main():
 	logger.debug("Loaded synteny_data")
 
 	# Create rough clusters with trees
-	bp = BlastHandling.BlastParse(blast_out)
+	bp = BlastHandling.BlastParse(blast_out, args.max_size_diff)
 	logger.debug("Parsed Blast")
 	hits = bp.readBlastM8()
 	logger.debug("Read Blast")
