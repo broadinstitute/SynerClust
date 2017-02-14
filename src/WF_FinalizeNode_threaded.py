@@ -152,7 +152,7 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 			for mo in mus_out:
 				l = mo.rstrip()  # probably not needed since split was used before to create it
 				if l.find('>') > -1:
-					seqID = line[1:]
+					seqID = l[1:]
 					# line = l.split()   # why split??
 					# seqID = line[0][1:line[0].rfind(";")]
 					# trailer = 1
