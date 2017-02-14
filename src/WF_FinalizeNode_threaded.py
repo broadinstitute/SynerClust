@@ -148,18 +148,19 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 			mus_seqs = {}
 			mus_str_seqs = {}
 			# total_length = 0
-			unrep = []
+			# unrep = []
 			for mo in mus_out:
 				l = mo.rstrip()  # probably not needed since split was used before to create it
 				if l.find('>') > -1:
-					line = l.split()   # why split??
-					seqID = line[0][1:line[0].rfind(";")]
+					seqID = line[1:]
+					# line = l.split()   # why split??
+					# seqID = line[0][1:line[0].rfind(";")]
 					# trailer = 1
 					# while seqID in mus_seqs:
 					# 	seqID = line[0][1:] + "." + str(trailer)
 					# 	trailer += 1
 					mus_seqs[seqID] = []
-					unrep.append(seqID)
+					# unrep.append(seqID)
 					mus_str_seqs[seqID] = ""
 				else:
 					mus_str_seqs[seqID] += l
