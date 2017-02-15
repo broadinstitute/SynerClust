@@ -202,7 +202,7 @@ def main():
 				if child[0] not in graph.nodes():
 					graph.add_node(child[0])
 					leaves.append(child[0])
-				graph.add_edge(group, child[0], dist=float(child[1] * lengths[child[0]]))  # child[1] is a rate, so scaling based on sequence length
+				graph.add_edge(group, child[0], dist=(float(child[1]) * lengths[child[0]]))  # child[1] is a rate, so scaling based on sequence length
 			output = output[:l] + group + output[r + 1:]
 
 		leaves.sort()
