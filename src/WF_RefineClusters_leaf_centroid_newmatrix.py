@@ -195,6 +195,7 @@ def main():
 			group = "node" + str(counter)
 			counter += 1
 
+			new_length = 0
 			if group not in graph.nodes():  # isn't it always a new node?
 				graph.add_node(group)
 			for child in children_string:
@@ -203,6 +204,8 @@ def main():
 					graph.add_node(child[0])
 					leaves.append(child[0])
 				graph.add_edge(group, child[0], dist=(float(child[1]) * lengths[child[0]]))  # child[1] is a rate, so scaling based on sequence length
+				new_length += lengths[child[0]]
+			lengths[group] = new_length / 2
 			output = output[:l] + group + output[r + 1:]
 
 		leaves.sort()
