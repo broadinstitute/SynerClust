@@ -146,6 +146,7 @@ def main():
 # 			continue
 
 		stdin_data = ""
+		lengths = {}
 # 		add_to_stdin = ""
 # 		for gene in cluster_to_genes[cluster]:
 # 			stdin_data += ">" + gene + "\n"
@@ -156,13 +157,17 @@ def main():
 			try:
 				if args.children[0][0] == "L":
 					stdin_data += childrenpkls[args.children[0]][gene] + "\n"
+					lengths[gene] = len(childrenpkls[args.children[0]][gene])
 				else:
 					stdin_data += childrenpkls[args.children[0]][gene][0].split("\n")[1] + "\n"
+					lengths[gene] = childrenpkls[args.children[0]][gene][0].split("\n")[1]
 			except KeyError:
 				if args.children[1][0] == "L":
 					stdin_data += childrenpkls[args.children[1]][gene] + "\n"
+					lengths[gene] = childrenpkls[args.children[1]][gene]
 				else:
 					stdin_data += childrenpkls[args.children[1]][gene][0].split("\n")[1] + "\n"
+					lengths[gene] = childrenpkls[args.children[1]][gene][0].split("\n")[1]
 
 		process = subprocess.Popen(muscle_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
 		output = process.communicate(stdin_data)[0]
@@ -197,7 +202,7 @@ def main():
 				if child[0] not in graph.nodes():
 					graph.add_node(child[0])
 					leaves.append(child[0])
-				graph.add_edge(group, child[0], dist=float(child[1]))
+				graph.add_edge(group, child[0], dist=float(child[1] * lengths[child[0]]))  # child[1] is a rate, so scaling based on sequence length
 			output = output[:l] + group + output[r + 1:]
 
 		leaves.sort()
@@ -220,12 +225,16 @@ def main():
 		syn_matrix = numpy.empty(len(leaves) * (len(leaves) - 1) / 2)
 		i = 1
 		pos = 0
+		max_neighbors_count = max([len(syn[k]) for k in syn])
+		longest_hom = float("-Inf")
 		for m in leaves[1:]:
 			syn_m = set(syn[m])
 			mSeqs = len(syn[m])
 # 			for n in graph.nodes():
 			for n in leaves[:i]:
 				hom_matrix[pos] = nx.shortest_path_length(graph, n, m, "dist")
+				if hom_matrix[pos] > longest_hom:
+					longest_hom = hom_matrix[pos]
 				nSeqs = len(syn[n])
 				matches = 0
 				if mSeqs == 0 or nSeqs == 0:
@@ -237,10 +246,13 @@ def main():
 					t_m = max(syn[m].count(a), 0)
 					t_n = max(syn[n].count(a), 0)
 					matches += min(t_m, t_n)
-				synFrac = float(matches) / float(min(mSeqs, nSeqs))  # why mSeqs and not len(syn_m) which is a set that removes duplicates?
+				# synFrac = float(matches) / float(max(mSeqs, nSeqs))  # why mSeqs and not len(syn_m) which is a set that removes duplicates?
+				synFrac = float(matches) / float(max_neighbors_count)  # why mSeqs and not len(syn_m) which is a set that removes duplicates?
 				syn_matrix[pos] = 1.0 - synFrac
 				pos += 1
 			i += 1
+		for pos in xrange(len(hom_matrix)):
+			hom_matrix[pos] /= longest_hom
 
 		logger.debug("Built matrices for " + cluster + " in " + str(time.time() - TIMESTAMP))
 		TIMESTAMP = time.time()

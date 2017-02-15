@@ -95,99 +95,99 @@ class NJTree:
 		return self.distance_matrix
 # 		return matrix_data
 
-	def buildGraphFromDistanceMatrix(self, matrix_data):
-		matrix = {}
-		unadded_nodes = set([])
-		initial_indices = []
-		for m in matrix_data:
-			g = m.split()[0]
-			initial_indices.append(g)
-		for m in matrix_data:
-			m = m.rstrip()
-			dat = m.split()
-			gene = dat[0]
-			unadded_nodes.add(gene)
-			my_species = "_".join(gene.split("_")[:-1])
-			self.graph.add_node(gene, species=my_species)
-			dists = dat[1:]
-			matrix[gene] = {}
-			for i in range(len(matrix_data)):
-				matrix[gene][initial_indices[i]] = float(dists[i])
-		self.readSyntenyMatrix(unadded_nodes)
-		while len(unadded_nodes) > 2:
-			Udists = {}
-			synUdists = {}
-			uan = len(unadded_nodes)
-			uan_denom = float(uan) - 2.0
-			for n in unadded_nodes:
-				u = 0.0
-				synu = 0.0
-				for m in unadded_nodes:
-					if n == m:
-						continue
-					u += matrix[n][m]  # /uan_denom
-					synu += self.syntenyMatrix[n][m]  # /uan_denom
-				Udists[n] = u
-				synUdists[n] = synu
-			min_nm = 1000000000.0
-			minp = []
-			for n in unadded_nodes:
-				for m in unadded_nodes:
-					if n == m:
-						continue
-					nm = uan_denom * matrix[n][m] - Udists[n] - Udists[m]
-					if nm < min_nm:
-						min_nm = nm
-						minp = [n, m]
-			minp.sort()
-			mp0_mp_dist = 0.5 * matrix[minp[0]][minp[1]] + 0.5 * (Udists[minp[0]] - Udists[minp[1]]) / uan_denom
-			syn_mp0_mp_dist = 0.5 * self.syntenyMatrix[minp[0]][minp[1]] + 0.5 * (synUdists[minp[0]] - synUdists[minp[1]]) / uan_denom
-			mp1_mp_dist = 0.5 * matrix[minp[0]][minp[1]] + 0.5 * (Udists[minp[1]] - Udists[minp[0]]) / uan_denom
-			syn_mp1_mp_dist = 0.5 * self.syntenyMatrix[minp[0]][minp[1]] + 0.5 * (synUdists[minp[1]] - synUdists[minp[0]]) / uan_denom
+# 	def buildGraphFromDistanceMatrix(self, matrix_data):
+# 		matrix = {}
+# 		unadded_nodes = set([])
+# 		initial_indices = []
+# 		for m in matrix_data:
+# 			g = m.split()[0]
+# 			initial_indices.append(g)
+# 		for m in matrix_data:
+# 			m = m.rstrip()
+# 			dat = m.split()
+# 			gene = dat[0]
+# 			unadded_nodes.add(gene)
+# 			my_species = "_".join(gene.split("_")[:-1])
+# 			self.graph.add_node(gene, species=my_species)
+# 			dists = dat[1:]
+# 			matrix[gene] = {}
+# 			for i in range(len(matrix_data)):
+# 				matrix[gene][initial_indices[i]] = float(dists[i])
+# 		self.readSyntenyMatrix(unadded_nodes)
+# 		while len(unadded_nodes) > 2:
+# 			Udists = {}
+# 			synUdists = {}
+# 			uan = len(unadded_nodes)
+# 			uan_denom = float(uan) - 2.0
+# 			for n in unadded_nodes:
+# 				u = 0.0
+# 				synu = 0.0
+# 				for m in unadded_nodes:
+# 					if n == m:
+# 						continue
+# 					u += matrix[n][m]  # /uan_denom
+# 					synu += self.syntenyMatrix[n][m]  # /uan_denom
+# 				Udists[n] = u
+# 				synUdists[n] = synu
+# 			min_nm = 1000000000.0
+# 			minp = []
+# 			for n in unadded_nodes:
+# 				for m in unadded_nodes:
+# 					if n == m:
+# 						continue
+# 					nm = uan_denom * matrix[n][m] - Udists[n] - Udists[m]
+# 					if nm < min_nm:
+# 						min_nm = nm
+# 						minp = [n, m]
+# 			minp.sort()
+# 			mp0_mp_dist = 0.5 * matrix[minp[0]][minp[1]] + 0.5 * (Udists[minp[0]] - Udists[minp[1]]) / uan_denom
+# 			syn_mp0_mp_dist = 0.5 * self.syntenyMatrix[minp[0]][minp[1]] + 0.5 * (synUdists[minp[0]] - synUdists[minp[1]]) / uan_denom
+# 			mp1_mp_dist = 0.5 * matrix[minp[0]][minp[1]] + 0.5 * (Udists[minp[1]] - Udists[minp[0]]) / uan_denom
+# 			syn_mp1_mp_dist = 0.5 * self.syntenyMatrix[minp[0]][minp[1]] + 0.5 * (synUdists[minp[1]] - synUdists[minp[0]]) / uan_denom
 
-			newNode = ";".join(minp)
-			my_species = ""
-			if self.graph.node[minp[0]]['species'] == self.graph.node[minp[1]]['species']:
-				my_species = self.graph.node[minp[0]]['species']
-			else:
-				my_species = self.mrca
-			self.graph.add_node(newNode, species=my_species)
-			for m in minp:
-				unadded_nodes.remove(m)
-# 			new_hrow = []
-# 			new_srow = []
-			matrix[newNode] = {}
-			self.syntenyMatrix[newNode] = {}
-			for k in unadded_nodes:
-				dik = matrix[minp[0]][k]
-				djk = matrix[minp[1]][k]
-				dij = matrix[minp[0]][minp[1]]
-				new_dist = (dik + djk - dij) / 2.0
-				matrix[newNode][k] = new_dist
-				matrix[k][newNode] = new_dist
+# 			newNode = ";".join(minp)
+# 			my_species = ""
+# 			if self.graph.node[minp[0]]['species'] == self.graph.node[minp[1]]['species']:
+# 				my_species = self.graph.node[minp[0]]['species']
+# 			else:
+# 				my_species = self.mrca
+# 			self.graph.add_node(newNode, species=my_species)
+# 			for m in minp:
+# 				unadded_nodes.remove(m)
+# # 			new_hrow = []
+# # 			new_srow = []
+# 			matrix[newNode] = {}
+# 			self.syntenyMatrix[newNode] = {}
+# 			for k in unadded_nodes:
+# 				dik = matrix[minp[0]][k]
+# 				djk = matrix[minp[1]][k]
+# 				dij = matrix[minp[0]][minp[1]]
+# 				new_dist = (dik + djk - dij) / 2.0
+# 				matrix[newNode][k] = new_dist
+# 				matrix[k][newNode] = new_dist
 
-				dik = self.syntenyMatrix[minp[0]][k]
-				djk = self.syntenyMatrix[minp[1]][k]
-				dij = self.syntenyMatrix[minp[0]][minp[1]]
-				new_dist = (dik + djk - dij) / 2.0
-				self.syntenyMatrix[newNode][k] = new_dist
-				self.syntenyMatrix[k][newNode] = new_dist
-			unadded_nodes.add(newNode)
-			self.graph.add_edge(minp[0], newNode, homology_weight=mp0_mp_dist, synteny_distance=syn_mp0_mp_dist)
-			self.graph.add_edge(minp[1], newNode, homology_weight=mp1_mp_dist, synteny_distance=syn_mp1_mp_dist)
-		# TODO this if should be out of the while loop
-		if len(unadded_nodes) == 2:
-			minp = []
-			for ua in unadded_nodes:
-				minp.append(ua)
-			self.graph.add_edge(minp[0], minp[1], homology_weight=matrix[minp[0]][minp[1]], synteny_distance=self.syntenyMatrix[minp[0]][minp[1]])
-			unadded_nodes = set([])
-			minp.sort()
-			big_md = ";".join(minp)
-			unadded_nodes.add(big_md)
-		bigNode = unadded_nodes.pop()
-		self.bigNode = bigNode
-		return bigNode
+# 				dik = self.syntenyMatrix[minp[0]][k]
+# 				djk = self.syntenyMatrix[minp[1]][k]
+# 				dij = self.syntenyMatrix[minp[0]][minp[1]]
+# 				new_dist = (dik + djk - dij) / 2.0
+# 				self.syntenyMatrix[newNode][k] = new_dist
+# 				self.syntenyMatrix[k][newNode] = new_dist
+# 			unadded_nodes.add(newNode)
+# 			self.graph.add_edge(minp[0], newNode, homology_weight=mp0_mp_dist, synteny_distance=syn_mp0_mp_dist)
+# 			self.graph.add_edge(minp[1], newNode, homology_weight=mp1_mp_dist, synteny_distance=syn_mp1_mp_dist)
+# 		# TODO this if should be out of the while loop
+# 		if len(unadded_nodes) == 2:
+# 			minp = []
+# 			for ua in unadded_nodes:
+# 				minp.append(ua)
+# 			self.graph.add_edge(minp[0], minp[1], homology_weight=matrix[minp[0]][minp[1]], synteny_distance=self.syntenyMatrix[minp[0]][minp[1]])
+# 			unadded_nodes = set([])
+# 			minp.sort()
+# 			big_md = ";".join(minp)
+# 			unadded_nodes.add(big_md)
+# 		bigNode = unadded_nodes.pop()
+# 		self.bigNode = bigNode
+# 		return bigNode
 
 	def buildGraphFromNewDistanceMatrix(self, hom_matrix, syn_matrix, leaves):
 		for l in leaves:
@@ -743,29 +743,6 @@ class NJTree:
 					new_trees.append(new_tree)
 					break
 		return (new_trees, new_root_edges)
-# 			# remove "root" node, put an edge in its place... these trees shouldn't be rooted!
-# 			# then get the newick format of the unrooted tree
-# 			myRoot = None
-# 			if n.has_node(root[1][1]):
-# 				myRoot = root[1][1]
-# 			else:
-# 				myRoot = root[1][0]
-# 			children = []
-# 			if not len(n[myRoot]) == 2:
-# 				if len(n.nodes()) == 1:
-# 					newicks.append(("(" + myRoot + ");"))
-# 					matrices.append((myRoot + "\t0.0"))
-# 				else:
-# 					sys.exit("splitTree: not 2 edges from temp root!:  " + str(len(n[myRoot])))
-# 			else:
-# 				for e in n[myRoot]:
-# 					ew = n[myRoot][e]['homology_weight']
-# 					children.append((e, ew))
-# 				n.remove_node(myRoot)
-# 				n.add_edge(children[0][0], children[1][0], homology_weight=(children[0][1] + children[1][1]))
-# 				matrices.append(NJTree.makeDistanceMatrix(myRoot, n))
-# 				newicks.append(NJTree.toNewick(n))
-# 		return (newicks, matrices)
 
 	@staticmethod
 	def makeDistanceMatrix(root, N):
