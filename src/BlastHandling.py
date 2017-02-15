@@ -226,7 +226,7 @@ class BlastParse:
 			T = t.split(";")[0]
 			if q == t:  # self hit
 				continue
-			elif q.split(";")[1] > BlastParse.max_size_diff * t.split(";")[1] or t.split(";")[1] > BlastParse.max_size_diff * q.split(";")[1]:  # size difference too big
+			elif int(q.split(";")[1]) > BlastParse.max_size_diff * int(t.split(";")[1]) or int(t.split(";")[1]) > BlastParse.max_size_diff * int(q.split(";")[1]):  # size difference too big
 				continue
 			mySeg = BlastSegment(q, t, line[2], line[3], line[11], line[10])  # query,target,pID,length,bitScore,evalue
 			mySeg.setAdjPID()
