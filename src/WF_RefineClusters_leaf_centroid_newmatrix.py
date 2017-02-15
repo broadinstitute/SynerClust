@@ -160,14 +160,14 @@ def main():
 					lengths[gene] = len(childrenpkls[args.children[0]][gene])
 				else:
 					stdin_data += childrenpkls[args.children[0]][gene][0].split("\n")[1] + "\n"
-					lengths[gene] = childrenpkls[args.children[0]][gene][0].split("\n")[1]
+					lengths[gene] = len(childrenpkls[args.children[0]][gene][0].split("\n")[1])
 			except KeyError:
 				if args.children[1][0] == "L":
 					stdin_data += childrenpkls[args.children[1]][gene] + "\n"
-					lengths[gene] = childrenpkls[args.children[1]][gene]
+					lengths[gene] = len(childrenpkls[args.children[1]][gene])
 				else:
 					stdin_data += childrenpkls[args.children[1]][gene][0].split("\n")[1] + "\n"
-					lengths[gene] = childrenpkls[args.children[1]][gene][0].split("\n")[1]
+					lengths[gene] = len(childrenpkls[args.children[1]][gene][0].split("\n")[1])
 
 		process = subprocess.Popen(muscle_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
 		output = process.communicate(stdin_data)[0]
