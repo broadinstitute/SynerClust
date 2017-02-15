@@ -254,8 +254,9 @@ def main():
 				syn_matrix[pos] = 1.0 - synFrac
 				pos += 1
 			i += 1
-		for pos in xrange(len(hom_matrix)):
-			hom_matrix[pos] /= longest_hom
+		if longest_hom > 0.0:  # to prevent dividing by zero
+			for pos in xrange(len(hom_matrix)):
+				hom_matrix[pos] /= longest_hom
 
 		logger.debug("Built matrices for " + cluster + " in " + str(time.time() - TIMESTAMP))
 		TIMESTAMP = time.time()
