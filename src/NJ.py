@@ -330,8 +330,8 @@ class NJTree:
 			dist = self.hom_shortest_paths[n][e[0]]
 		else:
 			dist = self.hom_shortest_paths[n][e[1]]
-		if self.graph[e[0]][e[1]]['homology_dist'] >= 0.0:
-			return dist + (e[attr] / 2)
+		if self.graph[e[0]][e[1]][attr] >= 0.0:
+			return dist + (self.graph[e[0]][e[1]] / 2)
 		else:
 			return dist
 
