@@ -19,16 +19,7 @@ class BlastSegment:
 		self.tLength = int(self.target.split(";")[1])
 		self.bitScore = float(bitScore)
 		self.evalue = float(evalue)
-		self.adjPID = 0.0
-		self.score = 0.0
-
-	# returns (pID/100)*qLength
-	# adjusted identity percentage, 100 000 < adjPID < 200 000
-	# lower means more identity
-	def setAdjPID(self):
-		# percent of the shortest sequence that the blast result represents
 		# percent = float(self.length) / float(min(self.qLength, self.tLength))  # mod for big BLAST
-		# changed to having an adjustement based on the size of the biggest sequence because ~100aa protein could have high match to ~2000aa protein, which is probably an artifact
 		percent = float(self.length) / float(max(self.qLength, self.tLength))
 		percent = float(self.length) / float(self.qLength)
 		self.adjPID = self.pID * percent
@@ -138,7 +129,6 @@ class BlastParse:
 	def readBlastM8(self):
 		m8 = open(self.m8_file, 'r').readlines()
 		hits = {}
-		# old_t = ""
 		for m in m8:
 			m = m.rstrip()
 			line = m.split()
@@ -153,7 +143,6 @@ class BlastParse:
 			elif int(q.split(";")[1]) > BlastParse.max_size_diff * int(t.split(";")[1]) or int(t.split(";")[1]) > BlastParse.max_size_diff * int(q.split(";")[1]):  # size difference too big
 				continue
 			mySeg = BlastSegment(q, t, line[2], line[3], line[11], line[10])  # query,target,pID,length,bitScore,evalue
-			mySeg.setAdjPID()
 			if Q not in hits:
 				hits[Q] = {}
 			if T not in hits[Q]:
