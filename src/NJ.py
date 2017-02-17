@@ -220,6 +220,8 @@ class NJTree:
 			self.rootedTree = tree
 			return (score, self.rootEdge, loss)
 
+		(self.hom_shortest_paths, self.paths) = nxe.all_pairs_path_length(self.graph, 'homology_dist')
+		self.syn_shortest_paths = nxe.all_pairs_path_length(self.graph, 'synteny_dist')[0]
 		# store shortest path matrix - it is the same for everyone
 		if len(self.graph.nodes()) > 100:
 			# big_e = 0.0
@@ -236,9 +238,7 @@ class NJTree:
 			return (-1.0, e_pair, len(self.graph.nodes()))
 
 		else:
-			(self.hom_shortest_paths, self.paths) = nxe.all_pairs_path_length(self.graph, 'homology_dist')
 			# self.paths = nx.shortest_path(self.graph, None, None)
-			self.syn_shortest_paths = nxe.all_pairs_path_length(self.graph, 'synteny_dist')[0]
 			for e in self.graph.edges():
 				(score, tree, gl_sum, loss) = self.scoreEdge(e, min_gl)
 				if gl_sum < min_gl:
