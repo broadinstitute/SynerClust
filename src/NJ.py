@@ -15,9 +15,7 @@ class NJTree:
 	def __init__(self, mrca, alpha, beta, gamma, gain, loss):
 		self.graph = nx.Graph()
 		self.bigNode = ""
-		# self.alpha = 10.0  # TODO take into account the actual value given
 		self.alpha = float(alpha)
-		# self.beta = 0.01  # TODO take into account the actual value given
 		self.beta = float(beta)
 		self.gamma = float(gamma)
 		self.gain = float(gain)
@@ -29,35 +27,7 @@ class NJTree:
 		self.hom_shortest_paths = None
 		self.syn_shortest_paths = None
 		self.paths = None
-		# self.centroid = ""
 		self.gl_map = {}  # node -> gain/loss tuple
-
-	def readSyntenyMatrix(self, valid_nodes):
-		# matrix_data = open(self.synteny_file,'r').readlines()
-		matrix_data = self.synteny_data
-		index = {}
-		rev_index = {}
-		# count = 0
-		valid_index = set([])
-		tcount = 0
-		for m in matrix_data:
-			gene = m.split()[0]
-			if gene in valid_nodes:
-				valid_index.add(tcount)
-				index[gene] = tcount
-				rev_index[tcount] = gene
-			tcount += 1
-		for m in matrix_data:
-			m = m.rstrip()
-			dat = m.split()
-			gene = dat[0]
-			if gene not in valid_nodes:
-				continue
-			self.syntenyMatrix[gene] = {}
-			dists = dat[1:]
-			for vi in valid_index:
-				self.syntenyMatrix[gene][rev_index[vi]] = float(dists[vi])
-		self.syntenyIndex = index
 
 	def readDistanceMatrix(self):
 		return self.distance_matrix
@@ -181,7 +151,7 @@ class NJTree:
 # 					new_nwk = ",".join(neighbors)
 					new_nwk = neighbors[0] + ":" + str(self.rootedTree[n][neighbors[0]]['homology_dist']) + ',' + neighbors[1] + ":" + str(self.rootedTree[n][neighbors[1]]['homology_dist'])
 					new_nwk2 = neighbors[0] + ":" + str(self.rootedTree[n][neighbors[0]]['synteny_dist']) + ',' + neighbors[1] + ":" + str(self.rootedTree[n][neighbors[1]]['synteny_dist'])
-					nwk = nwk.replace(n, "(" + new_nwk + ")")  ## add distance
+					nwk = nwk.replace(n, "(" + new_nwk + ")")
 					nwk2 = nwk2.replace(n, "(" + new_nwk2 + ")")
 					current_leaves.extend(neighbors)
 			return [nwk, nwk2]
@@ -525,7 +495,6 @@ class NJTree:
 			else:
 				self.OK = "true"
 				return self.OK
-		# How can the MRCA be one of the species??
 		# should add a verification that there are no more than 2 species
 
 	def splitNewTree(self, root):
@@ -575,27 +544,3 @@ class NJTree:
 					new_trees.append(new_tree)
 					break
 		return (new_trees, new_root_edges)
-
-	@staticmethod
-	def makeDistanceMatrix(root, N):
-		d = nx.shortest_path(N)
-		leaf = []
-		for nod in N.nodes():
-			if nod.count(";") == 0:
-				leaf.append(nod)
-		mat_string = ""
-		for m in leaf:
-			if len(mat_string) > 0:
-				mat_string += "\n"
-			m_dists = []
-			m_dists.append(m)
-			for n in leaf:
-				mn_dist = 0.0
-				if not m == n:
-					path = d[m][n]
-					while len(path) > 1:
-						mn_dist += N[path[0]][path[1]]['homology_weight']
-						path.pop(0)
-				m_dists.append(str(mn_dist))
-			mat_string += "\t".join(m_dists)
-		return mat_string
