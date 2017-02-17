@@ -3,7 +3,6 @@
 import operator
 import logging
 import networkx as nx
-import numpy
 import pickle
 
 
@@ -81,8 +80,6 @@ class BlastParse:
 						best_evalue = ts.evalue
 						q_best.append((q, t, ts_score))
 					elif (ts.getAdjPID() > bestAdjPID * min_best_hit):  # and best_evalue < 1.0:
-						# 	if (ts.evalue < float(1.0e-150)) or (best_evalue > 0.0 and (math.log10(best_evalue) + 30.0 > math.log10(ts.evalue))):
-						# 	qd_best.append((q, t, ts_score))
 						q_best.append((q, t, ts_score))
 
 			q_best = sorted(q_best, key=lambda tup: tup[2])
@@ -110,11 +107,6 @@ class BlastParse:
 		gene_count = 0
 		for s in subs:  # each subgraph is an initial cluster
 			clusterID = "cluster_" + str(count)
-			# if 'L_0000000_vpfkc0x3-cBWYIYFcmcPqA_019882' in s.nodes():
-			# 	debug_buffer = ''
-			# 	for e in s.edges():
-			# 		debug_buffer += e[0] + " " + e[1] + "\n"
-			# 	BlastParse.logger.debug("edges:\n" + debug_buffer + "\n\n")
 			if len(s.nodes()) == 1:
 				locus = s.nodes()[0]
 				orphans.write(locus + "\n")
@@ -129,6 +121,7 @@ class BlastParse:
 					if clusterID not in clusterToGenes:
 						clusterToGenes[clusterID] = []
 					clusterToGenes[clusterID].append(locus)
+					# BlastParse.logger()
 			count += 1
 			gene_count += len(s.nodes())
 		orphans.close()
@@ -140,75 +133,6 @@ class BlastParse:
 		with open(tree_dir + "cluster_to_genes.pkl", "w") as f:
 			pickle.dump(clusterToGenes, f)
 		return 0
-
-	# creates a distance matrix based on blast hits, augment distances with syntenic fractions
-	# @staticmethod
-	# def makeDistanceMatrix(graph, bestDirHits, geneToCluster, clusterToGenes, synData, homScale, synScale):
-	# 	big_dist = 200000.0
-	# 	myHomDist = {}
-	# 	# calculate blast distances
-	# 	for n in graph.nodes():
-	# 		myHomDist[n] = {}
-	# 		for m in graph.nodes():
-	# 			myHomDist[n][m] = big_dist
-	# 			if n == m:
-	# 				myHomDist[n][m] = 0.0
-	# 				continue
-	# 			if m in bestDirHits[n]:
-	# 				myHomDist[n][m] = bestDirHits[n][m]['weight']
-	# 				# myDist[n][m] = myDist[n][m] - (bestDirHits[g][h]['weight']*homScale)
-	# 				# myHomDist[n][m] = myHomDist[n][m] - bestDirHits[n][m]['weight']
-	# 	# populate neighbor lists with rough cluster IDs
-	# 	# synData contains one entry for each child node with their synteny_data.pkl
-	# 	syn = {}
-	# 	for d in myHomDist:
-	# 		# print "d", d
-	# 		syn[d] = []
-	# 		node = "_".join(d.split("_")[:-1])
-	# 		for n in synData[node][d]['neighbors']:
-	# 			syn[d].append(geneToCluster[n])
-	# 	# pairwise compare for syntenic fraction
-
-	# 	mySynDist = {}
-	# 	pairs = set([])
-	# 	all_nodes = graph.nodes()
-	# 	all_nodes.sort()
-	# 	syn_matrix = numpy.empty(len(all_nodes) * (len(all_nodes) - 1) / 2)
-	# 	i = 1
-	# 	pos = 0
-	# 	for m in all_nodes[1:]:
-	# 		mySynDist[m] = {}
-	# 		syn_m = set(syn[m])
-	# 		mSeqs = len(syn[m])
-	# 		for n in all_nodes[:i]:
-	# 			mySynDist[m][n] = big_dist
-	# 			my_pair = (m, n)
-	# 			if my_pair in pairs:
-	# 				mySynDist[m][n] = mySynDist[n][m]
-	# 				continue
-	# 			else:
-	# 				pairs.add(my_pair)
-	# 				my_inv_pair = (n, m)
-	# 				pairs.add(my_inv_pair)
-	# 			if n == m:
-	# 				mySynDist[m][n] = 0.0
-	# 				continue  # self comparisons should have identical neighbor sets anyway
-	# 			nSeqs = len(syn[n])
-	# 			matches = 0
-	# 			if mSeqs == 0 or nSeqs == 0:
-	# 				mySynDist[m][n] -= 0.0  # no neighbors in common if someone has no neighbors  # -= 0 ? does it change anything?
-	# 				continue
-	# 			all_neighbors = syn_m & set(syn[n])
-	# 			for a in all_neighbors:
-	# 				t_m = max(syn[m].count(a), 0)
-	# 				t_n = max(syn[n].count(a), 0)
-	# 				matches += min(t_m, t_n)
-	# 			synFrac = float(matches) / float(min(mSeqs, nSeqs))  # why mSeqs and not len(syn_m) which is a set that removes duplicates?
-	# 			mySynDist[m][n] = ((2.0 - synFrac) * 100000.0)
-	# 			syn_matrix[pos] = 1.0 - synFrac
-	# 			pos += 1
-	# 		i += 1
-	# 	return (myHomDist, mySynDist)
 
 	# reads in the m8 file and returns hits, which is a dict of BlastSegments
 	def readBlastM8(self):

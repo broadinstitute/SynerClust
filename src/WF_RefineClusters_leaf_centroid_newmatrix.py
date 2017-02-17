@@ -27,14 +27,6 @@ def usage():
 	sys.exit(1)
 
 
-# def load_leaves(leavespkls, locus_tag, node):
-# 	for leaf in locus_tag[node]:
-# 		if leaf[:9] == "L_0000000":
-# 			leavespkls[leaf] = None
-# 		else:
-# 			load_leaves(leavespkls, locus_tag, leaf)
-
-
 def main():
 	usage = "usage: WF_RefineCluster_leaf_centroid_newmatrix.py [options]"
 	parser = argparse.ArgumentParser(usage)
@@ -114,13 +106,6 @@ def main():
 # 	orphans = open(tree_dir + "orphan_genes.txt", 'r').readlines()
 	orphans = []
 	ok_trees = []
-
-	# locus_tag = {}
-	# with open(repo_path + "genomes/locus_tag_file.txt", "r") as f:
-	# 	for line in f:
-	# 		if ";" in line:
-	# 			s = line.rstrip().split("\t")
-	# 			locus_tag[s[1]] = s[0].split(";")
 
 	with open(repo_path + "nodes/" + args.node + "/trees/gene_to_cluster.pkl", "r") as f:
 		gene_to_cluster = pickle.load(f)
