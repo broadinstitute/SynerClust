@@ -51,7 +51,7 @@ def main():
 					t.rstrip()
 					line = t.split()
 					tagToGenome[line[1]] = line[0]
-		elif os.path.isdir(g):
+		elif os.path.isdir(genome_path + g):
 			with open(genome_path + g + "/annotation.txt", "r") as f:
 				d = f.readline().rstrip().split("\t")
 				genomeToAnnot[d[0]] = d[1]
