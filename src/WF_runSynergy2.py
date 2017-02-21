@@ -35,6 +35,7 @@ def main():
 	parser.add_argument('-m', '--min_best_hit', type=float, dest="min_best_hit", default=0.5, help="Minimal %% of match length for Blastp hits compared to best one.")
 	parser.add_argument('-B', '--blast_eval', type=float, dest="blast_eval", default=#BLAST_EVAL_DEFAULT, help="Minimal e-value for Blastp hits. (default = #BLAST_EVAL_DEFAULT)")
 	parser.add_argument('-l', '--locus', dest="locus_file", default="", help="A locus_tag_file.txt that corresponds to the data in this repository")
+	parser.add_argument('-N', '--locus', dest="coded_nwk_file", default="coded_tree.nwk", help="Output file for the newick tree using tag names and number of genomes as distances.")
 	parser.add_argument('-n', '--num_cores', type=int, dest="num_cores", default=#NUM_CORES_DEFAULT, help="The number of cores used for blast analysis (-a flag), (default = #NUM_CORES_DEFAULT)")
 	parser.add_argument('-F', '--min_syntenic_fraction', type=float, dest="minSynFrac", default=0.5, help="Currently UNUSED. Minimum syntenic fraction required for two genes from the same species to be considered paralogs, range [0.0,1.0], default=0.5")
 	parser.add_argument('-D', '--dist', type=float, dest="dist", default=1.2, help="Maximum FastTree distance between a representative sequence and sequences being represented for representative selection. (default = 1.2)")
@@ -105,6 +106,7 @@ def main():
 	logger.info("dependicizing")
 	myInitTree.calculateNodeDependencies(args.working_dir)
 	myInitTree.writeLocusTagFile()
+	myInitTree.writeCodedNewick(genome_dir + args.coded_nwk_file)
 
 	logger.info('Finished')
 

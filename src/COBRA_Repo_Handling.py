@@ -15,8 +15,9 @@ class RepoParse:
 		self.repo_file = repo_file
 		self.genomeToLocus = {}
 		self.locusToGenome = {}
+		self.nodeChildrenCount = {}
 		self.genomes = []
-		self.locusTags = set([])
+		# self.locusTags = set([])
 		RepoParse.logger.debug("RepoParse initialized")
 
 	def parseRepoFile(self, repo_path):
@@ -133,6 +134,7 @@ class RepoParse:
 				g.locus = self.assignGenomeLocus(g.genome)
 			self.genomeToLocus[g.genome] = g.locus
 			self.locusToGenome[g.locus] = g.genome
+			self.nodeChildrenCount[g.locus] = 1
 
 	def readLocusTagFile(self, tag_file):
 		tags = open(tag_file, 'r').readlines()
@@ -141,27 +143,22 @@ class RepoParse:
 			line = t.split()
 			self.genomeToLocus[line[0]] = line[1]
 			self.locusToGenome[line[1]] = line[0]
-			self.locusTags.add(line[1])
+			self.nodeChildrenCount[line[1]] = line[2]
+			# self.locusTags.add(line[1])
 
 	def writeLocusTagFile(self, genome_dir):
 		tag_out = open(genome_dir + "locus_tag_file.txt", 'w')
 		for g in self.genomeToLocus:
-			line = "\t".join([g, self.genomeToLocus[g]]) + "\n"
+			line = "\t".join([g, self.genomeToLocus[g], self.nodeChildrenCount[self.genomeToLocus[g]]]) + "\n"
 			tag_out.write(line)
 		tag_out.close()
 		RepoParse.logger.info("Wrote locus tags to locus_tag_file.txt")
 
 	def assignGenomeLocus(self, genome):
-		# RepoParse.logger.debug("".join(traceback.format_stack()))
 		# L for leaf
 		# 000000 because it is a leaf/basic level
 		# hash of the genome name, the [:-2] is to discard the "==" from the encoding
 		code = "L_0000000_" + base64.urlsafe_b64encode(hashlib.md5(genome).digest())[:-2]
-
-		# code = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
-		# while code in self.locusTags:
-		# 	code = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
-		# self.locusTags.add(code)
 		return code
 
 	def makeGenomeDirectories(self, genome_dir, distribute, synteny_window):

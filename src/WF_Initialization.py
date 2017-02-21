@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 
 # Gets the filesystem set prepped to run the actual algorithm and writes the commands to do so
-# import sys
-import string
-import random
 import os
 import pickle
 import logging
@@ -18,6 +15,7 @@ class Tree:
 		self.genomeToLocusFile = tree_obj.genomeToLocusFile
 		self.genomeToLocus = tree_obj.genomeToLocus
 		self.locusToGenome = tree_obj.locusToGenome
+		self.nodeChildrenCount = tree_obj.nodeChildrenCount
 		self.tree_string = ""
 		self.tree = tree_obj.tree
 		self.rooted_tree = tree_obj.rooted_tree
@@ -29,39 +27,37 @@ class Tree:
 		self.gain = gain
 		self.loss = loss
 		self.min_best_hit = min_best_hit
-# 		self.cmds_per_job = cmds_per_job
 		self.syn_dist = int(syn_dist)
-# 		self.homScale = homScale
-# 		self.synScale = synScale
-		# self.flow_name = flow_name
-# 		self.num_hits = numHits
 		self.min_syn_frac = minSynFrac
 		self.hamming = hamming
 		self.syn2_path = "#SYNERGY2_PATH"
 		Tree.logger.debug("Tree initialized")
 
 	def codeGenomeID(self, genome):
-		tag = ''
-		if genome in self.genomeToLocus:
-			tag = self.genomeToLocus[genome]
-		else:
-			# TODO CHECK IF THIS IS EVER CALLED
-			Tree.logger.error("If this is called, check when and why to modify the tag generated.")
-			import pdb
-			pdb.set_trace()
-			tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
-			while tag in self.locusToGenome:
-				tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
-		self.genomeToLocus[genome] = tag
-		self.locusToGenome[tag] = genome
-		return tag
+		return self.genomeToLocus[genome]
+		# tag = ''
+		# if genome in self.genomeToLocus:
+		# 	tag = self.genomeToLocus[genome]
+		# else:
+		# 	# TODO CHECK IF THIS IS EVER CALLED
+		# 	Tree.logger.error("If this is called, check when and why to modify the tag generated.")
+		# 	import pdb
+		# 	pdb.set_trace()
+		# 	tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
+		# 	while tag in self.locusToGenome:
+		# 		tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
+		# self.genomeToLocus[genome] = tag
+		# self.locusToGenome[tag] = genome
+		# return tag
 
-	def reregisterGenomeID(self, identifier, newChildren):
+	def reregisterGenomeID(self, identifier, newChildren):  # actually usefull?
 		oldGenome = self.locusToGenome[identifier]
 		newGenome = ";".join(newChildren)
 		del self.genomeToLocus[oldGenome]
 		self.genomeToLocus[newGenome] = identifier
 		self.locusToGenome[identifier] = newGenome
+		self.nodeChildrenCount[identifier] = self.nodeChildrenCount[oldGenome]
+		del self.nodeChildrenCount[oldGenome]
 
 	def writeLocusTagFile(self):
 		tag_out = open(self.genomeToLocusFile, 'w')
@@ -70,6 +66,22 @@ class Tree:
 			tag_out.write(line)
 		tag_out.close()
 		Tree.logger.info("Wrote locus tags to locus_tag_file.txt")
+
+	def writeCodedNewick(self, coded_nwk_out):
+		to_replace = [self.root]
+		nwk_str = self.root + ":" + self.nodeChildrenCount[self.root]
+		while not to_replace:
+			n = to_replace.pop()
+			children_tag = self.rooted_tree.out_edges(n)  # should always be 2 if internal node and 0 if leaf
+			insert_str = ""
+			pos = nwk_str.find(n)
+			if children_tag:
+				insert_str = "(" + children_tag[0] + ":" + self.nodeChildrenCount[children_tag[0]] + "," + children_tag[1] + ":" + self.nodeChildrenCount[children_tag[1]] + ")"
+			nwk_str = nwk_str[:pos] + insert_str + nwk_str[pos:]
+			to_replace.append(children_tag[0], children_tag[1])
+		nwk_str += ";\n"
+		with open(coded_nwk_out, 'w') as f:
+			f.write(nwk_str)
 
 	def makePicklesForSingleGenome(self, working_dir, genome, node):
 		gdat = open(working_dir + "genomes/" + genome + "/annotation.txt", 'r').readlines()
@@ -422,65 +434,65 @@ class Tree:
 		my_sh.write(s_file)
 		my_sh.close()
 
-	def toNewick(self, graph):
-		up = []  # unprocessed
-		leaf = []
-		for n in graph.nodes():
-			if len(graph[n]) > 1:
-				up.append(n)
-			else:
-				leaf.append((n, n[0]))
-		curNode = None
-		last_string = ""
-		if len(graph.nodes()) == 2:
-			ew = str(graph[leaf[0][0]][leaf[1][0]]['weight'])
-			last_string = "(" + leaf[0][0] + ":" + ew + "," + leaf[1][0] + ":" + ew + ")"
-		while len(up) > 0:
-			(curNode, e_count) = self.calcMostEdgesToLeaves(up, leaf, graph)
-			leaves = []
-			for e in graph[curNode]:
-				for l in leaf:
-					if l[0] == e:
-						e_i = leaf.index(l)
-						e_text = e
-						if 'child_newick' in graph.node[e]:
-							if e_count > 2 and len(up) > 1:
-								continue
-							e_text = graph.node[e]['child_newick']
-						leaf.pop(e_i)
-						ew = graph[curNode][e]['weight']
-						text = e_text + ":" + str(ew)
-						leaves.append(text)
-			# add newick text to curNode
-			node_text = "(" + ",".join(leaves) + ")"
-			last_string = node_text
-			graph.node[curNode]['child_newick'] = node_text
-			# change curNode to leaf
-			cn_i = up.index(curNode)
-			up.pop(cn_i)
-			leaf.append((curNode, curNode[0]))
-		if len(leaf) == 2 and len(up) == 0 and len(graph.nodes()) > 2:
-			ew = str(graph[leaf[0][0]][leaf[1][0]]['weight'])
-			last_string = "(" + graph.node[leaf[0][0]]['child_newick'] + ":" + ew + "," + graph.node[leaf[1][0]]['child_newick'] + ":" + ew + ")"
-		last_string = last_string.replace("(", "(\n")
-		last_string = last_string.replace(",", ",\n")
-		last_string = last_string.replace(")", ")\n")
-		last_string = last_string.rstrip()
-		return last_string + ";"
+	# def toNewick(self, graph):
+	# 	up = []  # unprocessed
+	# 	leaf = []
+	# 	for n in graph.nodes():
+	# 		if len(graph[n]) > 1:
+	# 			up.append(n)
+	# 		else:
+	# 			leaf.append((n, n[0]))
+	# 	curNode = None
+	# 	last_string = ""
+	# 	if len(graph.nodes()) == 2:
+	# 		ew = str(graph[leaf[0][0]][leaf[1][0]]['weight'])
+	# 		last_string = "(" + leaf[0][0] + ":" + ew + "," + leaf[1][0] + ":" + ew + ")"
+	# 	while len(up) > 0:
+	# 		(curNode, e_count) = self.calcMostEdgesToLeaves(up, leaf, graph)
+	# 		leaves = []
+	# 		for e in graph[curNode]:
+	# 			for l in leaf:
+	# 				if l[0] == e:
+	# 					e_i = leaf.index(l)
+	# 					e_text = e
+	# 					if 'child_newick' in graph.node[e]:
+	# 						if e_count > 2 and len(up) > 1:
+	# 							continue
+	# 						e_text = graph.node[e]['child_newick']
+	# 					leaf.pop(e_i)
+	# 					ew = graph[curNode][e]['weight']
+	# 					text = e_text + ":" + str(ew)
+	# 					leaves.append(text)
+	# 		# add newick text to curNode
+	# 		node_text = "(" + ",".join(leaves) + ")"
+	# 		last_string = node_text
+	# 		graph.node[curNode]['child_newick'] = node_text
+	# 		# change curNode to leaf
+	# 		cn_i = up.index(curNode)
+	# 		up.pop(cn_i)
+	# 		leaf.append((curNode, curNode[0]))
+	# 	if len(leaf) == 2 and len(up) == 0 and len(graph.nodes()) > 2:
+	# 		ew = str(graph[leaf[0][0]][leaf[1][0]]['weight'])
+	# 		last_string = "(" + graph.node[leaf[0][0]]['child_newick'] + ":" + ew + "," + graph.node[leaf[1][0]]['child_newick'] + ":" + ew + ")"
+	# 	last_string = last_string.replace("(", "(\n")
+	# 	last_string = last_string.replace(",", ",\n")
+	# 	last_string = last_string.replace(")", ")\n")
+	# 	last_string = last_string.rstrip()
+	# 	return last_string + ";"
 
-	def calcMostEdgesToLeaves(self, unprocN, leaf, TG):
-		mostLeaves = -1
-		retNode = None
-		for n in unprocN:
-			e_count = 0
-			for e in TG[n]:
-				for l in leaf:
-					if e == l[0]:
-						e_count += 1
-			if e_count > mostLeaves:
-				mostLeaves = e_count
-				retNode = n
-		return (retNode, mostLeaves)
+	# def calcMostEdgesToLeaves(self, unprocN, leaf, TG):
+	# 	mostLeaves = -1
+	# 	retNode = None
+	# 	for n in unprocN:
+	# 		e_count = 0
+	# 		for e in TG[n]:
+	# 			for l in leaf:
+	# 				if e == l[0]:
+	# 					e_count += 1
+	# 		if e_count > mostLeaves:
+	# 			mostLeaves = e_count
+	# 			retNode = n
+	# 	return (retNode, mostLeaves)
 
 	def getGenomeToLocus(self):
 		return self.genomeToLocus

@@ -51,7 +51,7 @@ def main():
 					t.rstrip()
 					line = t.split()
 					tagToGenome[line[1]] = line[0]
-		else:
+		elif os.path.isdir(g):
 			with open(genome_path + g + "/annotation.txt", "r") as f:
 				d = f.readline().rstrip().split("\t")
 				genomeToAnnot[d[0]] = d[1]
@@ -64,6 +64,7 @@ def main():
 					l_t[line[1]] = line[0]
 					l_s[line[1]] = line[10]
 					t_n[line[0]] = [line[7], line[8], line[9]]
+		# else: other files in the genome directory (nwk tree with tags and any other user generated file)
 
 	nwksMap = {}
 	tmp = os.path.realpath(locus_mapping)

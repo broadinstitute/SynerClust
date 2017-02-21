@@ -213,7 +213,7 @@ def main():
 		syn_matrix = numpy.empty(len(leaves) * (len(leaves) - 1) / 2)
 		i = 1
 		pos = 0
-		max_neighbors_count = max([len(syn[k]) for k in syn])
+		# max_neighbors_count = max([len(syn[k]) for k in syn])
 		longest_hom = float("-Inf")
 		for m in leaves[1:]:
 			syn_m = set(syn[m])
