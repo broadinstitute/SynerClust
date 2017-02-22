@@ -249,9 +249,9 @@ def main():
 		j = 1
 		hom_buff = leaves[0] + "\n" + leaves[1] + "\t"
 		syn_buff = leaves[0] + "\n" + leaves[1] + "\t"
-		for k in xrange(hom_matrix):
-			hom_buff += str(hom_matrix[k]) + "\t"
-			syn_buff += str(syn_matrix[k]) + "\t"
+		for x, y in numpy.nditer([hom_buff, syn_buff]):
+			hom_buff += str(x) + "\t"
+			syn_buff += str(y) + "\t"
 			i += 1
 			if i >= j:
 				i = 0
