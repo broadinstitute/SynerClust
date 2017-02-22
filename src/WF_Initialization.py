@@ -74,6 +74,7 @@ class Tree:
 		while to_replace:
 			n = to_replace.pop()
 			children_tag = self.rooted_tree.out_edges(n)  # should always be 2 if internal node and 0 if leaf
+			children_tag = [children_tag[0][1], children_tag[1][1]]
 			insert_str = ""
 			pos = nwk_str.find(n)
 			if children_tag:
