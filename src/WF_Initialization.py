@@ -71,7 +71,7 @@ class Tree:
 	def writeCodedNewick(self, coded_nwk_out):
 		to_replace = [self.root]
 		nwk_str = self.root + ":" + str(self.nodeChildrenCount[self.root])
-		while not to_replace:
+		while to_replace:
 			n = to_replace.pop()
 			children_tag = self.rooted_tree.out_edges(n)  # should always be 2 if internal node and 0 if leaf
 			insert_str = ""
