@@ -63,7 +63,7 @@ class Tree:
 	def writeLocusTagFile(self):
 		tag_out = open(self.genomeToLocusFile, 'w')
 		for g in self.genomeToLocus:
-			line = "\t".join([g, self.genomeToLocus[g]]) + "\n"
+			line = "\t".join([g, self.genomeToLocus[g], str(self.nodeChildrenCount[self.genomeToLocus[g]])]) + "\n"
 			tag_out.write(line)
 		tag_out.close()
 		Tree.logger.info("Wrote locus tags to locus_tag_file.txt")
