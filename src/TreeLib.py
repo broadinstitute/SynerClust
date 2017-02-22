@@ -47,7 +47,7 @@ class Tree:
 				continue
 			self.genomeToLocus[l[0]] = l[1]
 			self.locusToGenome[l[1]] = l[0]
-			self.nodeChildrenCount[l[1]] = l[2]
+			self.nodeChildrenCount[l[1]] = int(l[2])
 
 	def codeGenomeID(self, genome):
 		# Tree.logger.debug("".join(traceback.format_stack()))

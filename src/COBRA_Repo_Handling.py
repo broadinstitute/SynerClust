@@ -143,13 +143,13 @@ class RepoParse:
 			line = t.split()
 			self.genomeToLocus[line[0]] = line[1]
 			self.locusToGenome[line[1]] = line[0]
-			self.nodeChildrenCount[line[1]] = line[2]
+			self.nodeChildrenCount[line[1]] = int(line[2])
 			# self.locusTags.add(line[1])
 
 	def writeLocusTagFile(self, genome_dir):
 		tag_out = open(genome_dir + "locus_tag_file.txt", 'w')
 		for g in self.genomeToLocus:
-			line = "\t".join([g, self.genomeToLocus[g], self.nodeChildrenCount[self.genomeToLocus[g]]]) + "\n"
+			line = "\t".join([g, self.genomeToLocus[g], str(self.nodeChildrenCount[self.genomeToLocus[g]])]) + "\n"
 			tag_out.write(line)
 		tag_out.close()
 		RepoParse.logger.info("Wrote locus tags to locus_tag_file.txt")
