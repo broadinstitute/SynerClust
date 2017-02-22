@@ -244,6 +244,26 @@ def main():
 				hom_matrix[pos] /= longest_hom
 
 		logger.debug("Built matrices for " + cluster + " in " + str(time.time() - TIMESTAMP))
+		# formatting matrices for output
+		i = 0
+		j = 1
+		hom_buff = leaves[0] + "\n" + leaves[1] + "\t"
+		syn_buff = leaves[0] + "\n" + leaves[1] + "\t"
+		for k in xrange(hom_matrix):
+			hom_buff += str(hom_matrix[k]) + "\t"
+			syn_buff += str(syn_matrix[k]) + "\t"
+			i += 1
+			if i >= j:
+				i = 0
+				j += 1
+				if j < len(leaves):
+					hom_buff += "\n" + leaves[j] + "\t"
+					syn_buff += "\n" + leaves[j] + "\t"
+				else:
+					hom_buff += "\n"
+					syn_buff += "\n"
+		logger.debug("Homology matrix for " + cluster + ":\n" + hom_buff)
+		logger.debug("Synteny matrix for " + cluster + ":\n" + syn_buff)
 		TIMESTAMP = time.time()
 
 		# Root, evaluate and split every tree until all trees are OK
