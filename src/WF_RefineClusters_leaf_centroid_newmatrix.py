@@ -249,7 +249,7 @@ def main():
 		j = 1
 		hom_buff = leaves[0] + "\n" + leaves[1] + "\t"
 		syn_buff = leaves[0] + "\n" + leaves[1] + "\t"
-		for x, y in numpy.nditer([hom_buff, syn_buff]):
+		for x, y in numpy.nditer([hom_matrix, syn_matrix]):
 			hom_buff += str(x) + "\t"
 			syn_buff += str(y) + "\t"
 			i += 1
