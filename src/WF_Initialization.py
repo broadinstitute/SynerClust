@@ -19,6 +19,7 @@ class Tree:
 		self.tree_string = ""
 		self.tree = tree_obj.tree
 		self.rooted_tree = tree_obj.rooted_tree
+		self.root = None
 		self.blast_eval = blast_eval
 		self.num_cores = num_cores
 		self.alpha = alpha
@@ -318,9 +319,9 @@ class Tree:
 		self.makeNodeFlowWorkflowControl(nodeTier, childToParent, working_dir)
 
 	def makeNodeFlowWorkflowControl(self, nodeTier, childToParent, working_dir):
-		root = nodeTier[max(nodeTier)][0]
+		self.root = nodeTier[max(nodeTier)][0]
 		stack = []
-		queue = collections.deque([[root, 0, []]])  # current_node, current_id, [child1_id, child2_id]
+		queue = collections.deque([[self.root, 0, []]])  # current_node, current_id, [child1_id, child2_id]
 		count = 1
 		while len(queue) > 0:
 			current = queue.pop()
