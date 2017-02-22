@@ -70,14 +70,14 @@ class Tree:
 
 	def writeCodedNewick(self, coded_nwk_out):
 		to_replace = [self.root]
-		nwk_str = self.root + ":" + self.nodeChildrenCount[self.root]
+		nwk_str = self.root + ":" + str(self.nodeChildrenCount[self.root])
 		while not to_replace:
 			n = to_replace.pop()
 			children_tag = self.rooted_tree.out_edges(n)  # should always be 2 if internal node and 0 if leaf
 			insert_str = ""
 			pos = nwk_str.find(n)
 			if children_tag:
-				insert_str = "(" + children_tag[0] + ":" + self.nodeChildrenCount[children_tag[0]] + "," + children_tag[1] + ":" + self.nodeChildrenCount[children_tag[1]] + ")"
+				insert_str = "(" + children_tag[0] + ":" + str(self.nodeChildrenCount[children_tag[0]]) + "," + children_tag[1] + ":" + str(self.nodeChildrenCount[children_tag[1]]) + ")"
 			nwk_str = nwk_str[:pos] + insert_str + nwk_str[pos:]
 			to_replace.append(children_tag[0], children_tag[1])
 		nwk_str += ";\n"
