@@ -80,7 +80,7 @@ class Tree:
 			if children_tag:
 				insert_str = "(" + children_tag[0] + ":" + str(self.nodeChildrenCount[children_tag[0]]) + "," + children_tag[1] + ":" + str(self.nodeChildrenCount[children_tag[1]]) + ")"
 			nwk_str = nwk_str[:pos] + insert_str + nwk_str[pos:]
-			to_replace.append(children_tag[0], children_tag[1])
+			to_replace.extend([children_tag[0], children_tag[1]])
 		nwk_str += ";\n"
 		with open(coded_nwk_out, 'w') as f:
 			f.write(nwk_str)
