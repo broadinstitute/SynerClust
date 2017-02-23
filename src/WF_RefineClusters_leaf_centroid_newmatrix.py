@@ -308,7 +308,7 @@ def main():
 				# if the tree has >1 source, it is rooted and evaluated
 				else:
 					root = myTree.rootTree()
-					logger.debug("Root for " + cluster + " is: " + root)
+					logger.debug("Root for " + cluster + " is: " + "\t".join(root))
 					myTree.checkTree(root)
 					# tree is valid, added to resolved clusters
 					if myTree.OK == "true" or myTree.OK == "parcimony":
