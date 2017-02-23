@@ -54,7 +54,7 @@ def main(argv):
 	lp_t = {}  # locus prefix to transcript
 	genomes = os.listdir(genome_path)
 	for g in genomes:
-		if g.find("locus_tag_file.txt") > -1:
+		if not os.path.isdir(genome_path + g):
 			continue
 		dataFile = genome_path + g + "/annotation.txt"
 		data = open(dataFile, 'r').readlines()
