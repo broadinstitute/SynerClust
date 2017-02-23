@@ -273,7 +273,8 @@ def main():
 		myTree = NJ.NJTree(mrca, args.alpha, args.beta, args.gamma, args.gain, args.loss)
 		myTree.buildGraphFromNewDistanceMatrix(hom_matrix, syn_matrix, leaves)
 
-		logger.debug("Built NJtree for " + cluster + " in " + str(time.time() - TIMESTAMP))
+		logger.debug("Built NJtree for " + cluster + " in " + str(time.time() - TIMESTAMP) + "\n" + "\n".join([str(myTree.graph[e[0]][e[1]]['homology_dist']) + " " + str(myTree.graph[e[0]][e[1]]['synteny_dist']) for e in myTree.graph.edges()]))
+
 		TIMESTAMP = time.time()
 
 # 		myTree = NJ.NJTree(tree_file, syn_file, mrca, alpha, beta, gamma, gain, loss)
@@ -307,6 +308,7 @@ def main():
 				# if the tree has >1 source, it is rooted and evaluated
 				else:
 					root = myTree.rootTree()
+					logger.debug("Root for " + cluster + " is: " + root)
 					myTree.checkTree(root)
 					# tree is valid, added to resolved clusters
 					if myTree.OK == "true" or myTree.OK == "parcimony":
