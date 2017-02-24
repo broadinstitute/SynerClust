@@ -20,6 +20,7 @@ MUSCLE_CMD = ["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "
 FASTTREE_CMD = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
 # FASTTREE_CMD = ["/Users/cgeorges/Work/Tools/FastTreeDouble", "-quiet", "-nosupport"]
 OUTPUT_LOCK = RLock()
+QUEUE_ERROR = False
 
 
 def get_alignement(stdin_data):
@@ -149,7 +150,7 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 			# redo on remaining sequences using the matrix with only their sequences (prune the big matrix)
 
 			mus_out = mus_out.split("\n")
-			mus_seqs = {}
+			# mus_seqs = {}
 			mus_str_seqs = {}
 			# total_length = 0
 			# unrep = []
@@ -163,13 +164,13 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 					# while seqID in mus_seqs:
 					# 	seqID = line[0][1:] + "." + str(trailer)
 					# 	trailer += 1
-					mus_seqs[seqID] = []
+					# mus_seqs[seqID] = []
 					# unrep.append(seqID)
 					mus_str_seqs[seqID] = ""
 				else:
 					mus_str_seqs[seqID] += l
-					for i in l:
-						mus_seqs[seqID].append(i)
+					# for i in l:
+					# 	mus_seqs[seqID].append(i)
 					# total_length += len(l)
 
 			logger.debug("Trying to acquire lock for " + clusterID)
@@ -178,7 +179,8 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 			out_buffer = ""
 			cons_res[clusterID] = []
 			for s in representative_sequences:
-				cons_seq = "".join(mus_seqs[s])
+				# cons_seq = "".join(mus_seqs[s])
+				cons_seq = mus_str_seqs[s]
 				cons_seq = cons_seq.replace("-", "")
 				out_buffer += ">" + clusterID + ";" + str(len(cons_seq)) + "\n"
 				out_buffer += cons_seq + "*\n"
@@ -193,6 +195,9 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 		except Empty:
 			resultsQueue.put(cons_res)
 			break
+
+		except:
+			QUEUE_ERROR = True
 
 
 if __name__ == "__main__":
@@ -247,6 +252,9 @@ if __name__ == "__main__":
 		cons_pkl.update(resultsQueue.get())
 
 	cons_out.close()
+
+	if QUEUE_ERROR:
+		sys.exit("Error in python queue")
 
 	with open(args.node_dir + "consensus_data.pkl", "w") as f:
 		pickle.dump(cons_pkl, f)
