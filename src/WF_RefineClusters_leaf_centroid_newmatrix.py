@@ -45,6 +45,9 @@ def main():
 
 	my_dir = args.node_dir + mrca + "/"
 
+	if "CLUSTERS_REFINED" in os.listdir(my_dir):
+		sys.exit(0)
+
 	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
 	logger = logging.getLogger()
 	logging.basicConfig(filename=my_dir + 'RefineClusters_leaf_centroid.log', format=FORMAT, filemode='w', level=logging.DEBUG)
@@ -53,9 +56,6 @@ def main():
 	ch.setLevel(logging.INFO)
 	logger.addHandler(ch)
 	logger.info('Started')
-
-	if "CLUSTERS_REFINED" in os.listdir(my_dir):
-		sys.exit(0)
 
 	TIMESTAMP = time.time()
 
@@ -273,7 +273,7 @@ def main():
 		myTree = NJ.NJTree(mrca, args.alpha, args.beta, args.gamma, args.gain, args.loss)
 		myTree.buildGraphFromNewDistanceMatrix(hom_matrix, syn_matrix, leaves)
 
-		logger.debug("Built NJtree for " + cluster + " in " + str(time.time() - TIMESTAMP) + "\n" + "\n".join([str(myTree.graph[e[0]][e[1]]['homology_dist']) + " " + str(myTree.graph[e[0]][e[1]]['synteny_dist']) for e in myTree.graph.edges()]))
+		logger.debug("Built NJtree for " + cluster + " in " + str(time.time() - TIMESTAMP) + "\n" + "\n".join([e[0] + " " + e[1] + " " + str(myTree.graph[e[0]][e[1]]['homology_dist']) + " " + str(myTree.graph[e[0]][e[1]]['synteny_dist']) for e in myTree.graph.edges()]))
 
 		TIMESTAMP = time.time()
 

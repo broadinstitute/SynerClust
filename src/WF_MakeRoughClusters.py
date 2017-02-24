@@ -44,6 +44,9 @@ def main():
 	blast_out = my_dir + "blast.m8"
 	n_head = my_dir + "blast_headers.txt"
 
+	if "TREES_FINISHED" in os.listdir(my_dir):
+		sys.exit(0)
+
 	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
 	logger = logging.getLogger()
 	logging.basicConfig(filename=my_dir + 'MakeRoughClusters.log', format=FORMAT, filemode='w', level=logging.DEBUG)
@@ -53,8 +56,6 @@ def main():
 	logger.addHandler(ch)
 	logger.info('Started')
 
-	if "TREES_FINISHED" in os.listdir(my_dir):
-		sys.exit(0)
 	# get synteny data
 	pickleSyn = {}
 	for c in args.children:
