@@ -82,6 +82,8 @@ class Tree:
 		while len(myExcisableRegions) > 0:
 			myExcisableRegions = sorted(myExcisableRegions, key=lambda reg: reg[4], reverse=True)
 			newSpeciesLocus = ""
+			if len(myExcisableRegions) == 1 and myExcisableRegions[0][2].count(",") == 1:  # "root" of the tree had 3 or more children
+				return myExcisableRegions[2][1:-1]
 			for mer in myExcisableRegions:
 				region = mer[2][1:-1]
 
