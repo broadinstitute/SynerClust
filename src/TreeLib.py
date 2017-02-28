@@ -125,6 +125,8 @@ class Tree:
 					myTreeString = region
 					break
 				while len(child_nodes) > 1 and same_length == 0:
+					if len(child_nodes) == 2 and len(myExcisableRegions) == 1:
+						break
 					# print "WHILE", len(child_nodes)
 					if len(child_nodes) > 2 and child_nodes[0][1] > 0.0:
 						has_dist = 1
