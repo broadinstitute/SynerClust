@@ -82,7 +82,8 @@ class Tree:
 		while len(myExcisableRegions) > 0:
 			myExcisableRegions = sorted(myExcisableRegions, key=lambda reg: reg[4], reverse=True)
 			newSpeciesLocus = ""
-			if len(myExcisableRegions) == 1 and myTreeString.count(",") == 1:  # "root" of the tree had 3 or more children
+			# if len(myExcisableRegions) == 1 and myTreeString.count(",") == 1:  # "root" of the tree had 3 or more children
+			if len(myExcisableRegions) == 1 and len(myExcisableRegions[0][2]) == len(myTreeString):  # "root" of the tree had 3 or more children
 				root_edge = myExcisableRegions[0][2][1:-1]
 				children = root_edge.split(",")
 				for i in xrange(2):
@@ -125,7 +126,7 @@ class Tree:
 					myTreeString = region
 					break
 				while len(child_nodes) > 1 and same_length == 0:
-					if len(child_nodes) == 2 and len(myExcisableRegions) == 1:
+					if len(child_nodes) == 2 and len(mer[2]) == len(myTreeString):
 						break
 					# print "WHILE", len(child_nodes)
 					if len(child_nodes) > 2 and child_nodes[0][1] > 0.0:
