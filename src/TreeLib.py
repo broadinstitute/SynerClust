@@ -83,7 +83,14 @@ class Tree:
 			myExcisableRegions = sorted(myExcisableRegions, key=lambda reg: reg[4], reverse=True)
 			newSpeciesLocus = ""
 			if len(myExcisableRegions) == 1 and myExcisableRegions[0][2].count(",") == 1:  # "root" of the tree had 3 or more children
-				return myExcisableRegions[2][1:-1]
+				root_edge = myExcisableRegions[0][2][1:-1]
+				children = root_edge.split(",")
+				for i in xrange(2):
+					name = children.split(":")[i]
+					if name not in self.locusToGenome:
+						locus = self.codeGenomeID(name)
+						children[i].replace(name, locus)
+				return ",".join(children)
 			for mer in myExcisableRegions:
 				region = mer[2][1:-1]
 
