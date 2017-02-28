@@ -132,7 +132,8 @@ class Tree:
 						# print "has_dist", has_dist
 						break
 					if len(child_nodes) == 2 and len(mer[2]) == len(myTreeString):
-						newSpeciesLocus = child_nodes[0][0] + ":0.0," + child_nodes[1][0] + ":0.0"
+						newSpeciesLocus = child_nodes[0][0] + ":" + child_nodes[0][1] + "," + child_nodes[1][0] + ":" + child_nodes[1][1]
+						self.tree.add_edge(child_nodes[0][0], child_nodes[1][0], weight=child_nodes[0][1])
 						break
 					tkids = []
 					# print len(child_nodes)
