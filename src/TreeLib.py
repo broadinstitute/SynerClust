@@ -86,7 +86,7 @@ class Tree:
 				root_edge = myExcisableRegions[0][2][1:-1]
 				children = root_edge.split(",")
 				for i in xrange(2):
-					name = children.split(":")[i]
+					name = children[i].split(":")[0]
 					if name not in self.locusToGenome:
 						locus = self.codeGenomeID(name)
 						children[i].replace(name, locus)
