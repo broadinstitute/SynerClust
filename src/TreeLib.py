@@ -126,12 +126,13 @@ class Tree:
 					myTreeString = region
 					break
 				while len(child_nodes) > 1 and same_length == 0:
-					if len(child_nodes) == 2 and len(mer[2]) == len(myTreeString):
-						break
 					# print "WHILE", len(child_nodes)
 					if len(child_nodes) > 2 and child_nodes[0][1] > 0.0:
 						has_dist = 1
 						# print "has_dist", has_dist
+						break
+					if len(child_nodes) == 2 and len(mer[2]) == len(myTreeString):
+						newSpeciesLocus = child_nodes[0][0] + ":0.0," + child_nodes[1][0] + ":0.0"
 						break
 					tkids = []
 					# print len(child_nodes)
