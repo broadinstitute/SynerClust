@@ -11,12 +11,12 @@ import argparse
 
 # def usage():
 # 	print """Creates rough clusters based on the BLAST output.
-# 
+#
 # 	WF_MakeRoughClusters.py [node dir] [node name] [min best hit] [child1] [child2]
-# 
+#
 # 	where [node dir] contains data pertinent to [node name], which has children [child1] and [child2].
 # 	Tightness of intra-rough-cluster relationships can be regulated by [min best hit].
-# 
+#
 # 	[node dir], dir path
 # 	full path to directory
 # 	[node name], string
@@ -30,26 +30,22 @@ import argparse
 
 
 def main():
-	usage = "usage: WF_RefineCluster_leaf_centroid_newmatrix.py [options]"
+	usage = "usage: WF_MakeRoughClusters.py [options]"
 	parser = argparse.ArgumentParser(usage)
 	parser.add_argument('-dir', dest="node_dir", required=True, help="Path to the \"nodes\" folder. (Required)")
 	parser.add_argument('-node', dest="node", required=True, help="Current node name. (Required)")
 	parser.add_argument('-m', '--min_best_hit', type=float, dest="min_best_hit", required=True, help="Minimal % of match length for Blastp hits compared to best one.")
 	parser.add_argument('-F', '--min_syntenic_fraction', type=float, dest="minSynFrac", required=True, help="Minimal syntenic fraction.")
+	parser.add_argument('-diff', '--max_size_diff', type=float, default=3.0, dest="max_size_diff", required=False, help="Maximal ratio difference in size between query and target sequence for Blast.")
 	parser.add_argument('children', nargs=2, help="Children nodes. (Required)")
 	args = parser.parse_args()
-	
-# 	node_dir = argv[0]
-# 	node = argv[1]
-# 	min_best_hit = float(argv[2])
-# 	homScale = float(argv[3])
-# 	synScale = float(argv[4])
-# 	numHits = int(argv[5])
-# 	minSynFrac = float(argv[6])
-# 	children = argv[7:]
+
 	my_dir = args.node_dir + args.node + "/"
 	blast_out = my_dir + "blast.m8"
 	n_head = my_dir + "blast_headers.txt"
+
+	if "TREES_FINISHED" in os.listdir(my_dir):
+		sys.exit(0)
 
 	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
 	logger = logging.getLogger()
@@ -60,8 +56,6 @@ def main():
 	logger.addHandler(ch)
 	logger.info('Started')
 
-	if "TREES_FINISHED" in os.listdir(my_dir):
-		sys.exit(0)
 	# get synteny data
 	pickleSyn = {}
 	for c in args.children:
@@ -69,13 +63,17 @@ def main():
 		pklFile = open(synFile, 'rb')
 		pickleSyn[c] = pickle.load(pklFile)
 		pklFile.close()
+	logger.debug("Loaded synteny_data")
 
 	# Create rough clusters with trees
-	bp = BlastHandling.BlastParse(blast_out)
+	bp = BlastHandling.BlastParse(blast_out, args.max_size_diff)
+	logger.debug("Parsed Blast")
 	hits = bp.readBlastM8()
+	logger.debug("Read Blast")
 	# hits = bp.readBlat()
 
-	(bestHits, bestDirHits) = bp.scoreHits(hits, n_head, args.min_best_hit, pickleSyn, args.minSynFrac)
+	bestReciprocalHits = bp.scoreHits(hits, n_head, args.min_best_hit, pickleSyn, args.minSynFrac)
+	logger.debug("Scored Hits")
 	tree_dir = my_dir + "trees"
 	# if "trees" in os.listdir(my_dir):
 	if os.path.exists(tree_dir):
@@ -87,7 +85,8 @@ def main():
 	# os.system("mkdir "+tree_dir)
 	os.mkdir(tree_dir)
 	tree_dir = tree_dir + os.sep
-	retval = bp.makePutativeClusters(bestHits, tree_dir, pickleSyn, bestDirHits)
+	retval = bp.makePutativeClusters(tree_dir, pickleSyn, bestReciprocalHits)
+	logger.debug("Made Putative Clusters")
 # 	sys.exit()
 	if retval > 0:
 		sys.exit(retval)
@@ -98,6 +97,7 @@ def main():
 	tf.close()
 
 	sys.exit(0)
+
 
 if __name__ == "__main__":
 	main()

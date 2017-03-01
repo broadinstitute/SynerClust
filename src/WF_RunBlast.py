@@ -72,7 +72,6 @@ def main(argv):
 			for lm in locusMap:
 				for lmm in locusMap[lm]:
 					strains.add("_".join(lmm.split("_")[:-1]))
-					logger.debug("%s splitted to %s" % (lmm, "_".join(lmm.split("_")[:-1])))
 			logger.info(strains)
 
 			if len(strains) == 1:
@@ -96,6 +95,7 @@ def main(argv):
 		bf.write("Way to go!\n")
 		bf.close()
 	# sys.exit(0)
+
 
 if __name__ == "__main__":
 	if len(sys.argv) == 1:

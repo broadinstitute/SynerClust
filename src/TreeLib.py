@@ -1,17 +1,12 @@
 #!/usr/bin/env python
 
 import sys
-# import math
 import getopt
-# import random
-# import string
-# import os
 import re
 import logging
 import hashlib
 import base64
 import networkx as nx
-# import traceback
 
 
 class Tree:
@@ -22,6 +17,7 @@ class Tree:
 		self.genomeToLocusFile = genomeToLocusFile
 		self.genomeToLocus = {}
 		self.locusToGenome = {}
+		self.nodeChildrenCount = {}
 		self.tree_string = ""
 		self.tree = nx.Graph()
 		self.root = None
@@ -51,6 +47,7 @@ class Tree:
 				continue
 			self.genomeToLocus[l[0]] = l[1]
 			self.locusToGenome[l[1]] = l[0]
+			self.nodeChildrenCount[l[1]] = int(l[2])
 
 	def codeGenomeID(self, genome):
 		# Tree.logger.debug("".join(traceback.format_stack()))
@@ -65,7 +62,8 @@ class Tree:
 				children.sort()
 				# max node degree between children nodes
 				degree = max(int(children[0].split("_")[1]), int(children[1].split("_")[1])) + 1
-			else:
+				n = self.nodeChildrenCount[children[0]] + self.nodeChildrenCount[children[1]]
+			else:  # should never happen since otherwise its a leaf
 				degree = 0
 			tag = "N_%07d_%s" % (degree, base64.urlsafe_b64encode(hashlib.md5(genome).digest())[:-2])
 			Tree.logger.debug("Created new tag %s for %s" % (tag, genome))
@@ -74,15 +72,9 @@ class Tree:
 			# 	tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
 			self.genomeToLocus[genome] = tag
 			self.locusToGenome[tag] = genome
+			self.nodeChildrenCount[tag] = n
 			# print genome, tag
 		return tag
-
-	# def reregisterGenomeID(self, identifier, newChildren):
-	# 	oldGenome = self.locusToGenome[identifier]
-	# 	newGenome = ";".join(newChildren)
-	# 	del self.genomeToLocus[oldGenome]
-	# 	self.genomeToLocus[newGenome] = identifier
-	# 	self.locusToGenome[identifier] = newGenome
 
 	def parseTree(self):
 		myTreeString = self.tree_string[0:-1]
@@ -90,6 +82,16 @@ class Tree:
 		while len(myExcisableRegions) > 0:
 			myExcisableRegions = sorted(myExcisableRegions, key=lambda reg: reg[4], reverse=True)
 			newSpeciesLocus = ""
+			# if len(myExcisableRegions) == 1 and len(myExcisableRegions[0][2]) == len(myTreeString):  # "root" of the tree had 3 or more children
+			if len(myExcisableRegions) == 1 and myTreeString.count(",") == 1:  # "root" of the tree had 3 or more children
+				root_edge = myExcisableRegions[0][2][1:-1]
+				children = root_edge.split(",")
+				for i in xrange(2):
+					name = children[i].split(":")[0]
+					if name not in self.locusToGenome:
+						locus = self.codeGenomeID(name)
+						children[i].replace(name, locus)
+				return ",".join(children)
 			for mer in myExcisableRegions:
 				region = mer[2][1:-1]
 
@@ -128,6 +130,10 @@ class Tree:
 					if len(child_nodes) > 2 and child_nodes[0][1] > 0.0:
 						has_dist = 1
 						# print "has_dist", has_dist
+						break
+					if len(child_nodes) == 2 and len(mer[2]) == len(myTreeString):
+						newSpeciesLocus = child_nodes[0][0] + ":" + str(child_nodes[0][1]) + "," + child_nodes[1][0] + ":" + str(child_nodes[1][1])
+						self.tree.add_edge(child_nodes[0][0], child_nodes[1][0], weight=child_nodes[0][1])
 						break
 					tkids = []
 					# print len(child_nodes)
@@ -244,56 +250,6 @@ class Tree:
 					self.tree.add_edge(myedges[0], myedges[1], weight=newweight)
 					self.tree.remove_node(n)
 
-	# Roots tree by midpoint based on branch length.
-	# def rootByMidpoint(self):
-	# 	#get all shortest paths between all nodes
-	# 	paths = nx.shortest_path_length(self.tree,None,None,'weight')
-	# 	#identify the pair of nodes with the longes shortest path. ancestral nodes are also evaluated, but can never be a member of the longest shortest path.
-	# 	longest_path = 0.0
-	# 	longest_pair = None
-	# 	path_dist = {}
-	# 	for p in paths:
-	# 		path_dist[p] = {}
-	# 		for r in paths[p]:
-	# 			# print r, paths[p][r]
-	# 			if r==p:
-	# 				path_dist[p][r] = 0.0
-	# 				# continue
-	# 			if r in path_dist[p]:
-	# 				if paths[p][r] < path_dist[p][r]:
-	# 					path_dist[p][r] = paths[p][r]
-	# 			else:
-	# 				path_dist[p][r] = paths[p][r]
-	# 			if paths[p][r] > longest_path:
-	# 				longest_pair = (p, r)
-	# 				longest_path = paths[p][r]
-	# 			elif longest_pair == None:
-	# 				longest_pair = (p,r)
-	# 	#trace the longest shortest path to identify the edge containing the midpoint
-	# 	path = nx.shortest_path(self.tree, longest_pair[0],longest_pair[1])
-	# 	# print "longest pair",longest_pair, longest_path
-	# 	mid = longest_path/2.0
-	# 	cur_node = path.pop()
-	# 	cur_length = 0.0
-	# 	root_edge = None
-	# 	while path:
-	# 		nextNode = path.pop()
-	# 		cur_length+= self.tree[cur_node][nextNode]['weight']
-	# 		if cur_length > mid:
-	# 			root_edge = (cur_node,nextNode)
-	# 			break
-	# 		cur_node = nextNode
-	# 	if root_edge == None:
-	# 		#this basically means all of the sequences are identical
-	# 		print "no root edge, setting to 'longest' pair"
-	# 		root_edge = longest_pair
-
-	# 	#root tree by adding a root node on midpoint edge
-	# 	# for n in self.tree.nodes():
-	# 		# print n, len(self.tree.edge[n]), self.tree.edge[n]
-	# 	print "root edge", root_edge
-	# 	self.rootTree(root_edge)
-
 	# make a directed graph
 	def rootTree(self, root_edge):
 		re_weight = (self.tree.edge[root_edge[0]][root_edge[1]]['weight']) / 2.0
@@ -406,139 +362,12 @@ class Tree:
 				later = tree_string[r:]
 				myweight = re.match(':\d+\.\d+', later)
 				region_weight = "None"
-				if not myweight == None:
+				if myweight is not None:
 					region_weight = later[myweight.start() + 1:myweight.end()]
 				# print "looking for", region_weight
 				myRegions.append((l, p[0], tree_string[l:r], length, region_weight))
 			i += 1
 		return myRegions
-
-	# def writeLocusTagFile(self):
-	# 	tag_out = open(self.genomeToLocusFile, 'w')
-	# 	for g in self.genomeToLocus:
-	# 		line = "\t".join([g, self.genomeToLocus[g]])+"\n"
-	# 		tag_out.write(line)
-	# 	tag_out.close()
-	# 	print "Wrote locus tags to locus_tag_file.txt"
-
-	# def toNewickLabels(self):
-	# 	graph = self.rooted_tree.copy()
-	# 	up = [] #unprocessed
-	# 	leaf = []
-	# 	for n in graph.nodes():
-	# 		if len(graph.out_edges(n)) > 0:
-	# 			up.append(n)
-	# 		elif len(graph.out_edges(n)) ==0:
-	# 			leaf.append(n)
-
-	# 	curNode = None
-	# 	last_string = ""
-	# 	up.sort()
-	# 	leaf.sort()
-	# 	if len(graph.nodes()) == 2:
-	# 		last_string = "("+",".join(leaf)+")"
-	# 	while len(up) > 0:
-	# 		(curNode,e_count) = self.calcMostEdgesToLeaves(up,leaf,graph)
-	# 		leaves = []
-	# 		for e in graph[curNode]:
-	# 			for l in leaf:
-	# 				if l == e:
-	# 					e_i = leaf.index(l)
-	# 					e_text = e
-	# 					if 'child_newick' in graph.node[e]:
-	# 						if e_count > 2 and len(up) > 1:
-	# 							continue
-	# 						e_text = graph.node[e]['child_newick']+e
-	# 					leaf.pop(e_i)
-	# 					leaves.append(e_text)
-	# 		#add newick text to curNode
-	# 		node_text = "("+",".join(leaves)+")"
-	# 		last_string = node_text
-	# 		graph.node[curNode]['child_newick'] = node_text
-	# 		#change curNode to leaf
-	# 		cn_i = up.index(curNode)
-	# 		up.pop(cn_i)
-	# 		leaf.append(curNode)
-	# 	if len(leaf) == 2 and len(up)==0 and len(graph.nodes()) > 2:
-	# 		last_string = "("+graph.node[leaf[0]]['child_newick']+","+graph.node[leaf[1]]['child_newick']+")"
-	# 	last_string = last_string.rstrip()
-	# 	return last_string+";"
-
-	# def toNewickNoLabels(self):
-	# 	graph = self.rooted_tree.copy()
-	# 	up = [] #unprocessed
-	# 	leaf = []
-	# 	for n in graph.nodes():
-	# 		if len(graph.out_edges(n)) > 0:
-	# 			up.append(n)
-	# 		elif len(graph.out_edges(n)) ==0:
-	# 			leaf.append(n)
-
-	# 	curNode = None
-	# 	last_string = ""
-	# 	up.sort()
-	# 	leaf.sort()
-	# 	if len(graph.nodes()) == 2:
-	# 		last_string = "("+",".join(leaf)+")"
-	# 	while len(up) > 0:
-	# 		(curNode,e_count) = self.calcMostEdgesToLeaves(up,leaf,graph)
-	# 		leaves = []
-	# 		for e in graph[curNode]:
-	# 			for l in leaf:
-	# 				if l == e:
-	# 					e_i = leaf.index(l)
-	# 					e_text = e
-	# 					if 'child_newick' in graph.node[e]:
-	# 						if e_count > 2 and len(up) > 1:
-	# 							continue
-	# 						e_text = graph.node[e]['child_newick']
-	# 					leaf.pop(e_i)
-	# 					leaves.append(e_text)
-	# 		#add newick text to curNode
-	# 		node_text = "("+",".join(leaves)+")"
-	# 		last_string = node_text
-	# 		graph.node[curNode]['child_newick'] = node_text
-	# 		#change curNode to leaf
-	# 		cn_i = up.index(curNode)
-	# 		up.pop(cn_i)
-	# 		leaf.append(curNode)
-	# 	if len(leaf) == 2 and len(up)==0 and len(graph.nodes()) > 2:
-	# 		last_string = "("+graph.node[leaf[0]]['child_newick']+","+graph.node[leaf[1]]['child_newick']+")"
-	# 	last_string = last_string.rstrip()
-	# 	return last_string+";"
-
-	# def calcMostEdgesToLeaves(self,unprocN,leaf,TG):
-	# 	mostLeaves = -1
-	# 	retNode = None
-	# 	for n in unprocN:
-	# 		e_count = 0
-	# 		for e in TG[n]:
-	# 			for l in leaf:
-	# 				if e == l:
-	# 					e_count += 1
-	# 		if e_count > mostLeaves:
-	# 			mostLeaves = e_count
-	# 			retNode = n
-	# 	return (retNode,mostLeaves)
-
-	# def makeClassSplits(self):
-	# 	ancestor_to_children = {}
-	# 	for a in self.ancestral:
-	# 		ancestor_to_children[a] = set([])
-	# 		leaves = []
-	# 		kids = self.getLeaves(a, leaves)
-	# 		for k in kids:
-	# 			ancestor_to_children[a].add(self.locusToGenome[k])
-	# 	return ancestor_to_children
-
-	# def getLeaves(self, ancestral_node, leaves):
-	# 	ret_list = []
-	# 	for c in self.rooted_tree.successors(ancestral_node):
-	# 		if len(self.rooted_tree.out_edges(c)) == 0:
-	# 			leaves.append(c)
-	# 		else:
-	# 			self.getLeaves(c, leaves)
-	# 	return leaves
 
 
 def usage():
@@ -568,9 +397,9 @@ def main(argv):
 	seq_file = ""
 	out_file = ""
 	locus_tag = "locus_tag_file.txt"
-	root = 1  # always on... need to develop
-	labels = 0
-	taxa_to_keep = ""
+	# root = 1  # always on... need to develop
+	# labels = 0
+	# taxa_to_keep = ""
 
 	try:
 		opts, args = getopt.getopt(argv, "t:l:k:s:o:rnh", ["tree=", "locus=", "keep=", "sequence=", "output=", "root", "node", "help"])
@@ -587,12 +416,12 @@ def main(argv):
 			out_file = arg
 		elif opt in ("-l", "--locus"):
 			locus_tag = arg
-		elif opt in ("-r", "--root"):
-			root = 1
-		elif opt in ("-n", "--node"):
-			labels = 1
-		elif opt in ("-k", "--keep"):
-			taxa_to_keep = arg
+		# elif opt in ("-r", "--root"):
+		# 	root = 1
+		# elif opt in ("-n", "--node"):
+		# 	labels = 1
+		# elif opt in ("-k", "--keep"):
+		# 	taxa_to_keep = arg
 		elif opt in ("-h", "--help"):
 			sys.exit(usage())
 
@@ -616,7 +445,8 @@ def main(argv):
 	else:
 
 		myTree.readTree()
-		success = myTree.parseTree()
+		# success = myTree.parseTree()
+		myTree.parseTree()
 		myCentroid = myTree.findCentroid()
 		centroidSeq = seqs[myCentroid]
 	conPep = open(out_file, 'w')

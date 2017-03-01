@@ -8,7 +8,7 @@ from multiprocessing import Process, Queue, RLock
 from Queue import Empty
 import subprocess
 import networkx as nx
-import median_of_medians
+# import median_of_medians
 import numpy
 import argparse
 
@@ -16,10 +16,11 @@ DEVNULL = open(os.devnull, 'w')
 # DIST_THRESHOLD = 0.7
 # REGEX = re.compile("(\([a-zA-Z0-9-_:;.]+,[a-zA-Z0-9-_:;.]+\))")
 MUSCLE_CMD = ["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
-# MUSCLE_CMD = ["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]  # kept for debugging
+# MUSCLE_CMD = ["/Users/cgeorges/Work/Tools/muscle3.8.31_i86darwin64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]  # kept for debugging
 FASTTREE_CMD = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
-# FASTTREE_CMD = ["/home/kamigiri/tools/FastTreeDouble", "-quiet", "-nosupport"]
+# FASTTREE_CMD = ["/Users/cgeorges/Work/Tools/FastTreeDouble", "-quiet", "-nosupport"]
 OUTPUT_LOCK = RLock()
+QUEUE_ERROR = False
 
 
 def get_alignement(stdin_data):
@@ -35,19 +36,28 @@ def get_fasttree(stdin_data):
 	return (output1, output2)
 
 
-def makeConsensus(tq, dist_threshold, consensus_pep):
+def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 	logger = logging.getLogger()
+	cons_res = {}
 	while True:
 		try:
-			nos = tq.get(block=True, timeout=3)
+			nos = tq.get(block=False)
 			pep_data = nos[0]
 			clusterID = nos[1]
-			logger.info("Processing cluster " + clusterID)
+			logger.debug("Processing cluster " + clusterID)
 			(mus_out, output) = get_fasttree("".join(pep_data))
 
+			lengths = {}
+			seqs = {}
+			leaves = []
+			for line in pep_data:
+				if line[0] == ">":
+					pep = line[1:].split("\n")
+					seqs[pep[0]] = pep[1]  # could most likely use this dict instead of recreating one from mus_out
+					lengths[pep[0]] = int(pep[0].split(";")[-1])
+					leaves.append(pep[0])
 			graph = nx.Graph()
 			counter = 1
-			leaves = []
 			representative_sequences = []
 			logger.debug(output)
 			while(True):
@@ -68,15 +78,15 @@ def makeConsensus(tq, dist_threshold, consensus_pep):
 					child = child.split(":")
 					if child[0] not in graph.nodes():
 						graph.add_node(child[0])
-						leaves.append(child[0])
 					graph.add_edge(group, child[0], dist=float(child[1]))
+				if "node" not in children[0] and "node" not in children[1] and children[0].split(":")[1] == 0.0 and seqs[children[0].split(":")[0]] != seqs[children[1].split(":")[0]]:
+					logger.critical("0.0 distance in fasttree:\n" + output + "\n" + children[0].split(":")[0] + "\n" + seqs[children[0].split(":")[0]] + "\n" + children[1].split(":")[0] + "\n" + seqs[children[1].split(":")[0]])
 				output = output[:l] + group + output[r + 1:]
 
-			logger.info("Built graph for cluster " + clusterID)
+			logger.debug("Built graph for cluster " + clusterID)
 			matrix_size = len(leaves) * (len(leaves) - 1) / 2
 			leaves_length = len(leaves)
 			# nodes are headers/gene references
-			leaves.sort()  # why?
 			dist_matrix = numpy.empty(matrix_size, float)  # diagonal matrix stored as an array
 			j = 0
 			i = 1
@@ -87,53 +97,40 @@ def makeConsensus(tq, dist_threshold, consensus_pep):
 				i += 1
 
 			while (matrix_size > 0):
-				# n rows, 2 columns
-				# 1st column = values, 2nd column = index
-				# average_dist is actually a sum of dist
-				# but since dividing all of its values by len(leaves) wouldn't change the median and we don't use these values elsewhere there is no need to do it
-				average_dist = numpy.zeros((len(leaves), 2), float)
-				# read through the matrix only once to fill average_dist
-				imax = 1
-				pos = 0
-				while(pos < matrix_size):
-					average_dist[imax - 1][1] = imax - 1
-					for i in xrange(imax):
-						average_dist[i][0] += dist_matrix[pos]
-						average_dist[imax][0] += dist_matrix[pos]
-						pos += 1
-					imax += 1
-
-				# pick something close to the median (median of medians)
-				# for_med = numpy.copy(average_dist)  # the median of medians search reorders elements
-				index = int(average_dist[median_of_medians.for2DArray(average_dist)][1])
-				representative_sequences.append(leaves[index])
-				logger.info("Added representative to cluster " + clusterID)
-				# n = math.floor((math.sqrt(8 * index + 1) - 1) / 2)
-				# check which sequences are more distant to it than the threshold
+				# select longest by reading dict once and keeping track of k,v for longest
+				max_len = 0
+				max_key = None
+				for key, value in lengths.iteritems():
+					if value > max_len:
+						max_len = value
+						max_key = key
+				representative_sequences.append(max_key)
+				index = leaves.index(max_key)
+				# representative_sequences.append(leaves[index])
+				logger.debug("Added representative to cluster " + clusterID)
 				to_remove = numpy.full(leaves_length, -1, int)
 				i = 0
 				for j in xrange(leaves_length):
 					if index == j:
 						to_remove[i] = j
+						del lengths[leaves[j - i]]
 						leaves.remove(leaves[j - i])
 						i += 1
 					elif index < j:
 						if dist_matrix[(j * (j - 1) / 2) + index] < dist_threshold:
 							to_remove[i] = j
+							del lengths[leaves[j - i]]
 							leaves.remove(leaves[j - i])
 							i += 1
 					else:
 						if dist_matrix[(index * (index - 1) / 2) + j] < dist_threshold:
 							to_remove[i] = j
+							del lengths[leaves[j - i]]
 							leaves.remove(leaves[j - i])
 							i += 1
-
 				logger.debug("Distance check with " + str(i) + " represented sequences done for " + clusterID)
-				# new_length = old_length - i
-				leaves_length -= i
-				# new_dist_matrix = numpy.empty(((new_length - 1) * new_length) / 2, float)
 
-				# -1 or -inf in old matrix where needed
+				leaves_length -= i
 				k = 0
 				l = 1
 				offset = 0
@@ -149,50 +146,58 @@ def makeConsensus(tq, dist_threshold, consensus_pep):
 
 				matrix_size = leaves_length * (leaves_length - 1) / 2
 				logger.debug("Matrix updated for " + clusterID)
-			# -float('Inf')
 			# remove from matrix data that is not needed anymore
 			# redo on remaining sequences using the matrix with only their sequences (prune the big matrix)
 
 			mus_out = mus_out.split("\n")
-			mus_seqs = {}
+			# mus_seqs = {}
 			mus_str_seqs = {}
-			total_length = 0
-			unrep = []
+			# total_length = 0
+			# unrep = []
 			for mo in mus_out:
-				l = mo.rstrip()
+				l = mo.rstrip()  # probably not needed since split was used before to create it
 				if l.find('>') > -1:
-					line = l.split()
-					seqID = line[0][1:]
-					trailer = 1
-					while seqID in mus_seqs:
-						seqID = line[0][1:] + "." + str(trailer)
-						trailer += 1
-					mus_seqs[seqID] = []
-					unrep.append(seqID)
+					seqID = l[1:]
+					# line = l.split()   # why split??
+					# seqID = line[0][1:line[0].rfind(";")]
+					# trailer = 1
+					# while seqID in mus_seqs:
+					# 	seqID = line[0][1:] + "." + str(trailer)
+					# 	trailer += 1
+					# mus_seqs[seqID] = []
+					# unrep.append(seqID)
 					mus_str_seqs[seqID] = ""
 				else:
 					mus_str_seqs[seqID] += l
-					for i in l:
-						mus_seqs[seqID].append(i)
-					total_length += len(l)
+					# for i in l:
+					# 	mus_seqs[seqID].append(i)
+					# total_length += len(l)
 
 			logger.debug("Trying to acquire lock for " + clusterID)
 			OUTPUT_LOCK.acquire()
 			logger.debug("Acquired lock for " + clusterID)
-			cons_out = open(consensus_pep, "a")
+			out_buffer = ""
+			cons_res[clusterID] = []
 			for s in representative_sequences:
-				cons_seq = "".join(mus_seqs[s])
+				# cons_seq = "".join(mus_seqs[s])
+				cons_seq = mus_str_seqs[s]
 				cons_seq = cons_seq.replace("-", "")
-				cons_out.write(">" + clusterID + ";" + str(len(cons_seq)) + "\n")
-				cons_out.write(cons_seq + "*\n")
+				out_buffer += ">" + clusterID + ";" + str(len(cons_seq)) + "\n"
+				out_buffer += cons_seq + "*\n"
+				cons_res[clusterID].append(out_buffer)
+				cons_out.write(out_buffer)
 				logger.debug("Wrote sequence for " + clusterID)
-			cons_out.close
+			cons_out.flush()
 			logger.debug("Trying to release lock for " + clusterID)
 			OUTPUT_LOCK.release()
 			logger.debug("Released lock for " + clusterID)
 
 		except Empty:
+			resultsQueue.put(cons_res)
 			break
+
+		except:
+			QUEUE_ERROR = True
 
 
 if __name__ == "__main__":
@@ -226,10 +231,15 @@ if __name__ == "__main__":
 	sdat.close()
 
 	notOKQ = Queue(0)
+	resultsQueue = Queue(0)
 	consensus_pep = args.node_dir + args.node + ".pep"
 	os.system("rm " + consensus_pep)  # since the file is opened in append mode every time, we need to delete anything from a previous run
 
-	processes = [Process(target=makeConsensus, args=(notOKQ, args.dist, consensus_pep)) for i in range(args.numThreads)]
+	cons_out = open(consensus_pep, "a")
+	with open(args.node_dir + "consensus_data.pkl", "r") as f:
+		cons_pkl = pickle.load(f)
+
+	processes = [Process(target=makeConsensus, args=(notOKQ, resultsQueue, args.dist, cons_out)) for i in xrange(args.numThreads)]
 
 	for clusterID in pickleSeqs:
 		notOKQ.put((pickleSeqs[clusterID], clusterID))
@@ -237,9 +247,17 @@ if __name__ == "__main__":
 	for p in processes:
 		p.start()
 		logger.info("Starting %s" % (p.pid))
-	for p in processes:
-		p.join()
-		logger.info("Finished %s" % (p.pid))
+
+	for i in xrange(args.numThreads):
+		cons_pkl.update(resultsQueue.get())
+
+	cons_out.close()
+
+	if QUEUE_ERROR:
+		sys.exit("Error in python queue")
+
+	with open(args.node_dir + "consensus_data.pkl", "w") as f:
+		pickle.dump(cons_pkl, f)
 
 	logger.info("All consensus sequences accounted for.")
 	os.system("cat " + args.node_dir + "clusters/singletons.cons.pep >> " + consensus_pep)  # ">>" to append

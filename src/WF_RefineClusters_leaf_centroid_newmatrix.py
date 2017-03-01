@@ -5,12 +5,12 @@ import os
 import NJ
 import pickle
 import networkx as nx
+import NetworkX_Extension as nxe
 import numpy
-# from collections import Counter
 import logging
 import subprocess
 import argparse
-# import scipy.spatial.distance as distance
+import time
 
 DEVNULL = open(os.devnull, 'w')
 
@@ -26,14 +26,6 @@ def usage():
 	WF_RefineClusters.py [node_dir] [flow_id] [jobs_per_cmd] [node] [alpha] [gamma] [gain] [loss] [children...]
 	"""
 	sys.exit(1)
-
-
-# def load_leaves(leavespkls, locus_tag, node):
-# 	for leaf in locus_tag[node]:
-# 		if leaf[:9] == "L_0000000":
-# 			leavespkls[leaf] = None
-# 		else:
-# 			load_leaves(leavespkls, locus_tag, leaf)
 
 
 def main():
@@ -54,17 +46,8 @@ def main():
 
 	my_dir = args.node_dir + mrca + "/"
 
-# 	node_dir = argv[0]
-# # 	repo_path = argv[0][:-6]
-# 	mrca = argv[3]
-# 	node = argv[3]
-# 	alpha = float(argv[4]) # synteny weight
-# 	gamma = float(argv[5]) # gain/loss weight
-# 	gain = float(argv[6])
-# 	loss = float(argv[7])
-# 	children = argv[8:]
-# # 	NO_BREAK_EW = 0.5
-# 	beta = 0.01 # homology weight
+	if "CLUSTERS_REFINED" in os.listdir(my_dir):
+		sys.exit(0)
 
 	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
 	logger = logging.getLogger()
@@ -75,8 +58,7 @@ def main():
 	logger.addHandler(ch)
 	logger.info('Started')
 
-	if "CLUSTERS_REFINED" in os.listdir(my_dir):
-		sys.exit(0)
+	TIMESTAMP = time.time()
 
 	# read trees, resolve clusters
 	# tree_dir = my_dir + "trees/"
@@ -97,6 +79,7 @@ def main():
 	pickleMaps = {}
 	# picklePeps = {}
 	childrenpkls = {}
+	children_cons = {}
 	# print "last_tree", last_tree
 	# load locus_mapping files from children
 	for c in args.children:
@@ -111,25 +94,19 @@ def main():
 		if c[0] == "L":
 			with open(args.node_dir + c + "/" + c + ".pkl", "r") as f:
 				childrenpkls[c] = pickle.load(f)
+			children_cons[c] = childrenpkls[c]
 		else:  # c[0] == "N"
 			with open(args.node_dir + c + "/pep_data.pkl", "r") as f:
 				childrenpkls[c] = pickle.load(f)
 			with open(args.node_dir + c + "/singletons_pep_data.pkl", "r") as f:
 				childrenpkls[c].update(pickle.load(f))
+			with open(args.node_dir + c + "/consensus_data.pkl", "r") as f:
+				children_cons[c] = pickle.load(f)
 
 # 	old_orphans = open(tree_dir + "orphan_genes.txt", 'r').readlines()
 # 	orphans = open(tree_dir + "orphan_genes.txt", 'r').readlines()
 	orphans = []
 	ok_trees = []
-
-
-####  UNUSED????
-	# locus_tag = {}
-	# with open(repo_path + "genomes/locus_tag_file.txt", "r") as f:
-	# 	for line in f:
-	# 		if ";" in line:
-	# 			s = line.rstrip().split("\t")
-	# 			locus_tag[s[1]] = s[0].split(";")
 
 	with open(repo_path + "nodes/" + args.node + "/trees/gene_to_cluster.pkl", "r") as f:
 		gene_to_cluster = pickle.load(f)
@@ -137,10 +114,13 @@ def main():
 		cluster_to_genes = pickle.load(f)
 
 	muscle_cmd = ["#MUSCLE_PATH", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
-	# muscle_cmd = ["/home/kamigiri/tools/muscle3.8.31_i86linux64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
+	# muscle_cmd = ["/Users/cgeorges/Work/Tools/muscle3.8.31_i86darwin64", "-maxiters", "2", "-diags", "-sv", "-distance1", "kbit20_3", "-quiet"]
 	fasttree_cmd = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
-	# fasttree_cmd = ["/home/kamigiri/tools/FastTreeDouble", "-quiet", "-nosupport"]
+	# fasttree_cmd = ["/Users/cgeorges/Work/Tools/FastTreeDouble", "-quiet", "-nosupport"]
 	ok_trees = []
+
+	logger.debug("Loading files took " + str(time.time() - TIMESTAMP))
+	TIMESTAMP = time.time()
 
 # 	for clusterID in pickleSeqs:
 	for cluster in cluster_to_genes:
@@ -152,6 +132,7 @@ def main():
 # 			continue
 
 		stdin_data = ""
+		lengths = {}
 # 		add_to_stdin = ""
 # 		for gene in cluster_to_genes[cluster]:
 # 			stdin_data += ">" + gene + "\n"
@@ -162,20 +143,27 @@ def main():
 			try:
 				if args.children[0][0] == "L":
 					stdin_data += childrenpkls[args.children[0]][gene] + "\n"
+					lengths[gene] = len(childrenpkls[args.children[0]][gene])
 				else:
 					stdin_data += childrenpkls[args.children[0]][gene][0].split("\n")[1] + "\n"
+					lengths[gene] = len(childrenpkls[args.children[0]][gene][0].split("\n")[1])
 			except KeyError:
 				if args.children[1][0] == "L":
 					stdin_data += childrenpkls[args.children[1]][gene] + "\n"
+					lengths[gene] = len(childrenpkls[args.children[1]][gene])
 				else:
 					stdin_data += childrenpkls[args.children[1]][gene][0].split("\n")[1] + "\n"
+					lengths[gene] = len(childrenpkls[args.children[1]][gene][0].split("\n")[1])
 
 		process = subprocess.Popen(muscle_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
 		output = process.communicate(stdin_data)[0]
 		process = subprocess.Popen(fasttree_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
 		output = process.communicate(output)[0]
 		# if (len(locus_mapping[cluster]) > 5):
-		print(output + "\n\n")
+
+		logger.debug("Built fasttree for " + cluster + " in " + str(time.time() - TIMESTAMP))
+		TIMESTAMP = time.time()
+		logger.debug(output + "\n\n")
 		# tree = NJ.NJTree("", "", node, alpha, beta, gamma, gain, loss)
 
 		graph = nx.Graph()
@@ -193,6 +181,7 @@ def main():
 			group = "node" + str(counter)
 			counter += 1
 
+			new_length = 0
 			if group not in graph.nodes():  # isn't it always a new node?
 				graph.add_node(group)
 			for child in children_string:
@@ -200,13 +189,18 @@ def main():
 				if child[0] not in graph.nodes():
 					graph.add_node(child[0])
 					leaves.append(child[0])
-				graph.add_edge(group, child[0], dist=float(child[1]))
+				graph.add_edge(group, child[0], dist=(float(child[1]) * lengths[child[0]]))  # child[1] is a rate, so scaling based on sequence length
+				new_length += lengths[child[0]]
+			lengths[group] = new_length / 2
 			output = output[:l] + group + output[r + 1:]
 
 		leaves.sort()
 		cluster_to_genes[cluster].sort()
 		if leaves != cluster_to_genes[cluster]:
-			logger.critical("leaves:\n%s\ngenes:\n%s\n" % (leaves, cluster_to_genes[cluster]))
+			logger.critical("leaves:\n%s\ngenes:\n%s\nstdin_data:\n%s\n" % (leaves, cluster_to_genes[cluster], stdin_data))
+
+		logger.debug("Read fasttree for " + cluster + " in " + str(time.time() - TIMESTAMP))
+		TIMESTAMP = time.time()
 
 		leaves.sort()
 		syn = {}
@@ -220,12 +214,18 @@ def main():
 		syn_matrix = numpy.empty(len(leaves) * (len(leaves) - 1) / 2)
 		i = 1
 		pos = 0
+		# max_neighbors_count = max([len(syn[k]) for k in syn])
+		longest_hom = float("-Inf")
+		hom_distances = nxe.all_pairs_path_length(graph, "dist")[0]
 		for m in leaves[1:]:
 			syn_m = set(syn[m])
 			mSeqs = len(syn[m])
 # 			for n in graph.nodes():
 			for n in leaves[:i]:
-				hom_matrix[pos] = nx.shortest_path_length(graph, n, m, "dist")
+				# hom_matrix[pos] = nx.shortest_path_length(graph, n, m, "dist")
+				hom_matrix[pos] = hom_distances[n][m]
+				if hom_matrix[pos] > longest_hom:
+					longest_hom = hom_matrix[pos]
 				nSeqs = len(syn[n])
 				matches = 0
 				if mSeqs == 0 or nSeqs == 0:
@@ -237,16 +237,49 @@ def main():
 					t_m = max(syn[m].count(a), 0)
 					t_n = max(syn[n].count(a), 0)
 					matches += min(t_m, t_n)
-				synFrac = float(matches) / float(min(mSeqs, nSeqs))  # why mSeqs and not len(syn_m) which is a set that removes duplicates?
+				synFrac = float(matches) / float(max(mSeqs, nSeqs))  # why mSeqs and not len(syn_m) which is a set that removes duplicates?
+				# synFrac = float(matches) / float(max_neighbors_count)  # why mSeqs and not len(syn_m) which is a set that removes duplicates?
 				syn_matrix[pos] = 1.0 - synFrac
 				pos += 1
 			i += 1
+		if longest_hom > 0.0:  # to prevent dividing by zero
+			for pos in xrange(len(hom_matrix)):
+				hom_matrix[pos] /= longest_hom
+
+		logger.debug("Built matrices for " + cluster + " in " + str(time.time() - TIMESTAMP))
+		# formatting matrices for output
+		i = 0
+		j = 1
+		hom_buff = leaves[0] + "\n" + leaves[1] + "\t"
+		syn_buff = leaves[0] + "\n" + leaves[1] + "\t"
+		for x, y in numpy.nditer([hom_matrix, syn_matrix]):
+			hom_buff += str(x) + "\t"
+			syn_buff += str(y) + "\t"
+			i += 1
+			if i >= j:
+				i = 0
+				j += 1
+				if j < len(leaves):
+					hom_buff += "\n" + leaves[j] + "\t"
+					syn_buff += "\n" + leaves[j] + "\t"
+				else:
+					hom_buff += "\n"
+					syn_buff += "\n"
+		logger.debug("Homology matrix for " + cluster + ":\n" + hom_buff)
+		logger.debug("Synteny matrix for " + cluster + ":\n" + syn_buff)
+		TIMESTAMP = time.time()
+
 		# Root, evaluate and split every tree until all trees are OK
 		unchecked_trees = []
 		# Could probably replace these lines by directly reading the distance matrix file into the list without needing to create a NJ.NJTree
 # 			myTree = NJ.NJTree(hom_mat, syn_mat, mrca, alpha, beta, gamma, gain, loss)
 		myTree = NJ.NJTree(mrca, args.alpha, args.beta, args.gamma, args.gain, args.loss)
 		myTree.buildGraphFromNewDistanceMatrix(hom_matrix, syn_matrix, leaves)
+
+		logger.debug("Built NJtree for " + cluster + " in " + str(time.time() - TIMESTAMP) + "\n" + "\n".join([e[0] + " " + e[1] + " " + str(myTree.graph[e[0]][e[1]]['homology_dist']) + " " + str(myTree.graph[e[0]][e[1]]['synteny_dist']) for e in myTree.graph.edges()]))
+
+		TIMESTAMP = time.time()
+
 # 		myTree = NJ.NJTree(tree_file, syn_file, mrca, alpha, beta, gamma, gain, loss)
 		# If "false" refers to orphan status, why are there also both "true" and "orphan"?
 		unchecked_trees.append((myTree, False))
@@ -262,7 +295,7 @@ def main():
 # 					o = n[1].split(":")[0]
 # 					o = o.replace("(", "")
 # 					orphans.append(o)
-					# last_tree = "orphan"
+#					last_tree = "orphan"
 				continue
 			# multiple node trees continue
 			else:
@@ -278,6 +311,7 @@ def main():
 				# if the tree has >1 source, it is rooted and evaluated
 				else:
 					root = myTree.rootTree()
+					logger.debug("Root for " + cluster + " is: " + "\t".join(root[1]))
 					myTree.checkTree(root)
 					# tree is valid, added to resolved clusters
 					if myTree.OK == "true" or myTree.OK == "parcimony":
@@ -290,18 +324,25 @@ def main():
 							ok_trees.append([format_nodes, myTree.getNewick(), True])
 						else:  # parcimony
 							ok_trees.append([format_nodes, myTree.getNewick(), False])
+						logger.debug("Got some OKtree for " + cluster + " in " + str(time.time() - TIMESTAMP))
+						TIMESTAMP = time.time()
 					# tree is invalid, added to unchecked trees unless it is an orphan
 					else:
 						# additional orphan exit
 						if myTree.OK == "orphan":
 							unchecked_trees.append((NJ.NJTree.toNewick(myTree.graph).split("\n"), myTree.OK))
-								# unchecked_trees.append((NJ.NJTree.splitNewTree(myTree), myTree.OK)) # need to return both subtrees + myTree.OK in list
+							# unchecked_trees.append((NJ.NJTree.splitNewTree(myTree), myTree.OK)) # need to return both subtrees + myTree.OK in list
 						else:
 							# (myNewicks, myMatrices) = myTree.splitTree(root)
 							(new_trees, new_root_edges) = myTree.splitNewTree(root)
 							# for m in myMatrices:
 							for new_tree in new_trees:
 								unchecked_trees.append((new_tree, myTree.OK))
+							logger.debug("Split NJtree for " + cluster + " in " + str(time.time() - TIMESTAMP))
+							TIMESTAMP = time.time()
+
+	logger.debug("Finished processing " + cluster + " in " + str(time.time() - TIMESTAMP))
+	TIMESTAMP = time.time()
 
 	newPickleMap = {}  # this will turn into the locus mappings for this node
 	newSyntenyMap = {}
@@ -310,7 +351,7 @@ def main():
 	childToCluster = {}  # child gene/og --> og.id for this node
 
 	for o in orphans:
-		ok_trees.insert(0, [[o.rstrip()], o.rstrip(), True])  #### TODO add tree here
+		ok_trees.insert(0, [[o.rstrip()], [o.rstrip(), o.rstrip()], True])  #### TODO add tree here
 
 	blast_pep = {}
 	for c in args.children:
@@ -335,9 +376,9 @@ def main():
 		if len(curPep) > 0:
 			blast_pep[curBlast].append(curPep)
 
-	# sys.exit()
 	# make control files for consensus sequence formation
 	# cons_cmds = []
+	cons_pkl = {}
 	singletons = cluster_dir + "singletons.cons.pep"
 	singles = open(singletons, 'w')
 	sum_stats = my_dir + "summary_stats.txt"
@@ -385,7 +426,7 @@ def main():
 				treeSeqs[seq].append(l)
 				tree_seq_count += 1
 				newSyntenyMap[clusterID]['count'] += 1
-		newNewickMap[clusterID] = [ok[1], ok[2]]
+		newNewickMap[clusterID] = [ok[1], ok[2]]  ###### CHANGE ok[1] or change reading in ClusterPostProcessing
 
 		my_lengths = []
 		min_taxa = len(taxa)
@@ -407,29 +448,78 @@ def main():
 # 		sys.exit()
 		sstats.write("\t".join(out_dat) + "\n")
 
-		if tree_seq_count == 1:
-			for seq in treeSeqs:
-				seqlen = str(len(seq))
-				singles.write(">" + clusterID + ";" + seqlen + "\n" + seq + "\n")
-			seq = treeSeqs.keys()[0]
-			singletons_pep[clusterID] = [">" + clusterID + ";" + str(len(seq)) + "\n" + seq + "\n"]
-		elif len(ok[0]) == 1:
-			for bseq in blast_pep[ok[0][0]]:
-				seqlen = str(len(bseq))
-				singles.write(">" + clusterID + ";" + seqlen + "\n" + bseq + "\n")
-			bseq = blast_pep[ok[0][0]][0]
-			singletons_pep[clusterID] = [">" + clusterID + ";" + str(len(bseq)) + "\n" + bseq + "\n"]
+		if len(ok[0]) == 1:
+			child = "_".join(ok[0][0].split("_")[:-1])
+# 			seq = children_cons[child][ok[0][0]]
+			seqs = {}
+			if child[0] == "L":
+				seqs[g] = children_cons[child][g]
+			else:
+				for seq in children_cons[child][g]:
+					i = 0
+					identifier = None
+					for s in seq.rstrip().split("\n"):
+						if not i % 2:
+							identifier = s[1:].split(";")[0]
+						else:
+							seqs[identifier] = s
+						i += 1
+# 			else:
+				# need to get list of sequences to write them all
+			for k, s in seqs.iteritems():
+				cons_pkl[clusterID] = [">" + clusterID + ";" + str(len(s)) + "\n" + s + "\n"]
+				singletons_pep[clusterID] = [">" + clusterID + ";" + str(len(s)) + "\n" + s + "\n"]
+				singles.write(">" + clusterID + ";" + str(len(s)) + "\n" + s + "\n")
 		else:
-			#  temp_pep = cluster_dir + clusterID + ".pep"
-			#  pepOut = open(temp_pep, 'w')
 			pickleToCons[clusterID] = []
 			newNewickMap[clusterID].append([])
-			for seq in treeSeqs:
-				seqlen = str(len(seq))
-				identifier = treeSeqs[seq][0]  # TODO output ALL IDs from seq because there might be more than a single ID, and this is NOT a .cons.pep file, just a .pep file
-# 				pepOut.write(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
-				pickleToCons[clusterID].append(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
-				newNewickMap[clusterID][2].append(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
+			for g in ok[0]:
+				child = "_".join(g.split("_")[:-1])
+				seqs = {}
+				if child[0] == "L":
+					seqs[g] = children_cons[child][g]
+				else:
+					for seq in children_cons[child][g]:
+# 						if seq[0] == ">":  # else its a leaf so only sequence is present
+						i = 0
+						identifier = None
+						for s in seq.rstrip().split("\n"):
+							if not i % 2:  # not so that 0 is True
+								identifier = s[1:].split(";")[0]
+							else:
+								seqs[identifier] = s
+							i += 1
+# 						else:
+# 							seqs = [seq]
+				i = 0
+				for k, s in seqs.iteritems():
+					pickleToCons[clusterID].append(">" + k + ";" + str(i) + ";" + str(len(s)) + "\n" + s + "\n")  # str(i) is a unique part in name so that all different names for muscle/fasttree
+					newNewickMap[clusterID][2].append(">" + k + ";" + str(len(s)) + "\n" + s + "\n")
+					i += 1
+# 		if tree_seq_count == 1:
+# 			for seq in treeSeqs:
+# 				seqlen = str(len(seq))
+# 				singles.write(">" + clusterID + ";" + seqlen + "\n" + seq + "\n")
+# 			seq = treeSeqs.keys()[0]
+# 			singletons_pep[clusterID] = [">" + clusterID + ";" + str(len(seq)) + "\n" + seq + "\n"]
+# 		elif len(ok[0]) == 1:
+# 			for bseq in blast_pep[ok[0][0]]:
+# 				seqlen = str(len(bseq))
+# 				singles.write(">" + clusterID + ";" + seqlen + "\n" + bseq + "\n")
+# 			bseq = blast_pep[ok[0][0]][0]
+# 			singletons_pep[clusterID] = [">" + clusterID + ";" + str(len(bseq)) + "\n" + bseq + "\n"]
+# 		else:
+# 			#  temp_pep = cluster_dir + clusterID + ".pep"
+# 			#  pepOut = open(temp_pep, 'w')
+# 			pickleToCons[clusterID] = []
+# 			newNewickMap[clusterID].append([])
+# 			for seq in treeSeqs:
+# 				seqlen = str(len(seq))
+# 				identifier = treeSeqs[seq][0]  # TODO output ALL IDs from seq because there might be more than a single ID, and this is NOT a .cons.pep file, just a .pep file
+# # 				pepOut.write(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
+# # 				pickleToCons[clusterID].append(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
+# 				pickleToCons[clusterID].append(children_cons[child][g])
+# 				newNewickMap[clusterID][2].append(">" + identifier + ";" + seqlen + "\n" + seq + "\n")
 # 			pepOut.close()
 		cluster_counter += 1
 	singles.close()
@@ -466,11 +556,14 @@ def main():
 	with open(my_dir + "clusters_newick.pkl", "w") as f:
 		pickle.dump(newNewickMap, f)
 
+	with open(my_dir + "consensus_data.pkl", "w") as f:
+		pickle.dump(cons_pkl, f)
 	# script complete call
 	clusters_done_file = my_dir + "CLUSTERS_REFINED"
 	cr = open(clusters_done_file, 'w')
 	cr.write("Way to go!\n")
 	cr.close()
+
 
 if __name__ == "__main__":
 	main()

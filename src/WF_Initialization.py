@@ -1,17 +1,9 @@
 #!/usr/bin/env python
 
 # Gets the filesystem set prepped to run the actual algorithm and writes the commands to do so
-# import sys
-import string
-import random
 import os
-# import numpy
 import pickle
-# import re
 import logging
-# import TreeLib
-# import networkx as nx
-import traceback
 import collections
 
 
@@ -23,9 +15,11 @@ class Tree:
 		self.genomeToLocusFile = tree_obj.genomeToLocusFile
 		self.genomeToLocus = tree_obj.genomeToLocus
 		self.locusToGenome = tree_obj.locusToGenome
+		self.nodeChildrenCount = tree_obj.nodeChildrenCount
 		self.tree_string = ""
 		self.tree = tree_obj.tree
 		self.rooted_tree = tree_obj.rooted_tree
+		self.root = None
 		self.blast_eval = blast_eval
 		self.num_cores = num_cores
 		self.alpha = alpha
@@ -34,48 +28,64 @@ class Tree:
 		self.gain = gain
 		self.loss = loss
 		self.min_best_hit = min_best_hit
-# 		self.cmds_per_job = cmds_per_job
 		self.syn_dist = int(syn_dist)
-# 		self.homScale = homScale
-# 		self.synScale = synScale
-		# self.flow_name = flow_name
-# 		self.num_hits = numHits
 		self.min_syn_frac = minSynFrac
 		self.hamming = hamming
 		self.syn2_path = "#SYNERGY2_PATH"
 		Tree.logger.debug("Tree initialized")
 
 	def codeGenomeID(self, genome):
-		Tree.logger.debug("".join(traceback.format_stack()))
-		tag = ''
-		if genome in self.genomeToLocus:
-			tag = self.genomeToLocus[genome]
-		else:
-			# TODO CHECK IF THIS IS EVER CALLED
-			Tree.logger.error("If this is called, check when and why to modify the tag generated.")
-			import pdb
-			pdb.set_trace()
-			tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
-			while tag in self.locusToGenome:
-				tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
-		self.genomeToLocus[genome] = tag
-		self.locusToGenome[tag] = genome
-		return tag
+		return self.genomeToLocus[genome]
+		# tag = ''
+		# if genome in self.genomeToLocus:
+		# 	tag = self.genomeToLocus[genome]
+		# else:
+		# 	# TODO CHECK IF THIS IS EVER CALLED
+		# 	Tree.logger.error("If this is called, check when and why to modify the tag generated.")
+		# 	import pdb
+		# 	pdb.set_trace()
+		# 	tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
+		# 	while tag in self.locusToGenome:
+		# 		tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
+		# self.genomeToLocus[genome] = tag
+		# self.locusToGenome[tag] = genome
+		# return tag
 
-	def reregisterGenomeID(self, identifier, newChildren):
+	def reregisterGenomeID(self, identifier, newChildren):  # actually usefull?
 		oldGenome = self.locusToGenome[identifier]
 		newGenome = ";".join(newChildren)
 		del self.genomeToLocus[oldGenome]
 		self.genomeToLocus[newGenome] = identifier
 		self.locusToGenome[identifier] = newGenome
+		self.nodeChildrenCount[identifier] = self.nodeChildrenCount[oldGenome]
+		del self.nodeChildrenCount[oldGenome]
 
 	def writeLocusTagFile(self):
 		tag_out = open(self.genomeToLocusFile, 'w')
 		for g in self.genomeToLocus:
-			line = "\t".join([g, self.genomeToLocus[g]]) + "\n"
+			line = "\t".join([g, self.genomeToLocus[g], str(self.nodeChildrenCount[self.genomeToLocus[g]])]) + "\n"
 			tag_out.write(line)
 		tag_out.close()
 		Tree.logger.info("Wrote locus tags to locus_tag_file.txt")
+
+	def writeCodedNewick(self, coded_nwk_out):
+		to_replace = [self.root]
+		nwk_str = self.root + ":" + str(self.nodeChildrenCount[self.root])
+		while to_replace:
+			n = to_replace.pop()
+			children_tag = self.rooted_tree.out_edges(n)  # should always be 2 if internal node and 0 if leaf
+			if not children_tag:
+				continue
+			children_tag = [children_tag[0][1], children_tag[1][1]]
+			insert_str = ""
+			pos = nwk_str.find(n)
+			if children_tag:
+				insert_str = "(" + children_tag[0] + ":" + str(self.nodeChildrenCount[children_tag[0]]) + "," + children_tag[1] + ":" + str(self.nodeChildrenCount[children_tag[1]]) + ")"
+			nwk_str = nwk_str[:pos] + insert_str + nwk_str[pos:]
+			to_replace.extend([children_tag[0], children_tag[1]])
+		nwk_str += ";\n"
+		with open(coded_nwk_out, 'w') as f:
+			f.write(nwk_str)
 
 	def makePicklesForSingleGenome(self, working_dir, genome, node):
 		gdat = open(working_dir + "genomes/" + genome + "/annotation.txt", 'r').readlines()
@@ -312,9 +322,9 @@ class Tree:
 		self.makeNodeFlowWorkflowControl(nodeTier, childToParent, working_dir)
 
 	def makeNodeFlowWorkflowControl(self, nodeTier, childToParent, working_dir):
-		root = nodeTier[max(nodeTier)][0]
+		self.root = nodeTier[max(nodeTier)][0]
 		stack = []
-		queue = collections.deque([[root, 0, []]])  # current_node, current_id, [child1_id, child2_id]
+		queue = collections.deque([[self.root, 0, []]])  # current_node, current_id, [child1_id, child2_id]
 		count = 1
 		while len(queue) > 0:
 			current = queue.pop()
@@ -350,16 +360,7 @@ class Tree:
 				for e in self.rooted_tree.edges(curNode):
 					# print curNode, e
 					kids.append(e[1])
-					# if not (e[1] in nodeTier[0] or e[1] in local_proc_nodes):
-						# print "WaitForFile ",e[1]
-						# local_proc_nodes.append((next_cmd_id,"wait",e[1]))
-						# set_cmd_count+=1
-						# next_cmd_id = "1."+str(sets)+"."+str(set_cmd_count)
-
-				# print "NodeFlow",curNode,kids
 				self.makeSingleNodeFlow(working_dir, curNode, next_cmd_id, kids)
-				# self.makeSingleConsensusFlow(working_dir,curNode,next_cmd_id)
-				# self.makeFinalizeNodeFlow(working_dir,curNode,next_cmd_id)
 				all_proc_nodes.append(curNode)
 				local_proc_nodes.append((next_cmd_id, curNode))
 				set_cmd_count += 1
@@ -380,42 +381,12 @@ class Tree:
 		child2 = kids[1]
 
 		syn2_path = self.syn2_path
-# 		config_file = syn2_path + "WF_NodeFlowTemplate.ini"
-		# config_file = syn2_path+"WF_NewNodeFlowTemplate.ini"
-# 		template_file = syn2_path + "WF_NodeFlowTemplate.xml"
+
 		sh_uge_file = syn2_path + "NewNodeShTemplate.sh"
 		sh_file = syn2_path + "NewNodeTemplate.sh"
 
-# 		my_config_file = my_dir + curNode + ".ini"
-# 		my_template_file = my_dir + curNode + ".xml"
 		my_sh_uge_file = my_dir + curNode + "_uge.sh"
 		my_sh_file = my_dir + curNode + ".sh"
-
-# 		c_file = open(config_file, 'r').read()
-# 		c_file = c_file.replace('#SYNERGY2_PATH', syn2_path)
-# 		c_file = c_file.replace('#WORKING_DIR', working_dir)
-# 		c_file = c_file.replace('#CHILD1', child1)
-# 		c_file = c_file.replace('#CHILD2', child2)
-# 		c_file = c_file.replace('#NODE', curNode)
-# 		c_file = c_file.replace('#ID', cmd_id)
-# 		c_file = c_file.replace('#BLAST_EVAL', str(self.blast_eval))
-# 		c_file = c_file.replace('#NUM_CORES', str(self.num_cores))
-# 		c_file = c_file.replace('#HAMMING', str(self.hamming))
-# 		c_file = c_file.replace('#CMDS_PER_JOB', str(self.cmds_per_job))
-# 		c_file = c_file.replace('#ALPHA', str(self.alpha))
-# 		c_file = c_file.replace('#GAMMA', str(self.gamma))
-# 		c_file = c_file.replace('#GAIN', str(self.gain))
-# 		c_file = c_file.replace('#LOSS', str(self.loss))
-# 		c_file = c_file.replace('#MIN_BEST_HIT', str(self.min_best_hit))
-# 		c_file = c_file.replace('#NUM_HITS', str(self.num_hits))
-# 		c_file = c_file.replace('#MIN_SYNTENIC_FRACTION', str(self.min_syn_frac))
-# 		c_file = c_file.replace('#HOMOLOGY_SCALE', str(self.homScale))
-# 		c_file = c_file.replace('#SYNTENY_SCALE', str(self.synScale))
-# 		c_file = c_file.replace('#WORKING_DIR', working_dir)
-
-# 		my_conf = open(my_config_file, 'w')
-# 		my_conf.write(c_file)
-# 		my_conf.close()
 
 		s_file = open(sh_uge_file, 'r').read()
 		s_file = s_file.replace('#SYNERGY2_PATH', syn2_path)
@@ -467,256 +438,65 @@ class Tree:
 		my_sh.write(s_file)
 		my_sh.close()
 
-# 		t_file = open(template_file, 'r').read()
-# 		t_file = t_file.replace('#NODE', curNode)
-# 		t_file = t_file.replace('#ID', cmd_id)
-# 		t_file = t_file.replace('#SYNERGY2_PATH', syn2_path)
-# 		t_file = t_file.replace('#WORKING_DIR', working_dir)
-# 		t_file = t_file.replace('#CHILD1', child1)
-# 		t_file = t_file.replace('#CHILD2', child2)
-# 		t_file = t_file.replace('#WORKING_DIR', working_dir)
-# 		my_temp = open(my_template_file, 'w')
-# 		my_temp.write(t_file)
-# 		my_temp.close()
+	# def toNewick(self, graph):
+	# 	up = []  # unprocessed
+	# 	leaf = []
+	# 	for n in graph.nodes():
+	# 		if len(graph[n]) > 1:
+	# 			up.append(n)
+	# 		else:
+	# 			leaf.append((n, n[0]))
+	# 	curNode = None
+	# 	last_string = ""
+	# 	if len(graph.nodes()) == 2:
+	# 		ew = str(graph[leaf[0][0]][leaf[1][0]]['weight'])
+	# 		last_string = "(" + leaf[0][0] + ":" + ew + "," + leaf[1][0] + ":" + ew + ")"
+	# 	while len(up) > 0:
+	# 		(curNode, e_count) = self.calcMostEdgesToLeaves(up, leaf, graph)
+	# 		leaves = []
+	# 		for e in graph[curNode]:
+	# 			for l in leaf:
+	# 				if l[0] == e:
+	# 					e_i = leaf.index(l)
+	# 					e_text = e
+	# 					if 'child_newick' in graph.node[e]:
+	# 						if e_count > 2 and len(up) > 1:
+	# 							continue
+	# 						e_text = graph.node[e]['child_newick']
+	# 					leaf.pop(e_i)
+	# 					ew = graph[curNode][e]['weight']
+	# 					text = e_text + ":" + str(ew)
+	# 					leaves.append(text)
+	# 		# add newick text to curNode
+	# 		node_text = "(" + ",".join(leaves) + ")"
+	# 		last_string = node_text
+	# 		graph.node[curNode]['child_newick'] = node_text
+	# 		# change curNode to leaf
+	# 		cn_i = up.index(curNode)
+	# 		up.pop(cn_i)
+	# 		leaf.append((curNode, curNode[0]))
+	# 	if len(leaf) == 2 and len(up) == 0 and len(graph.nodes()) > 2:
+	# 		ew = str(graph[leaf[0][0]][leaf[1][0]]['weight'])
+	# 		last_string = "(" + graph.node[leaf[0][0]]['child_newick'] + ":" + ew + "," + graph.node[leaf[1][0]]['child_newick'] + ":" + ew + ")"
+	# 	last_string = last_string.replace("(", "(\n")
+	# 	last_string = last_string.replace(",", ",\n")
+	# 	last_string = last_string.replace(")", ")\n")
+	# 	last_string = last_string.rstrip()
+	# 	return last_string + ";"
 
-	# def makeSingleConsensusFlow(self, working_dir, curNode, prev_cmd_id):
-	# 	ids = prev_cmd_id.split(".")
-	# 	last = int(ids[-1])+1
-	# 	ids[-1] = str(last)
-	# 	cmd_id = ".".join(ids)
-
-	# 	s2 = self.syn2_path
-	# 	my_dir = working_dir+"nodes/"+curNode+"/"
-
-	# 	config_file = s2+"WF_consensus_seq_flow_template.ini"
-	# 	template_file = s2+"WF_consensus_seq_flow_template.xml"
-
-	# 	my_config_file = my_dir+"consensus_seq_flow_config.ini"
-	# 	my_template_file = my_dir+"consensus_seq_flow_template.xml"
-
-	# 	c_file = open(config_file, 'r').read()
-	# 	c_file = c_file.replace('#WORKING_DIR', working_dir)
-	# 	c_file = c_file.replace('#NODE', curNode)
-	# 	c_file = c_file.replace('#ID', cmd_id)
-	# 	c_file = c_file.replace('#SYNERGY2_PATH', s2)
-
-	# 	t_file = open(template_file, 'r').read()
-	# 	t_file = t_file.replace('#ID', cmd_id)
-
-	# 	my_conf = open(my_config_file, 'w')
-	# 	my_conf.write(c_file)
-	# 	my_conf.close()
-
-	# 	my_temp = open(my_template_file, 'w')
-	# 	my_temp.write(t_file)
-	# 	my_temp.close()
-
-	# def makeFinalizeNodeFlow(self, working_dir, curNode, prev_cmd_id):
-	# 	ids = prev_cmd_id.split(".")
-	# 	last = int(ids[-1])+2
-	# 	ids[-1] = str(last)
-	# 	cmd_id = ".".join(ids)
-
-	# 	s2 = self.syn2_path
-	# 	my_dir = working_dir+"nodes/"+curNode+"/"
-
-	# 	config_file = s2+"WF_finalize_node_template.ini"
-	# 	template_file = s2+"WF_finalize_node_template.xml"
-
-	# 	my_config_file = my_dir+"finalize_node_config.ini"
-	# 	my_template_file = my_dir+"finalize_node_template.xml"
-
-	# 	c_file = open(config_file, 'r').read()
-	# 	c_file = c_file.replace('#WORKING_DIR', working_dir)
-	# 	c_file = c_file.replace('#NODE', curNode)
-	# 	c_file = c_file.replace('#ID', cmd_id)
-	# 	c_file = c_file.replace('#SYNERGY2_PATH', s2)
-
-	# 	t_file = open(template_file, 'r').read()
-	# 	t_file = t_file.replace('#ID', cmd_id)
-
-	# 	my_conf = open(my_config_file, 'w')
-	# 	my_conf.write(c_file)
-	# 	my_conf.close()
-
-	# 	my_temp = open(my_template_file, 'w')
-	# 	my_temp.write(t_file)
-	# 	my_temp.close()
-
-	# def makeNodeFlowLauncher(self, working_dir, serial_sets):
-	# 	ini_file = open(working_dir + self.flow_name + ".ini", 'w')
-	# 	xml_file = open(working_dir + self.flow_name + ".xml", 'w')
-	# 	xml_file.write("""<?xml version="1.0" encoding="utf-8"?>""" + "\n")
-	# 	xml_file.write("""<commandSetRoot>""" + "\n")
-	# 	xml_file.write("""\t<commandSet type="parallel">""" + "\n")
-	# 	xml_file.write("""\t\t<name>""" + self.flow_name + """</name>""" + "\n")
-	# 	ini_file.write("[1]\nname=" + self.flow_name + "\n")
-	# 	instance_commands = []
-
-	# 	for s in serial_sets:
-	# 		sub_s = 1
-	# 		xml_file.write("""\t\t<commandSet type="serial">""" + "\n")
-	# 		xml_file.write("""\t\t\t<configMapId>1.""" + str(s) + """</configMapId>""" + "\n")
-	# 		xml_file.write("""\t\t\t<name>subflow1.""" + str(s) + """</name>""" + "\n")
-	# 		ini_file.write("[1." + str(s) + "]\n")
-	# 		ini_file.write("name=subflow1." + str(s) + "\n\n")
-
-	# 		for n in serial_sets[s]:
-	# 			ini_id = n[0]
-	# 			if len(n) == 3 and n[1] == "wait":
-	# 				# wait command
-	# 				xml_file.write("\t\t\t<command>\n")
-	# 				xml_file.write("\t\t\t\t<name>WaitForNode</name>\n")
-	# 				xml_file.write("\t\t\t\t<configMapId>" + ini_id + "</configMapId>\n")
-	# 				xml_file.write("\t\t\t</command>\n")
-	# 				ini_file.write("[" + ini_id + "]\n")
-	# 				ini_file.write("name=WaitForNode\n")
-	# 				ini_file.write("type=RunUnixCommand\n")
-	# 				ini_file.write("executable=" + self.syn2_path + "WF_WaitForFile.py\n")
-	# 				ini_file.write("arg=" + working_dir + "nodes/" + n[2] + "/\n")
-	# 				ini_file.write("arg=NODE_COMPLETE\n\n")
-	# 			else:
-	# 				# node flow command
-	# 				node = n[1]
-	# 				path_to_node_dir = working_dir + "nodes/" + node + "/"
-	# 				instance_cmd = "RunWorkflow -t " + path_to_node_dir + node + ".xml -c " + path_to_node_dir + node + ".ini -i " + path_to_node_dir + node + "_instance.xml\n"
-	# 				# tier = int(ini_id.split(".")[-1])
-	# 				dist_to_root = len(nx.shortest_path(self.rooted_tree, self.tree_obj.root, node))
-	# 				instance_commands.append((instance_cmd, dist_to_root))
-	# 				xml_file.write("\t\t\t<command>\n")
-	# 				xml_file.write("\t\t\t\t<name>" + node + "</name>\n")
-	# 				xml_file.write("\t\t\t\t<configMapId>" + ini_id + "</configMapId>\n")
-	# 				xml_file.write("\t\t\t</command>\n")
-	# 				ini_file.write("[" + ini_id + "]\n")
-	# 				ini_file.write("name=" + node + "\n")
-	# 				ini_file.write("type=RunUnixCommand\n")
-	# 				ini_file.write("executable=" + self.syn2_path + "WF_WaitForFile.py\n")
-	# 				ini_file.write("arg=" + working_dir + "nodes/" + n[1] + "/\n")
-	# 				ini_file.write("arg=NODE_COMPLETE\n\n")
-
-	# 			sub_s += 1
-	# 		xml_file.write("""\t\t</commandSet>""" + "\n")
-
-	# 	xml_file.write("""\t</commandSet>""" + "\n")
-	# 	xml_file.write("""</commandSetRoot>""")
-	# 	xml_file.close()
-
-	# 	instance_command_out = open("instance_commands.txt", 'w')
-	# 	instance_commands = sorted(instance_commands, key=lambda tup: tup[1], reverse=True)
-	# 	for ic in instance_commands:
-	# 		instance_command_out.write(ic[0])
-	# 	instance_command_out.close()
-
-	def toNewick(self, graph):
-		up = []  # unprocessed
-		leaf = []
-		for n in graph.nodes():
-			if len(graph[n]) > 1:
-				up.append(n)
-			else:
-				leaf.append((n, n[0]))
-		curNode = None
-		last_string = ""
-		if len(graph.nodes()) == 2:
-			ew = str(graph[leaf[0][0]][leaf[1][0]]['weight'])
-			last_string = "(" + leaf[0][0] + ":" + ew + "," + leaf[1][0] + ":" + ew + ")"
-		while len(up) > 0:
-			(curNode, e_count) = self.calcMostEdgesToLeaves(up, leaf, graph)
-			leaves = []
-			for e in graph[curNode]:
-				for l in leaf:
-					if l[0] == e:
-						e_i = leaf.index(l)
-						e_text = e
-						if 'child_newick' in graph.node[e]:
-							if e_count > 2 and len(up) > 1:
-								continue
-							e_text = graph.node[e]['child_newick']
-						leaf.pop(e_i)
-						ew = graph[curNode][e]['weight']
-						text = e_text + ":" + str(ew)
-						leaves.append(text)
-			# add newick text to curNode
-			node_text = "(" + ",".join(leaves) + ")"
-			last_string = node_text
-			graph.node[curNode]['child_newick'] = node_text
-			# change curNode to leaf
-			cn_i = up.index(curNode)
-			up.pop(cn_i)
-			leaf.append((curNode, curNode[0]))
-		if len(leaf) == 2 and len(up) == 0 and len(graph.nodes()) > 2:
-			ew = str(graph[leaf[0][0]][leaf[1][0]]['weight'])
-			last_string = "(" + graph.node[leaf[0][0]]['child_newick'] + ":" + ew + "," + graph.node[leaf[1][0]]['child_newick'] + ":" + ew + ")"
-		last_string = last_string.replace("(", "(\n")
-		last_string = last_string.replace(",", ",\n")
-		last_string = last_string.replace(")", ")\n")
-		last_string = last_string.rstrip()
-		return last_string + ";"
-
-	def calcMostEdgesToLeaves(self, unprocN, leaf, TG):
-		mostLeaves = -1
-		retNode = None
-		for n in unprocN:
-			e_count = 0
-			for e in TG[n]:
-				for l in leaf:
-					if e == l[0]:
-						e_count += 1
-			if e_count > mostLeaves:
-				mostLeaves = e_count
-				retNode = n
-		return (retNode, mostLeaves)
-
-# 	def getMinDistancePair(self, nodes, extinct):
-# 		min_extinct_pcount = sorted(extinct, key=lambda tup: tup[2])[0][2]
-# 		# calc smallest line distance between 2 nodes
-# 		# (ln_count,locus,dist,p_count,tp_count, c_paren)
-# 		min_dist = nodes[-1][0] - nodes[0][0] + 1.0
-# 		i = len(nodes) - 1
-# 		while i >= 0:
-# 			j = len(nodes) - 1
-# 			while j >= 0:
-# 				min_row = min(i, j)
-# 				max_row = max(i, j)
-# 				if i == j:
-# 					j -= 1
-# 				elif nodes[min_row][5] is True:
-# 					j -= 1
-# 				elif min(nodes[i][3], nodes[j][3]) < min_extinct_pcount:
-# 					j -= 1
-# 				elif nodes[min_row][3] <= nodes[max_row][3]:
-# 					j -= 1
-# 				else:
-# 					if abs(nodes[i][0] - nodes[j][0]) < min_dist:
-# 						min_dist = abs(nodes[i][0] - nodes[j][0])
-# 					j -= 1
-# 			i -= 1
-# 		# if a node pairing has the minimum distance, add it
-# 		md_pairs = []
-# 		max_rparen = 0
-# 		for n in nodes:
-# 			for m in nodes:
-# 				if m[0] <= n[0]:
-# 					continue
-# 				min_row = min(m[0], n[0])
-# 				if m[0] == min_row and m[5] is True:
-# 					continue
-# 				if n[0] == min_row and n[5] is True:
-# 					continue
-# 				if abs(n[3]-m[3]) > 1:
-# 					continue
-# 				if abs(n[0]-m[0]) == min_dist:
-# 					my_mrp = max(n[3], m[3])
-# 					if my_mrp > max_rparen:
-# 						max_rparen = my_mrp
-# 					md_pairs.append((n, m))
-# 		# get pairs that have the maximum rparen counts
-# 		max_rparen_pairs = []
-# 		for md in md_pairs:
-# 			if md[0][3] == max_rparen or md[1][3] == max_rparen:
-# 				max_rparen_pairs.append(md)
-# 		max_rparen_pairs = sorted(max_rparen_pairs, key=lambda pair: pair[1][4], reverse=True)
-# 		return max_rparen_pairs[0]
+	# def calcMostEdgesToLeaves(self, unprocN, leaf, TG):
+	# 	mostLeaves = -1
+	# 	retNode = None
+	# 	for n in unprocN:
+	# 		e_count = 0
+	# 		for e in TG[n]:
+	# 			for l in leaf:
+	# 				if e == l[0]:
+	# 					e_count += 1
+	# 		if e_count > mostLeaves:
+	# 			mostLeaves = e_count
+	# 			retNode = n
+	# 	return (retNode, mostLeaves)
 
 	def getGenomeToLocus(self):
 		return self.genomeToLocus

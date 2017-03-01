@@ -135,157 +135,194 @@ def makeSyntenyPickle(working_dir, genome, node, neighbors, SYNTENIC_WINDOW):
 
 
 def extractAnnotation(gff3_file, seq_file, genome_name, locus, out_file, stat_file, peptide_file):
-	# get fasta sequence into a SequenceParse object
-	myGenome = SequenceParse.Genome(seq_file)
-	myGenome.readSequence()
 
-	# process annotation file
-	gff3 = open(gff3_file, 'r').readlines()
 	out = open(out_file, 'w')
-
-	out.write(genome_name + "\t" + gff3_file[gff3_file.rfind("/") + 1:] + "\n")
-
 	pep_hash = {}
-	if not peptide_file == "null":
+	count = 1
+
+	if peptide_file != "null":
+		out.write(genome_name + "\t" + peptide_file[peptide_file.rfind("/") + 1:] + "\n")
 		peps = open(peptide_file, 'r').readlines()
 		for p in peps:
 			p = p.rstrip()
 			if p.find(">") == 0:
 				pid = p[1:]
-				pep_hash[pid] = ""
+				npid = pid.split()[0].split(":")[1]
+				# for tmp in pid.split():
+				# 	if tmp[:5] == "Gene:":
+				# 		npid = tmp[5:]
+				# 	elif tmp[:8] == "ENSEMBL:":
+				# 		npid = tmp[8:]
+				pep_hash[npid] = ""
 			else:
-				pep_hash[pid] += p
+				pep_hash[npid] += p
+		for pid in pep_hash:
+			outline = "\t".join([pid, numberFromIndex(locus, count), numberFromIndex(genome_name, count), "0", str((len(pep_hash[pid]) * 3) - 1), ".", str(len(pep_hash[pid])), pid, "None", "None", pep_hash[pid]]) + "\n"
+			out.write(outline)  # add a buffer that gets printed every modulo x of count, output buffer at the end too
+			count += 1
 
-	count = 1
-	curID = ""
-	myCDS = ""
-	cds_tups = []
-	gstart = ""
-	gstop = ""
-	gstrand = ""
-	scaffold = ""
-	scaffGeneCount = {}
-	name = "None"
-	mrna_id = None
-	alias = None
-	for g in gff3:
-		g = g.rstrip()
-		line = g.split()
-		if len(line) < 7:
-			continue
-		# for every "gene" in the gff3, get the ID= field, this is required, this becomes curID
-		if line[2] == "gene":
-			# deal with last gene feature
-			if len(cds_tups) > 0:
-				# concatenate all of the CDS sequences together, then translate them with SequenceParse
-				if cds_tups[0][3] == "+":
-					cds_tups = sorted(cds_tups, key=lambda feat: feat[1])
+	else:
+		# process annotation file
+		gff3 = open(gff3_file, 'r').readlines()
+		# get fasta sequence into a SequenceParse object
+		myGenome = SequenceParse.Genome(seq_file)
+		myGenome.readSequence()
+
+		out.write(genome_name + "\t" + gff3_file[gff3_file.rfind("/") + 1:] + "\n")
+
+		curID = ""
+		myCDS = ""
+		cds_tups = []
+		gstart = ""
+		gstop = ""
+		gstrand = ""
+		scaffold = ""
+		scaffGeneCount = {}
+		name = "None"
+		mrna_id = ""
+		alias = None
+		for g in gff3:
+			g = g.rstrip()
+			line = g.split()
+			if len(line) < 7:
+				continue
+			# for every "gene" in the gff3, get the ID= field, this is required, this becomes curID
+			if line[2] == "gene":
+				# deal with last gene feature
+				if len(cds_tups) > 0:
+					# concatenate all of the CDS sequences together, then translate them with SequenceParse
+					if cds_tups[0][3] == "+":
+						cds_tups = sorted(cds_tups, key=lambda feat: feat[1])
+					else:
+						cds_tups = sorted(cds_tups, key=lambda feat: feat[1], reverse=True)
+					for c in cds_tups:
+						myCDS = myCDS + c[4]
+					if curID in pep_hash:
+						peptide = pep_hash[curID]
+					else:
+						peptide = myGenome.translateCDS(myCDS)
+					length = str(len(peptide))
+
+					if scaffold not in scaffGeneCount:
+						scaffGeneCount[scaffold] = 0
+					scaffGeneCount[scaffold] += 1
+
+					# assign locus tag
+					locus_tag = numberFromIndex(locus, count)
+					count += 1
+
+					if mrna_id is "":
+						mrna_id = curID
+					if alias is None:
+						alias = curID
+
+					# write to file
+					outline = "\t".join([curID, locus_tag, scaffold, gstart, gstop, gstrand, length, mrna_id, alias, name, peptide]) + "\n"
+					out.write(outline)
+				myCDS = ""
+				cds_tups = []
+				data = "-".join(line[8:]).split(";")   # join to read the whole attributes even if spaces
+				gstart = line[3]
+				gstop = line[4]
+				gstrand = line[6]
+				name = "None"
+				mrna_id = ""
+				alias = None
+				# cds_tups_primary = False
+				# primary_done = False
+				for d in data:
+					if d.find("ID=") == 0:
+						curID = d.split("=")[1]
+					if d.find("Dbxref=") == 0:  # added for NCBI's genbank in gff3 format
+						curID = d.split(":")[1]
+					if d.find("Name=") == 0:
+						name = d.split("=")[1]
+			# for every subsequence "exon" after the "gene", get the CDS using SequenceParse methods
+			# elif line[2] == "exon":
+			elif line[2] == "CDS":
+				scaffold = line[0]
+				start = int(line[3])
+				stop = int(line[4])
+				strand = line[6]
+				if line[7] == ".":
+					phase = 0
 				else:
-					cds_tups = sorted(cds_tups, key=lambda feat: feat[1], reverse=True)
-				for c in cds_tups:
-					myCDS = myCDS + c[4]
-				if curID in pep_hash:
-					peptide = pep_hash[curID]
-				else:
-					peptide = myGenome.translateCDS(myCDS)
-				length = str(len(peptide))
+					phase = int(line[7])
+				next_cds = "junk!"
+				if curID not in pep_hash:
+					next_cds = myGenome.getCDS(scaffold, start, stop, strand, phase)
+				# if not primary_done:
+				# 	next_cds = myGenome.getCDS(scaffold, start, stop, strand, phase)
+				my_tup = (scaffold, int(start), stop, strand, next_cds)
+				cds_tups.append(my_tup)
+			elif line[2] == "mRNA":
+				# if cds_tups_primary:
+				# 	primary_done = True
+				# if not primary_done:
+				for d in line[8].split(";"):
+					if d.find("ID=") == 0:
+						mrna_id_tmp = d.split("=")[1]
+					if d.find("Dbxref=") == 0:
+						mrna_id_tmp = d.split(":")[1]
+					# 	if d.find("VectorBase:") == 0:  # import that in first position for this one as it can also be in the Dbxref field
+					# 		if d[-3:] == "-RA":
+					# 			cds_tups_primary = True
+					# 			mrna_id = mrna_id_tmp
+					# 		cds_tups = []
+					# if not cds_tups_primary:
+					# 	mrna_id += mrna_id_tmp
+				mrna_id += mrna_id_tmp
+		if len(cds_tups) > 0:
+			# concatenate all of the CDS sequences together, then translate them with SequenceParse
+			if cds_tups[0][3] == "+":
+				cds_tups = sorted(cds_tups, key=lambda feat: feat[1])
+			else:
+				cds_tups = sorted(cds_tups, key=lambda feat: feat[1], reverse=True)
+			for c in cds_tups:
+				myCDS = myCDS + c[4]
+			peptide = myGenome.translateCDS(myCDS)
+			length = str(len(peptide))
 
-				if scaffold not in scaffGeneCount:
-					scaffGeneCount[scaffold] = 0
-				scaffGeneCount[scaffold] += 1
+			# assign locus tag
+			locus_tag = numberFromIndex(locus, count)
+			if scaffold not in scaffGeneCount:
+				scaffGeneCount[scaffold] = 0
+			scaffGeneCount[scaffold] += 1
 
-				# assign locus tag
-				locus_tag = numberFromIndex(locus, count)
-				count += 1
+			if mrna_id == "":
+				mrna_id = curID
+			if alias is None:
+				alias = curID
 
-				if mrna_id is None:
-					mrna_id = curID
-				if alias is None:
-					alias = curID
+			# write to file
+			outline = "\t".join([curID, locus_tag, scaffold, gstart, gstop, gstrand, length, mrna_id, alias, name, peptide]) + "\n"
+			out.write(outline)
 
-				# write to file
-				outline = "\t".join([curID, locus_tag, scaffold, gstart, gstop, gstrand, length, mrna_id, alias, name, peptide]) + "\n"
-				out.write(outline)
-			myCDS = ""
-			cds_tups = []
-			data = line[8].split(";")
-			gstart = line[3]
-			gstop = line[4]
-			gstrand = line[6]
-			name = "None"
-			mrna_id = None
-			alias = None
-			for d in data:
-				if d.find("ID=") == 0:
-					curID = d.split("=")[1]
-				if d.find("Name=") == 0:
-					name = d.split("=")[1]
-		# for every subsequence "exon" after the "gene", get the CDS using SequenceParse methods
-		elif line[2] == "exon":
-			scaffold = line[0]
-			start = int(line[3])
-			stop = int(line[4])
-			strand = line[6]
-			next_cds = "junk!"
-			if curID not in pep_hash:
-				next_cds = myGenome.getCDS(scaffold, start, stop, strand)
-			my_tup = (scaffold, int(start), stop, strand, next_cds)
-			cds_tups.append(my_tup)
-		elif line[2] == "mRNA":
-			for d in line[8].split(";"):
-				if d.find("ID=") == 0:
-					mrna_id = d.split("=")[1]
-	if len(cds_tups) > 0:
-		# concatenate all of the CDS sequences together, then translate them with SequenceParse
-		if cds_tups[0][3] == "+":
-			cds_tups = sorted(cds_tups, key=lambda feat: feat[1])
-		else:
-			cds_tups = sorted(cds_tups, key=lambda feat: feat[1], reverse=True)
-		for c in cds_tups:
-			myCDS = myCDS + c[4]
-		peptide = myGenome.translateCDS(myCDS)
-		length = str(len(peptide))
-
-		# assign locus tag
-		locus_tag = numberFromIndex(locus, count)
-		if scaffold not in scaffGeneCount:
-			scaffGeneCount[scaffold] = 0
-		scaffGeneCount[scaffold] += 1
-
-		if mrna_id is None:
-			mrna_id = curID
-		if alias is None:
-			alias = curID
-
-		# write to file
-		outline = "\t".join([curID, locus_tag, scaffold, gstart, gstop, gstrand, length, mrna_id, alias, name, peptide]) + "\n"
-		out.write(outline)
+		stats = myGenome.calcGenomeStats(scaffGeneCount, count)  # [length, scaff n50, scaff n90, gene n50, gene n90]
+		stat_out = open(stat_file, 'w')
+		# outline = Genome\tlocus\tlength\tN50\tN90\tgene_count
+		stats.insert(0, genome_name)
+		stats.insert(1, locus)
+		stats.append(str(count))
+		outline = "\t".join(stats) + "\n"
+		stat_out.write(outline)
+		print outline
+		stat_out.close()
 	out.close()
-
-	stats = myGenome.calcGenomeStats(scaffGeneCount, count)  # [length, scaff n50, scaff n90, gene n50, gene n90]
-	stat_out = open(stat_file, 'w')
-	# outline = Genome\tlocus\tlength\tN50\tN90\tgene_count
-	stats.insert(0, genome_name)
-	stats.insert(1, locus)
-	stats.append(str(count))
-	outline = "\t".join(stats) + "\n"
-	stat_out.write(outline)
-	print outline
-	stat_out.close()
 
 
 def main(argv):
 	usage = "usage: FormatAnnotation_external.py [options] <reference.fasta> <scaffolds.fasta>"
 	parser = argparse.ArgumentParser(usage)
-	parser.add_argument('-gff', dest="gff3_file", required=True, help="GFF3 annotation file. (Required)")
-	parser.add_argument('-seq', dest="seq_file", required=True, help="Sequence file. (Required)")
+	parser.add_argument('-gff', dest="gff3_file", help="GFF3 annotation file.")
+	parser.add_argument('-seq', dest="seq_file", help="Sequence file.")
 	parser.add_argument('-name', dest="genome_name", required=True, help="Genome name. (Required)")
-	parser.add_argument('--pep', dest="peptide_file", help="Peptide file name.")
+	parser.add_argument('--pep', dest="peptide_file", help="Peptide file name. (Overrides Sequence + GFF3, no synteny)")
 	parser.add_argument('-locus', dest="locus", required=True, help="Locus name. (Required)")
 	parser.add_argument('-out', dest="out_file", required=True, help="Output name. (Required)")
-	parser.add_argument('-synteny', type=int, dest="syntenic_window", required=True, help="Syntenic window size. (Required)")
-	parser.add_argument('--annot', dest="annot", default = '0', help="")
-	parser.add_argument('--pickle', dest="pickle_juice", default = '0', help="")
+	parser.add_argument('-synteny', type=int, dest="syntenic_window", default=6000, help="Syntenic window size. (Required)")
+	parser.add_argument('--annot', dest="annot", default='0', help="")
+	parser.add_argument('--pickle', dest="pickle_juice", default='0', help="")
 	parser.add_argument("--transl_table", type=int, dest="transl_table", default=1, help="Translation table to use. (NCBI IDs)")
 	args = parser.parse_args()
 
