@@ -5,6 +5,7 @@ import os
 import NJ
 import pickle
 import networkx as nx
+import NetworkX_Extension as nxe
 import numpy
 import logging
 import subprocess
@@ -215,12 +216,14 @@ def main():
 		pos = 0
 		# max_neighbors_count = max([len(syn[k]) for k in syn])
 		longest_hom = float("-Inf")
+		hom_distances = nxe.all_pairs_path_length(graph, "dist")
 		for m in leaves[1:]:
 			syn_m = set(syn[m])
 			mSeqs = len(syn[m])
 # 			for n in graph.nodes():
 			for n in leaves[:i]:
-				hom_matrix[pos] = nx.shortest_path_length(graph, n, m, "dist")
+				# hom_matrix[pos] = nx.shortest_path_length(graph, n, m, "dist")
+				hom_matrix[pos] = hom_distances[n][m]
 				if hom_matrix[pos] > longest_hom:
 					longest_hom = hom_matrix[pos]
 				nSeqs = len(syn[n])
