@@ -43,15 +43,35 @@ def main():
 	t_n = {}  # transcript to IDs: mRNA, alias, name
 	tagToGenome = {}  # encoded genome name (tag) to genome name
 	genomeToAnnot = {}  # encoded genome name (tag) to annotation file
-	genomes = os.listdir(genome_path)
+	# genomes = os.listdir(genome_path)
+	nwksMap = {}
+	tmp = os.path.realpath(locus_mapping)
+	tmp2 = tmp.rfind('/')
+	current_root = tmp[tmp.rfind("/", 0, tmp2) + 1:tmp2]
+	nodes_path = tmp[:tmp.rfind("/", 0, tmp2) + 1]
+	# nodes = os.listdir(nodes_path)
+
+	with open(genome_path + "locus_tag_file.txt", 'r') as f:
+		for t in f:
+			t.rstrip()
+			line = t.split()
+			tagToGenome[line[1]] = line[0]
+
+	genomes = []
+	nodes = [current_root]
+	inter_nodes = [current_root]
+	while inter_nodes:
+		current_node = inter_nodes.pop()
+		children_nodes = tagToGenome[current_node].split(";")
+		for child_node in children_nodes:
+			if child_node[0] == "N":
+				inter_nodes.append(child_node)
+			else:  # child_node[0] == "L"
+				genomes.append(tagToGenome[child_node])
+			nodes.append(child_node)
+
 	for g in genomes:
-		if g.find("locus_tag_file.txt") > -1:
-			with open(genome_path + "locus_tag_file.txt", 'r') as f:
-				for t in f:
-					t.rstrip()
-					line = t.split()
-					tagToGenome[line[1]] = line[0]
-		elif os.path.isdir(genome_path + g):
+		if os.path.isdir(genome_path + g):  # shouldn't be needed anymore after changing how the genomes list is created
 			with open(genome_path + g + "/annotation.txt", "r") as f:
 				d = f.readline().rstrip().split("\t")
 				genomeToAnnot[d[0]] = d[1]
@@ -66,12 +86,6 @@ def main():
 					t_n[line[0]] = [line[7], line[8], line[9]]
 		# else: other files in the genome directory (nwk tree with tags and any other user generated file)
 
-	nwksMap = {}
-	tmp = os.path.realpath(locus_mapping)
-	tmp2 = tmp.rfind('/')
-	current_root = tmp[tmp.rfind("/", 0, tmp2) + 1:tmp2]
-	nodes_path = tmp[:tmp.rfind("/", 0, tmp2) + 1]
-	nodes = os.listdir(nodes_path)
 	distrib_out = open(nodes_path + current_root + "/cluster_dist_per_genome.txt", "w")
 	clusters_out = open(nodes_path + current_root + "/clusters.txt", "w")
 	if args.alignement:
