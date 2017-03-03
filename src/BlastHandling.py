@@ -4,23 +4,29 @@ import operator
 import logging
 import networkx as nx
 import pickle
+import os
+import subprocess
+
+DEVNULL = open(os.devnull, 'w')
 
 
 class BlastSegment:
 	# logger = logging.getLogger("BlastSegment")
 
-	def __init__(self, query, target, pID, align_length, bitScore, evalue):
+	def __init__(self, query, target, pID, align_length, qstart, qend, bitScore, evalue):
 		self.query = query
 		self.target = target
 		# identity percentage
 		self.pID = float(pID) / 100.0
 		self.length = int(align_length)
 		self.qLength = int(self.query.split(";")[1])
+		self.qstart = int(qstart)
+		self.qend = int(qend)
 		self.tLength = int(self.target.split(";")[1])
 		self.bitScore = float(bitScore)
 		self.evalue = float(evalue)
 		# percent = float(self.length) / float(min(self.qLength, self.tLength))  # mod for big BLAST
-		percent = float(self.length) / float(max(self.qLength, self.tLength))
+		# percent = float(self.length) / float(max(self.qLength, self.tLength))
 		percent = float(self.length) / float(self.qLength)
 		self.adjPID = self.pID * percent
 		self.score = (2.0 - self.adjPID) * 100000.0
@@ -34,16 +40,38 @@ class BlastSegment:
 
 class BlastParse:
 	logger = logging.getLogger("BlastParse")
+	children = None
 	EVALUE_THRESHOLD = 1e-4
+	CORE_HITS_COUNT_THRESHOLD = 5
+	OVERLAP_PROPORTION_THRESHOLD = 0.5
 
-	def __init__(self, m8_file, max_size_diff):
-		self.m8_file = m8_file
+	def __init__(self, max_size_diff, children):
 		BlastParse.max_size_diff = max_size_diff
+		BlastParse.children = children
+
+	@staticmethod
+	def getBestHits(q_hits, min_best_hit):
+		bestAdjPID = 0.0
+		best_evalue = 1.0
+		q_best = []
+		for ts in q_hits:
+			ts_score = ts.getScore()
+			t = ts.target.split(";")[0]
+			if ts.evalue < float(BlastParse.EVALUE_THRESHOLD):
+				if best_evalue == 1.0:  # and ts.evalue < float(1e-3):  # TODO change hardcoded evalue threshold
+					bestAdjPID = ts.getAdjPID()
+					best_evalue = ts.evalue
+					# q_best.append((q, t, ts_score))
+					q_best.append((t, ts_score))
+				elif (ts.getAdjPID() > bestAdjPID * min_best_hit):  # and best_evalue < 1.0:
+					# q_best.append((q, t, ts_score))
+					q_best.append((t, ts_score))
+		return q_best
 
 	# hits are scored by cumulative percent identity
 	# synData is unused
 	@staticmethod
-	def scoreHits(hits, headers, min_best_hit, synData, minSynFrac):
+	def scoreHits(hits, headers, min_best_hit, minSynFrac):
 		bestHits = nx.Graph()
 		bestReciprocalHits = nx.Graph()
 		head = open(headers, 'r').readlines()
@@ -57,32 +85,62 @@ class BlastParse:
 		bestReciprocalHits.add_nodes_from(myHead)
 
 		for q in hits:
-			bestAdjPID = 0.0
-			best_evalue = 1.0
-			q_best = []
 			q_hits = [hits[q][t] for t in hits[q]]
 			q_hits.sort(key=operator.attrgetter('bitScore'), reverse=True)
-			for ts in q_hits:
-				ts_score = ts.getScore()
-				t = ts.target.split(";")[0]
-				if ts.evalue < float(BlastParse.EVALUE_THRESHOLD):
-					if best_evalue == 1.0:  # and ts.evalue < float(1e-3):  # TODO change hardcoded evalue threshold
-						bestAdjPID = ts.getAdjPID()
-						best_evalue = ts.evalue
-						q_best.append((q, t, ts_score))
-					elif (ts.getAdjPID() > bestAdjPID * min_best_hit):  # and best_evalue < 1.0:
-						q_best.append((q, t, ts_score))
+			q_best = BlastParse.getBestHits(q_hits, min_best_hit)
 
-			q_best = sorted(q_best, key=lambda tup: tup[2])
+			# checking for protein domain increasing number of hits
+			if len(q_best) >= BlastParse.CORE_HITS_COUNT_THRESHOLD:
+				# identifying the potential domain
+				(overlap_start, overlap_end, overlap_count) = BlastParse.longest_maximal_overlap_interval(q_best)
+				if overlap_count >= BlastParse.CORE_HITS_COUNT_THRESHOLD and (overlap_end - overlap_start < q.qLength * BlastParse.OVERLAP_PROPORTION_THRESHOLD):
+					query_child = q_best[0][0][:q_best[0][0].rfind("_")]
+					target_child = q_best[0][1][:q_best[0][1].rfind("_")]
+
+					# get query sequence
+					cmd = ["cat", query_child + ".blast.fa", "|", "grep", "-A", "1", q.query]
+					process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
+					query_seq = process.communicate()[0].split("\n")
+
+					# masking domain
+					new_query = query_seq[0] + "\n" + query_seq[1][:overlap_start] + query_seq[1][overlap_start:overlap_end].lower() + query_seq[1][overlap_end:] + "\n"
+
+					# run blastp
+					db = target_child + ".blast.fa"
+					cmd = ["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", "1", "-lcase_masking", "-db", db]
+					process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
+					output = process.communicate(new_query)[0]
+
+					# parse output
+					new_q_hits = BlastParse.readBlastM8(output.split("\n"))
+					new_q_best = BlastParse.getBestHits(new_q_hits, min_best_hit)
+
+					# combine new hits with original ones
+					filtered_q_best = []
+					for new_h in new_q_best:
+						for h in q_best:
+							if new_h[0] == h[0]:
+								filtered_q_best.append(h)
+								break
+
+					# assign new result to be used in the graph
+					q_best = filtered_q_best
+
+			# q_best = sorted(q_best, key=lambda tup: tup[2])
+			q_best = sorted(q_best, key=lambda tup: tup[1])
 			for hit in q_best:
-				if not bestHits.has_edge(hit[0], hit[1]):
-					bestHits.add_edge(hit[0], hit[1], weight=hit[2], query="_".join(q.split("_")[:-1]))
-				elif bestHits[hit[0]][hit[1]]["query"] != "_".join(q.split("_")[:-1]):  # not to add an edge in the reciprocal graph if there are simply multiple matches between same query and target
-					bestReciprocalHits.add_edge(hit[0], hit[1], weight=hit[2])
+				# if not bestHits.has_edge(hit[0], hit[1]):
+				# 	bestHits.add_edge(hit[0], hit[1], weight=hit[2], query="_".join(q.split("_")[:-1]))
+				# elif bestHits[hit[0]][hit[1]]["query"] != "_".join(q.split("_")[:-1]):  # not to add an edge in the reciprocal graph if there are simply multiple matches between same query and target
+					# bestReciprocalHits.add_edge(hit[0], hit[1], weight=hit[2])
+				if not bestHits.has_edge(q, hit[0]):
+					bestHits.add_edge(q, hit[0], weight=hit[1], query="_".join(q.split("_")[:-1]))
+				elif bestHits[q][hit[0]]["query"] != "_".join(q.split("_")[:-1]):  # not to add an edge in the reciprocal graph if there are simply multiple matches between same query and target
+					bestReciprocalHits.add_edge(q, hit[0], weight=hit[1])
 		return bestReciprocalHits
 
 	@staticmethod
-	def makePutativeClusters(tree_dir, synData, bestReciprocalHits):
+	def makePutativeClusters(tree_dir, bestReciprocalHits):
 		# numThreads = 4
 		# MAX_HITS = numHits
 		BlastParse.logger.info("len(best hits nodes) %d %d" % (len(bestReciprocalHits.nodes()), len(bestReciprocalHits.edges())))
@@ -125,11 +183,47 @@ class BlastParse:
 			pickle.dump(clusterToGenes, f)
 		return 0
 
+	@staticmethod
+	def longest_maximal_overlap_interval(hits):
+		starts = []
+		ends = []
+		for hit in hits:
+			starts.append(hit.qstart)
+			ends.append(hit.qend)
+		starts.sort()
+		ends.sort()
+		n = len(hits)
+		i = j = 0
+		maxi = maxj = -1
+		maximal_overlap = 0
+		current_overlap = 0
+		while i < n and j < n:
+			if starts[i] < ends[j]:
+				current_overlap += 1
+				if current_overlap > maximal_overlap:
+					maximal_overlap = current_overlap
+					maxi = i
+					maxj = j
+				elif current_overlap == maximal_overlap:
+					if ends[j] - starts[i] > ends[maxj] - starts[maxi]:  # keep longest
+						maxi = i
+						maxj = j
+				i += 1
+			else:
+				current_overlap -= 1
+				j += 1
+		return (maxi, maxj, maximal_overlap)
+
+	@staticmethod
+	def readBlastM8FromFile(f):
+		data = open(f, "r").readlines()
+		BlastParse.readBlastM8(data)
+
 	# reads in the m8 file and returns hits, which is a dict of BlastSegments
-	def readBlastM8(self):
-		m8 = open(self.m8_file, 'r').readlines()
+	@staticmethod
+	def readBlastM8(data):
 		hits = {}
-		for m in m8:
+		for m in data:
 			m = m.rstrip()
 			line = m.split()
 			if len(line) < 5:
@@ -142,7 +236,7 @@ class BlastParse:
 				continue
 			elif int(q.split(";")[1]) > BlastParse.max_size_diff * int(t.split(";")[1]) or int(t.split(";")[1]) > BlastParse.max_size_diff * int(q.split(";")[1]):  # size difference too big
 				continue
-			mySeg = BlastSegment(q, t, line[2], line[3], line[11], line[10])  # query,target,pID,length,bitScore,evalue
+			mySeg = BlastSegment(q, t, line[2], line[3], line[6], line[7], line[11], line[10])  # query,target,pID,length,bitScore,evalue
 			if Q not in hits:
 				hits[Q] = {}
 			if T not in hits[Q]:
