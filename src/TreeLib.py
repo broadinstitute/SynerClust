@@ -83,24 +83,21 @@ class Tree:
 			myExcisableRegions = sorted(myExcisableRegions, key=lambda reg: reg[4], reverse=True)
 			newSpeciesLocus = ""
 			# if len(myExcisableRegions) == 1 and len(myExcisableRegions[0][2]) == len(myTreeString):  # "root" of the tree had 3 or more children
-			if len(myExcisableRegions) == 1 and myTreeString.count(",") == 1:  # "root" of the tree had 3 or more children
-				root_edge = myExcisableRegions[0][2][1:-1]
-				children = root_edge.split(",")
-				for i in xrange(2):
-					name = children[i].split(":")[0]
-					if name not in self.locusToGenome:
-						locus = self.codeGenomeID(name)
-						children[i].replace(name, locus)
-				return ",".join(children)
+			# if len(myExcisableRegions) == 1 and myTreeString.count(",") == 1:  # "root" of the tree had 3 or more children
+			# 	root_edge = myExcisableRegions[0][2][1:-1]
+			# 	children = root_edge.split(",")
+			# 	for i in xrange(2):
+			# 		name = children[i].split(":")[0]
+			# 		if name not in self.locusToGenome:
+			# 			locus = self.codeGenomeID(name)
+			# 			children[i].replace(name, locus)
+			# 	return ",".join(children)
 			for mer in myExcisableRegions:
 				region = mer[2][1:-1]
 
 				genomes = region.split(",")
 				child_nodes = []
-				# print "genomes", len(genomes), len(myTreeString), len(mer[2])
-				# print genomes
 				for g in genomes:
-					# print g
 					nome = g.split(":")[0]
 					dist = float(g.split(":")[1])
 					locus = ""
@@ -126,42 +123,33 @@ class Tree:
 					myTreeString = region
 					break
 				while len(child_nodes) > 1 and same_length == 0:
-					# print "WHILE", len(child_nodes)
 					if len(child_nodes) > 2 and child_nodes[0][1] > 0.0:
 						has_dist = 1
-						# print "has_dist", has_dist
 						break
 					if len(child_nodes) == 2 and len(mer[2]) == len(myTreeString):
 						newSpeciesLocus = child_nodes[0][0] + ":" + str(child_nodes[0][1]) + "," + child_nodes[1][0] + ":" + str(child_nodes[1][1])
-						self.tree.add_edge(child_nodes[0][0], child_nodes[1][0], weight=child_nodes[0][1])
+						child_nodes = []
+						# self.tree.add_edge(child_nodes[0][0], child_nodes[1][0], weight=child_nodes[0][1])
 						break
 					tkids = []
-					# print len(child_nodes)
 					tkids.append(child_nodes.pop(0))
 					tkids.append(child_nodes.pop(0))
-					# print len(child_nodes)
 					tnodes = []
 					for tk in tkids:
 						self.tree.add_node(tk[0])
 						tnodes.append(tk[0])
 					tnodes.sort()
 					newSpeciesLocus = self.codeGenomeID(";".join(tnodes))
-					# print tkids,";".join(tnodes), newSpeciesLocus
 					self.tree.add_node(newSpeciesLocus)
 					weight = 0.0
 					for tk in tkids:
 						weight = tk[1]
 						self.tree.add_edge(newSpeciesLocus, tk[0], weight=tk[1])
-						# print tk[0],self.tree.edge[tk[0]]
-					# print newSpeciesLocus, self.tree.edge[newSpeciesLocus]
 					child_nodes.append((newSpeciesLocus, weight))
 				if has_dist == 1:
 					min_pair = (child_nodes[0], child_nodes[1])
 					min_dist = child_nodes[0][1] + child_nodes[1][1]
-					# print min_pair, min_dist
-					# subPaths = {}
 					for c in child_nodes:
-						# print c
 						if self.tree_string.find(self.locusToGenome[c[0]]) > -1:
 							self.tree.add_node(c[0])
 						for q in child_nodes:
@@ -172,16 +160,13 @@ class Tree:
 								min_dist = weight_sum
 								min_pair = (c, q)
 					tkids = []
-					# print len(child_nodes), child_nodes
 					tkids.append(child_nodes.pop(child_nodes.index(min_pair[0])))
 					tkids.append(child_nodes.pop(child_nodes.index(min_pair[1])))
-					# print len(child_nodes), child_nodes
 					tnodes = []
 					for tk in tkids:
 						tnodes.append(tk[0])
 					tnodes.sort()
 					newSpeciesLocus = self.codeGenomeID(";".join(tnodes))
-					# print tkids,";".join(tnodes), newSpeciesLocus
 					self.tree.add_node(newSpeciesLocus)
 					weight = child_nodes[0][1]
 					for tk in tkids:
@@ -189,10 +174,7 @@ class Tree:
 					self.tree.add_edge(newSpeciesLocus, child_nodes[0][0], weight=child_nodes[0][1])
 					my_dist = ":" + str(child_nodes[0][1])
 					newSpeciesLocus = child_nodes[0][0] + my_dist + "," + newSpeciesLocus + my_dist
-					# newSpeciesLocus = "("+",".join(forReplace)+")"
 				myTreeString = myTreeString.replace(mer[2], newSpeciesLocus)
-
-				# print myTreeString
 				child_nodes = []
 			myExcisableRegions = self.indexParens(myTreeString)
 		return myTreeString
@@ -220,35 +202,35 @@ class Tree:
 					minRootLen = root_len
 		return self.locusToGenome[minRoot]
 
-	def trimTaxa(self, taxaToKeep):
-		ancestral = set([])
-		for n in self.tree.nodes():
-			n_nome = self.locusToGenome[n]
-			if n_nome.find(";") > -1:
-				ancestral.add(n)
-				continue
-			if n_nome not in taxaToKeep:
-				# print "removed", n_nome
-				self.tree.remove_node(n)
-		for n in self.tree.nodes():
-			n_nome = self.locusToGenome[n]
-			if n_nome.find(";") > -1 and len(self.tree[n]) < 2:
-				self.tree.remove_node(n)
-		badAncestral = 1
-		while (badAncestral):
-			badAncestral = 0
-			for n in self.tree.nodes():
-				if n in ancestral and len(self.tree[n]) == 2:
-					badAncestral += 1
-					myedges = []
-					myweights = []
-					for e in self.tree[n]:
-						myedges.append(e)
-						myweights.append(self.tree[n][e]['weight'])
-					newweight = myweights[0] + myweights[1]
-					# print myedges,myedges[0],myedges[1], newweight
-					self.tree.add_edge(myedges[0], myedges[1], weight=newweight)
-					self.tree.remove_node(n)
+	# def trimTaxa(self, taxaToKeep):
+	# 	ancestral = set([])
+	# 	for n in self.tree.nodes():
+	# 		n_nome = self.locusToGenome[n]
+	# 		if n_nome.find(";") > -1:
+	# 			ancestral.add(n)
+	# 			continue
+	# 		if n_nome not in taxaToKeep:
+	# 			# print "removed", n_nome
+	# 			self.tree.remove_node(n)
+	# 	for n in self.tree.nodes():
+	# 		n_nome = self.locusToGenome[n]
+	# 		if n_nome.find(";") > -1 and len(self.tree[n]) < 2:
+	# 			self.tree.remove_node(n)
+	# 	badAncestral = 1
+	# 	while (badAncestral):
+	# 		badAncestral = 0
+	# 		for n in self.tree.nodes():
+	# 			if n in ancestral and len(self.tree[n]) == 2:
+	# 				badAncestral += 1
+	# 				myedges = []
+	# 				myweights = []
+	# 				for e in self.tree[n]:
+	# 					myedges.append(e)
+	# 					myweights.append(self.tree[n][e]['weight'])
+	# 				newweight = myweights[0] + myweights[1]
+	# 				# print myedges,myedges[0],myedges[1], newweight
+	# 				self.tree.add_edge(myedges[0], myedges[1], weight=newweight)
+	# 				self.tree.remove_node(n)
 
 	# make a directed graph
 	def rootTree(self, root_edge):
