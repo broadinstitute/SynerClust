@@ -237,6 +237,8 @@ def extractAnnotation(gff3_file, seq_file, genome_name, locus, out_file, stat_fi
 						curID = d.split(":")[1]
 					if d.find("Name=") == 0:
 						name = d.split("=")[1]
+					if d.find("locus_tag=") == 0:
+						name = d.split("=")[1]
 			# for every subsequence "exon" after the "gene", get the CDS using SequenceParse methods
 			# elif line[2] == "exon":
 			elif line[2] == "CDS":
