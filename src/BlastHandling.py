@@ -62,10 +62,10 @@ class BlastParse:
 					bestAdjPID = ts.getAdjPID()
 					best_evalue = ts.evalue
 					# q_best.append((q, t, ts_score))
-					q_best.append((t, ts_score))
+					q_best.append((t, ts_score, ts))
 				elif (ts.getAdjPID() > bestAdjPID * min_best_hit):  # and best_evalue < 1.0:
 					# q_best.append((q, t, ts_score))
-					q_best.append((t, ts_score))
+					q_best.append((t, ts_score, ts))
 		return q_best
 
 	# hits are scored by cumulative percent identity
@@ -93,14 +93,18 @@ class BlastParse:
 			if len(q_best) >= BlastParse.CORE_HITS_COUNT_THRESHOLD:
 				# identifying the potential domain
 				(overlap_start, overlap_end, overlap_count) = BlastParse.longest_maximal_overlap_interval(q_best)
-				if overlap_count >= BlastParse.CORE_HITS_COUNT_THRESHOLD and (overlap_end - overlap_start < q.qLength * BlastParse.OVERLAP_PROPORTION_THRESHOLD):
-					query_child = q_best[0][0][:q_best[0][0].rfind("_")]
-					target_child = q_best[0][1][:q_best[0][1].rfind("_")]
+				if overlap_count >= BlastParse.CORE_HITS_COUNT_THRESHOLD and (overlap_end - overlap_start < q_best[0][2].qLength * BlastParse.OVERLAP_PROPORTION_THRESHOLD):
+					BlastParse.logger.debug("Masking a region")
+					target_child = q_best[0][0][:q_best[0][0].rfind("_")]
+					query_child = q[:q.rfind("_")]
 
 					# get query sequence
-					cmd = ["cat", query_child + ".blast.fa", "|", "grep", "-A", "1", q.query]
+					cmd = ["cat", query_child + ".blast.fa"]
+					cmd2 = ["grep", "-A", "1", q_best[0][2].query]
 					process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
-					query_seq = process.communicate()[0].split("\n")
+					fasta_file = process.communicate()[0]
+					process = subprocess.Popen(cmd2, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
+					query_seq = process.communicate(fasta_file)[0].split("\n")
 
 					# masking domain
 					new_query = query_seq[0] + "\n" + query_seq[1][:overlap_start] + query_seq[1][overlap_start:overlap_end].lower() + query_seq[1][overlap_end:] + "\n"
@@ -113,7 +117,7 @@ class BlastParse:
 
 					# parse output
 					new_q_hits = BlastParse.readBlastM8(output.split("\n"))
-					new_q_best = BlastParse.getBestHits(new_q_hits, min_best_hit)
+					new_q_best = BlastParse.getBestHits([new_q_hits[q][t] for t in new_q_hits[new_q_hits.keys()[0]]], min_best_hit)
 
 					# combine new hits with original ones
 					filtered_q_best = []
@@ -122,7 +126,7 @@ class BlastParse:
 							if new_h[0] == h[0]:
 								filtered_q_best.append(h)
 								break
-
+					BlastParse.logger("Pre-masking: " + len(q_best) + " hits; Post-masking: " + len(filtered_q_best) + " hits.")
 					# assign new result to be used in the graph
 					q_best = filtered_q_best
 
@@ -188,8 +192,8 @@ class BlastParse:
 		starts = []
 		ends = []
 		for hit in hits:
-			starts.append(hit.qstart)
-			ends.append(hit.qend)
+			starts.append(hit[2].qstart)
+			ends.append(hit[2].qend)
 		starts.sort()
 		ends.sort()
 		n = len(hits)
