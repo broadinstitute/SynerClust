@@ -128,8 +128,7 @@ class Tree:
 						break
 					if len(child_nodes) == 2 and len(mer[2]) == len(myTreeString):
 						newSpeciesLocus = child_nodes[0][0] + ":" + str(child_nodes[0][1]) + "," + child_nodes[1][0] + ":" + str(child_nodes[1][1])
-						child_nodes = []
-						# self.tree.add_edge(child_nodes[0][0], child_nodes[1][0], weight=child_nodes[0][1])
+						self.tree.add_edge(child_nodes[0][0], child_nodes[1][0], weight=child_nodes[0][1])
 						break
 					tkids = []
 					tkids.append(child_nodes.pop(0))
