@@ -66,7 +66,7 @@ def main():
 	# logger.debug("Loaded synteny_data")
 
 	# Create rough clusters with trees
-	bp = BlastHandling.BlastParse(args.max_size_diff, args.children)
+	bp = BlastHandling.BlastParse(args.max_size_diff, args.node_dir + args.node + "/")
 	logger.debug("Parsed Blast")
 	hits = BlastHandling.BlastParse.readBlastM8FromFile(blast_out)
 	logger.debug("Read Blast")

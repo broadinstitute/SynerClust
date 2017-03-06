@@ -40,14 +40,14 @@ class BlastSegment:
 
 class BlastParse:
 	logger = logging.getLogger("BlastParse")
-	children = None
+	node_path = None
 	EVALUE_THRESHOLD = 1e-4
 	CORE_HITS_COUNT_THRESHOLD = 5
 	OVERLAP_PROPORTION_THRESHOLD = 0.5
 
-	def __init__(self, max_size_diff, children):
+	def __init__(self, max_size_diff, node_path):
 		BlastParse.max_size_diff = max_size_diff
-		BlastParse.children = children
+		BlastParse.node_path = node_path
 
 	@staticmethod
 	def getBestHits(q_hits, min_best_hit):
@@ -99,7 +99,7 @@ class BlastParse:
 					query_child = q[:q.rfind("_")]
 
 					# get query sequence
-					cmd = ["cat", query_child + ".blast.fa"]
+					cmd = ["cat", BlastParse.node_path + query_child + ".blast.fa"]
 					cmd2 = ["grep", "-A", "1", q_best[0][2].query]
 					process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
 					fasta_file = process.communicate()[0]
@@ -110,7 +110,7 @@ class BlastParse:
 					new_query = query_seq[0] + "\n" + query_seq[1][:overlap_start] + query_seq[1][overlap_start:overlap_end].lower() + query_seq[1][overlap_end:] + "\n"
 
 					# run blastp
-					db = target_child + ".blast.fa"
+					db = BlastParse.node_path + target_child + ".blast.fa"
 					cmd = ["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", "1", "-lcase_masking", "-db", db]
 					process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
 					output = process.communicate(new_query)[0]
@@ -126,7 +126,8 @@ class BlastParse:
 							if new_h[0] == h[0]:
 								filtered_q_best.append(h)
 								break
-					BlastParse.logger("Pre-masking: " + len(q_best) + " hits; Post-masking: " + len(filtered_q_best) + " hits.")
+					BlastParse.logger.debug("Pre-masking: " + str(len(q_best)) + " hits; Post-masking: " + str(len(filtered_q_best)) + " hits.")
+					### Verify whether there is at 1 hit left
 					# assign new result to be used in the graph
 					q_best = filtered_q_best
 
