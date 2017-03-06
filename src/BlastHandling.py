@@ -217,7 +217,7 @@ class BlastParse:
 	@staticmethod
 	def readBlastM8FromFile(f):
 		data = open(f, "r").readlines()
-		BlastParse.readBlastM8(data)
+		return BlastParse.readBlastM8(data)
 
 	# reads in the m8 file and returns hits, which is a dict of BlastSegments
 	@staticmethod
