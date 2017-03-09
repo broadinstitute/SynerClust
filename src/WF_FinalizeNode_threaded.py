@@ -149,6 +149,10 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 			# remove from matrix data that is not needed anymore
 			# redo on remaining sequences using the matrix with only their sequences (prune the big matrix)
 
+			# add single non represented sequence left, if any
+			if leaves:
+				representative_sequences.add(leaves.pop())
+
 			mus_out = mus_out.split("\n")
 			# mus_seqs = {}
 			mus_str_seqs = {}
