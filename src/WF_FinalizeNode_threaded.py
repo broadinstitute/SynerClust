@@ -176,10 +176,10 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 			logger.debug("Trying to acquire lock for " + clusterID)
 			OUTPUT_LOCK.acquire()
 			logger.debug("Acquired lock for " + clusterID)
-			out_buffer = ""
 			cons_res[clusterID] = []
 			for s in representative_sequences:
 				# cons_seq = "".join(mus_seqs[s])
+				out_buffer = ""
 				cons_seq = mus_str_seqs[s]
 				cons_seq = cons_seq.replace("-", "")
 				out_buffer += ">" + clusterID + ";" + str(len(cons_seq)) + "\n"
