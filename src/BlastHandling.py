@@ -94,7 +94,7 @@ class BlastParse:
 				# identifying the potential domain
 				(overlap_start, overlap_end, overlap_count) = BlastParse.longest_maximal_overlap_interval(q_best)
 				if overlap_count >= BlastParse.CORE_HITS_COUNT_THRESHOLD and (overlap_end - overlap_start < q_best[0][2].qLength * BlastParse.OVERLAP_PROPORTION_THRESHOLD):
-					BlastParse.logger.debug("Masking a region")
+					BlastParse.logger.debug("Masking a region for query q = " + q)
 					target_child = q_best[0][0][:q_best[0][0].rfind("_")]
 					query_child = q[:q.rfind("_")]
 
@@ -126,7 +126,7 @@ class BlastParse:
 							if new_h[0] == h[0]:
 								filtered_q_best.append(h)
 								break
-					BlastParse.logger.debug("Pre-masking: " + str(len(q_best)) + " hits; Post-masking: " + str(len(filtered_q_best)) + " hits.")
+					BlastParse.logger.debug("Query q = " + q + "\nPre-masking: " + str(len(q_best)) + " hits; Post-masking: " + str(len(filtered_q_best)) + " hits.")
 					### Verify whether there is at 1 hit left
 					# assign new result to be used in the graph
 					q_best = filtered_q_best
