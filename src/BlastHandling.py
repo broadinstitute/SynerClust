@@ -127,7 +127,7 @@ class BlastParse:
 								filtered_q_best.append(h)
 								break
 					BlastParse.logger.debug("Pre-masking: " + str(len(q_best)) + " hits; Post-masking: " + str(len(filtered_q_best)) + " hits.")
-					### Verify whether there is at 1 hit left
+					### Verify whether there is at least 1 hit left
 					# assign new result to be used in the graph
 					q_best = filtered_q_best
 
