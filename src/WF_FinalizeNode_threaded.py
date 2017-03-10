@@ -151,7 +151,7 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 
 			# add single non represented sequence left, if any
 			if leaves:
-				representative_sequences.add(leaves.pop())
+				representative_sequences.append(leaves.pop())
 
 			mus_out = mus_out.split("\n")
 			# mus_seqs = {}
