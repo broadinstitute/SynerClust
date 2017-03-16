@@ -27,9 +27,9 @@ def all_pairs_path_length(G, weight=['weight']):
 				target = nodes[t]
 				path = paths[source][target]
 				i = 0
-				if source not in distances:
+				if source not in distances[w]:
 					distances[w][source] = {}
-				if target not in distances:
+				if target not in distances[w]:
 					distances[w][target] = {}
 				distances[w][source][target] = 0.0
 				while i < len(path) - 1:
