@@ -216,7 +216,7 @@ def main():
 		pos = 0
 		# max_neighbors_count = max([len(syn[k]) for k in syn])
 		longest_hom = float("-Inf")
-		hom_distances = nxe.all_pairs_path_length(graph, "dist")[0][0]
+		hom_distances = nxe.all_pairs_path_length(graph, ['dist'])[0][0]
 		for m in leaves[1:]:
 			syn_m = set(syn[m])
 			mSeqs = len(syn[m])
