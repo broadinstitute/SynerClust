@@ -130,6 +130,7 @@ def main():
 	nwk_out = open(nodes_path + current_root + "/newicks_full.txt", "w")
 	totalGenes = 0
 	pairs = set([])
+	pairs2 = set([])
 	scc_count = 0
 	mcc_count = 0
 	cluster_noOrphan = 0
@@ -161,8 +162,10 @@ def main():
 			for j in xrange(i + 1, len(leafKids)):
 				if l_t[leafKids[i]] < l_t[leafKids[j]]:
 					pairs.add((l_t[leafKids[i]], l_t[leafKids[j]]))
+					pairs2.add((t_n[l_t[leafKids[i]]][2], t_n[l_t[leafKids[j]]][2]))
 				else:
 					pairs.add((l_t[leafKids[j]], l_t[leafKids[i]]))
+					pairs2.add((t_n[l_t[leafKids[j]]][2], t_n[l_t[leafKids[i]]][2]))
 
 		prefix_count = Counter(genomes)
 		distrib_buffer = ""
@@ -212,6 +215,9 @@ def main():
 	pdat = open(pair_pkl, 'wb')
 	pickle.dump(pairs, pdat)
 	pdat.close()
+
+	with open(mydir + "tuple_pairs_locus.pkl", "w") as f:
+		pickle.dump(pairs2, f)
 
 
 if __name__ == "__main__":

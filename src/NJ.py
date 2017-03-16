@@ -170,7 +170,7 @@ class NJTree:
 		curNode = None
 		last_string = ""
 		if len(graph.nodes()) == 2:
-			ew = str(graph[leaf[0][0]][leaf[1][0]]['homology_weight'])
+			ew = str(graph[leaf[0][0]][leaf[1][0]]['homology_dist'])
 			last_string = "(" + leaf[0][0] + ":" + ew + "," + leaf[1][0] + ":" + ew + ")"
 		while len(up) > 0:
 			(curNode, e_count) = NJTree.calcMostEdgesToLeaves(up, leaf, graph)
@@ -185,7 +185,7 @@ class NJTree:
 								continue
 							e_text = graph.node[e]['child_newick']
 						leaf.pop(e_i)
-						ew = graph[curNode][e]['homology_weight']
+						ew = graph[curNode][e]['homology_dist']
 						text = e_text + ":" + str(ew)
 						leaves.append(text)
 			# add newick text to curNode
@@ -197,7 +197,7 @@ class NJTree:
 			up.pop(cn_i)
 			leaf.append((curNode, graph.node[curNode]['species']))
 		if len(leaf) == 2 and len(up) == 0 and len(graph.nodes()) > 2:
-			ew = str(graph[leaf[0][0]][leaf[1][0]]['homology_weight'])
+			ew = str(graph[leaf[0][0]][leaf[1][0]]['homology_dist'])
 			last_string = "(" + graph.node[leaf[0][0]]['child_newick'] + ":" + ew + "," + graph.node[leaf[1][0]]['child_newick'] + ":" + ew + ")"
 		last_string = last_string.replace("(", "(\n")
 		last_string = last_string.replace(",", ",\n")
@@ -220,8 +220,8 @@ class NJTree:
 			self.rootedTree = tree
 			return (score, self.rootEdge, loss)
 
-		(self.hom_shortest_paths, self.paths) = nxe.all_pairs_path_length(self.graph, 'homology_dist')
-		self.syn_shortest_paths = nxe.all_pairs_path_length(self.graph, 'synteny_dist')[0]
+		([self.hom_shortest_paths, self.syn_shortest_paths], self.paths) = nxe.all_pairs_path_length(self.graph, ['homology_dist', 'synteny_dist'])
+		# self.syn_shortest_paths = nxe.all_pairs_path_length(self.graph, 'synteny_dist')[0]
 		# store shortest path matrix - it is the same for everyone
 		if len(self.graph.nodes()) > 100:
 			# big_e = 0.0
