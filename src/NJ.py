@@ -12,7 +12,7 @@ import NetworkX_Extension as nxe
 class NJTree:
 	logger = logging.getLogger("NJTree")
 
-	def __init__(self, mrca, alpha, beta, gamma, gain, loss):
+	def __init__(self, mrca, alpha, beta, gamma, gain, loss, synteny):
 		self.graph = nx.Graph()
 		self.bigNode = ""
 		self.alpha = float(alpha)
@@ -20,6 +20,7 @@ class NJTree:
 		self.gamma = float(gamma)
 		self.gain = float(gain)
 		self.loss = float(loss)
+		self.synteny = synteny
 		self.OK = "false"
 		self.rootEdge = None
 		self.mrca = mrca
@@ -138,7 +139,8 @@ class NJTree:
 # 			nwk = "(" + ",".join(current_leaves) + ");"
 # 			nwk = ",".join(current_leaves)
 			nwk = "(" + current_leaves[0] + ":" + str(self.rootedTree['root'][current_leaves[0]]['homology_dist']) + ',' + current_leaves[1] + ":" + str(self.rootedTree['root'][current_leaves[1]]['homology_dist']) + ")"
-			nwk2 = "(" + current_leaves[0] + ":" + str(self.rootedTree['root'][current_leaves[0]]['synteny_dist']) + ',' + current_leaves[1] + ":" + str(self.rootedTree['root'][current_leaves[1]]['synteny_dist']) + ")"
+			if self.synteny:
+				nwk2 = "(" + current_leaves[0] + ":" + str(self.rootedTree['root'][current_leaves[0]]['synteny_dist']) + ',' + current_leaves[1] + ":" + str(self.rootedTree['root'][current_leaves[1]]['synteny_dist']) + ")"
 			while current_leaves:
 				n = current_leaves.pop()
 				neighbors = list(self.rootedTree[n])
@@ -150,11 +152,15 @@ class NJTree:
 					processed.append(n)
 # 					new_nwk = ",".join(neighbors)
 					new_nwk = neighbors[0] + ":" + str(self.rootedTree[n][neighbors[0]]['homology_dist']) + ',' + neighbors[1] + ":" + str(self.rootedTree[n][neighbors[1]]['homology_dist'])
-					new_nwk2 = neighbors[0] + ":" + str(self.rootedTree[n][neighbors[0]]['synteny_dist']) + ',' + neighbors[1] + ":" + str(self.rootedTree[n][neighbors[1]]['synteny_dist'])
 					nwk = nwk.replace(n, "(" + new_nwk + ")")
-					nwk2 = nwk2.replace(n, "(" + new_nwk2 + ")")
+					if self.synteny:
+						new_nwk2 = neighbors[0] + ":" + str(self.rootedTree[n][neighbors[0]]['synteny_dist']) + ',' + neighbors[1] + ":" + str(self.rootedTree[n][neighbors[1]]['synteny_dist'])
+						nwk2 = nwk2.replace(n, "(" + new_nwk2 + ")")
 					current_leaves.extend(neighbors)
-			return [nwk, nwk2]
+			if self.synteny:
+				return [nwk, nwk2]
+			else:
+				return [nwk]
 		else:
 			NJTree.logger.critical("Tried to get Newick from a tree that has no rootTree: %s" % (self.bigNode))
 
@@ -220,7 +226,10 @@ class NJTree:
 			self.rootedTree = tree
 			return (score, self.rootEdge, loss)
 
-		([self.hom_shortest_paths, self.syn_shortest_paths], self.paths) = nxe.all_pairs_path_length(self.graph, ['homology_dist', 'synteny_dist'])
+		if self.synteny:
+			([self.hom_shortest_paths, self.syn_shortest_paths], self.paths) = nxe.all_pairs_path_length(self.graph, ['homology_dist', 'synteny_dist'])
+		else:
+			([self.hom_shortest_paths], self.paths) = nxe.all_pairs_path_length(self.graph, ['homology_dist'])
 		# self.syn_shortest_paths = nxe.all_pairs_path_length(self.graph, 'synteny_dist')[0]
 		# store shortest path matrix - it is the same for everyone
 		if len(self.graph.nodes()) > 100:
@@ -258,8 +267,11 @@ class NJTree:
 		h_dists = self.getDistances(e, 'homology_dist')
 		h_var = numpy.var(h_dists)
 		# s_dists = self.getSyntenyDistances(e)
-		s_dists = self.getDistances(e, 'synteny_dist')
-		s_var = numpy.var(s_dists)
+		if self.synteny:
+			s_dists = self.getDistances(e, 'synteny_dist')
+			s_var = numpy.var(s_dists)
+		else:
+			s_var = 0  # syn_factor becomes a constant at -2 so doesn't change ranking
 		# get gain/loss count
 		my_gl = 0
 		gain = 0
@@ -377,13 +389,18 @@ class NJTree:
 		gl_total = 0
 		tGraph = self.graph.copy()
 		newWeight = tGraph[e[0]][e[1]]['homology_dist'] / 2.0
-		newWeight2 = tGraph[e[0]][e[1]]['synteny_dist'] / 2.0
+		if self.synteny:
+			newWeight2 = tGraph[e[0]][e[1]]['synteny_dist'] / 2.0
 # 		newSpecies = ""
 		newID = "root"
 		tGraph.remove_edge(e[0], e[1])
 		tGraph.add_node(newID, species=self.mrca)
-		tGraph.add_edge(e[0], newID, homology_dist=newWeight, synteny_dist=newWeight2)
-		tGraph.add_edge(e[1], newID, homology_dist=newWeight, synteny_dist=newWeight2)
+		if self.synteny:
+			tGraph.add_edge(e[0], newID, homology_dist=newWeight, synteny_dist=newWeight2)
+			tGraph.add_edge(e[1], newID, homology_dist=newWeight, synteny_dist=newWeight2)
+		else:
+			tGraph.add_edge(e[0], newID, homology_dist=newWeight)
+			tGraph.add_edge(e[1], newID, homology_dist=newWeight)
 		# TODO no modification to synteny weights??
 		up = []  # up = unprocessed, length is number of edges
 		leaf = []  # leaf nodes
@@ -506,7 +523,7 @@ class NJTree:
 		for n in new_graphs:
 			for futur_root in futur_roots:  # loop here, but next if selects only 1 iteration
 				if futur_root in n.nodes():
-					new_tree = NJTree(self.mrca, self.alpha, self.beta, self.gamma, self.gain, self.loss)
+					new_tree = NJTree(self.mrca, self.alpha, self.beta, self.gamma, self.gain, self.loss, self.synteny)
 					if futur_root.count(";") == 0:  # only 1 leave on this half
 						new_tree.bigNode = futur_root
 						new_tree.rootEdge = (futur_root, futur_root)
@@ -518,29 +535,36 @@ class NJTree:
 					children = []
 					to_remove = []
 					hom_attributes = nx.get_edge_attributes(n, 'homology_dist')
-					syn_attributes = nx.get_edge_attributes(n, 'synteny_dist')
+					if self.synteny:
+						syn_attributes = nx.get_edge_attributes(n, 'synteny_dist')
 					for child in nx.all_neighbors(n, futur_root):
 						if child in futur_roots:
 							continue  # other half of the graph
 						children.append(child)
 						try:
 							new_hom_weight += hom_attributes[(child, futur_root)]
-							new_syn_weight += syn_attributes[(child, futur_root)]
+							if self.synteny:
+								new_syn_weight += syn_attributes[(child, futur_root)]
 						except KeyError:
 							new_hom_weight += hom_attributes[(futur_root, child)]
-							new_syn_weight += syn_attributes[(futur_root, child)]
+							if self.synteny:
+								new_syn_weight += syn_attributes[(futur_root, child)]
 						to_remove.append([child, futur_root])
 					for pair in to_remove:
 						n.remove_edge(pair[0], pair[1])
 					n.remove_node(futur_root)
 					new_BigNode = ";".join([f for f in n.nodes() if f.count(";") == 0])
-					n.add_edge(children[0], children[1], homology_dist=new_hom_weight, synteny_dist=new_syn_weight)
+					if self.synteny:
+						n.add_edge(children[0], children[1], homology_dist=new_hom_weight, synteny_dist=new_syn_weight)
+					else:
+						n.add_edge(children[0], children[1], homology_dist=new_hom_weight)
 					new_tree.rootEdge = (children[0], children[1])
 					new_root_edges.append(new_tree.rootEdge)
 					new_tree.bigNode = new_BigNode
 					new_tree.graph = n
 					new_tree.hom_shortest_paths = self.hom_shortest_paths
-					new_tree.syn_shortest_paths = self.syn_shortest_paths
+					if self.synteny:
+						new_tree.syn_shortest_paths = self.syn_shortest_paths
 					new_trees.append(new_tree)
 					break
 		return (new_trees, new_root_edges)

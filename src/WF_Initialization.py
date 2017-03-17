@@ -10,7 +10,7 @@ import collections
 class Tree:
 	logger = logging.getLogger("Tree")
 
-	def __init__(self, tree_obj, blast_eval, num_cores, alpha, beta, gamma, gain, loss, min_best_hit, syn_dist, minSynFrac, hamming):
+	def __init__(self, tree_obj, blast_eval, num_cores, alpha, beta, gamma, gain, loss, min_best_hit, syn_dist, minSynFrac, hamming, synteny):
 		self.tree_obj = tree_obj
 		self.genomeToLocusFile = tree_obj.genomeToLocusFile
 		self.genomeToLocus = tree_obj.genomeToLocus
@@ -31,6 +31,7 @@ class Tree:
 		self.syn_dist = int(syn_dist)
 		self.min_syn_frac = minSynFrac
 		self.hamming = hamming
+		self.synteny = synteny
 		self.syn2_path = "#SYNERGY2_PATH"
 		Tree.logger.debug("Tree initialized")
 
@@ -408,6 +409,11 @@ class Tree:
 # 		s_file = s_file.replace('#HOMOLOGY_SCALE', str(self.homScale))
 # 		s_file = s_file.replace('#SYNTENY_SCALE', str(self.synScale))
 		s_file = s_file.replace('#WORKING_DIR', working_dir)
+		if self.synteny:
+			s_file = s_file.replace('#NOSYNTENY', "")
+		else:
+			s_file = s_file.replace('#NOSYNTENY', "--no-synteny")
+
 
 		my_sh = open(my_sh_uge_file, 'w')
 		my_sh.write(s_file)
@@ -433,6 +439,10 @@ class Tree:
 # 		s_file = s_file.replace('#HOMOLOGY_SCALE', str(self.homScale))
 # 		s_file = s_file.replace('#SYNTENY_SCALE', str(self.synScale))
 		s_file = s_file.replace('#WORKING_DIR', working_dir)
+		if self.synteny:
+			s_file = s_file.replace('#NOSYNTENY', "")
+		else:
+			s_file = s_file.replace('#NOSYNTENY', "--no-synteny")
 
 		my_sh = open(my_sh_file, 'w')
 		my_sh.write(s_file)

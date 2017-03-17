@@ -40,6 +40,7 @@ def main():
 	parser.add_argument('-F', '--min_syntenic_fraction', type=float, dest="minSynFrac", default=0.5, help="Currently UNUSED. Minimum syntenic fraction required for two genes from the same species to be considered paralogs, range [0.0,1.0], default=0.5")
 	parser.add_argument('-D', '--dist', type=float, dest="dist", default=1.2, help="Maximum FastTree distance between a representative sequence and sequences being represented for representative selection. (default = 1.2)")
 	parser.add_argument('-s', '--synteny_window', type=int, dest="synteny_window", default=6000, help="Distance in base pairs that will contribute to upstream and downstream to syntenic fraction. The total window size is [int]*2. (default = 6000")
+	parser.add_argument('--no-synteny', dest="synteny", default=True, action='store_false', required=False, help="Disable use of synteny (required is information not available).")
 	args = parser.parse_args()
 
 	args.working_dir = os.path.abspath(args.working_dir) + "/"
@@ -102,7 +103,7 @@ def main():
 	logger.info(root_edge)
 	myTree.rootTree(root_edge)
 	logger.info("initializing")
-	myInitTree = WF_Initialization.Tree(myTree, args.blast_eval, args.num_cores, args.alpha, args.beta, args.gamma, args.gain, args.loss, args.min_best_hit, args.synteny_window, args.minSynFrac, args.dist)
+	myInitTree = WF_Initialization.Tree(myTree, args.blast_eval, args.num_cores, args.alpha, args.beta, args.gamma, args.gain, args.loss, args.min_best_hit, args.synteny_window, args.minSynFrac, args.dist, args.synteny)
 	logger.info("dependicizing")
 	myInitTree.calculateNodeDependencies(args.working_dir)
 	myInitTree.writeLocusTagFile()
