@@ -336,7 +336,7 @@ def main():
 						format_nodes = []
 						#### TODO store rooted tree as newick string from graph
 						for n in myTree.graph.nodes():
-							if n.count(";") == 0:
+							if n.count(";") == 0 and n[:4] != "node":
 								format_nodes.append(n)
 						if myTree.OK == "true":
 							ok_trees.append([format_nodes, myTree.getNewick(), True])
