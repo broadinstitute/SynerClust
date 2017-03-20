@@ -553,13 +553,13 @@ class NJTree:
 					for pair in to_remove:
 						n.remove_edge(pair[0], pair[1])
 					n.remove_node(futur_root)
-					new_BigNode = ";".join([f for f in n.nodes() if len(n[f]) == 1])
 					if self.synteny:
 						n.add_edge(children[0], children[1], homology_dist=new_hom_weight, synteny_dist=new_syn_weight)
 					else:
 						n.add_edge(children[0], children[1], homology_dist=new_hom_weight)
 					new_tree.rootEdge = (children[0], children[1])
 					new_root_edges.append(new_tree.rootEdge)
+					new_BigNode = ";".join([f for f in n.nodes() if len(n[f]) == 1])
 					new_tree.bigNode = new_BigNode
 					new_tree.graph = n
 					new_tree.hom_shortest_paths = self.hom_shortest_paths
