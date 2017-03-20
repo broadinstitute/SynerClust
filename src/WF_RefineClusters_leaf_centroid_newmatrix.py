@@ -172,7 +172,7 @@ def main():
 		graph = nx.Graph()
 		counter = 1
 		leaves = []
-		while(True):  ### add 'species' field to nodes
+		while(True):
 			r = output.find(")")
 			l = output[:r].rfind("(")
 
@@ -181,6 +181,17 @@ def main():
 				if len(graph.nodes()) == 0:
 					ok_trees.append(output.split(":")[0][1:])
 				break
+
+			if output.count(":") == 2:  # last edge
+				children = children_string[0].split(":")
+				children.append(children_string[1].split(":"))
+				for child in children:
+					if child[0] not in graph.nodes():
+						graph.add_node(child[0], species="_".join(child[0].split("_")[:-1]))
+						leaves.append(child[0])
+				graph.add_edge(children[0][0], children[1][0], homology_dist=float(children[0][1]) + float(children[1][1]))
+				break
+
 			group = "node" + str(counter)
 			counter += 1
 
