@@ -176,6 +176,9 @@ def main():
 			r = output.find(")")
 			l = output[:r].rfind("(")
 
+			if r == -1 and l == -1:  # only last 3-way node left
+				break
+
 			children_string = output[l + 1:r].split(",")
 			if len(children_string) == 1:
 				if len(graph.nodes()) == 0:
@@ -205,7 +208,7 @@ def main():
 					leaves.append(child[0])
 				graph.add_edge(group, child[0], homology_dist=(float(child[1]) * lengths[child[0]]))  # child[1] is a rate, so scaling based on sequence length
 				new_length += lengths[child[0]]
-			lengths[group] = new_length / 2
+			lengths[group] = new_length / len(children_string)
 			output = output[:l] + group + output[r + 1:]
 
 		leaves.sort()
