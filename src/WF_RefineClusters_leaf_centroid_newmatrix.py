@@ -184,7 +184,7 @@ def main():
 
 			if output.count(":") == 2:  # last edge
 				children = [children_string[0].split(":")]
-				children.append([children_string[1].split(":")])
+				children.append(children_string[1].split(":"))
 				for child in children:
 					if child[0] not in graph.nodes():
 						graph.add_node(child[0], species="_".join(child[0].split("_")[:-1]))
