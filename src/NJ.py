@@ -233,18 +233,46 @@ class NJTree:
 		# self.syn_shortest_paths = nxe.all_pairs_path_length(self.graph, 'synteny_dist')[0]
 		# store shortest path matrix - it is the same for everyone
 		if len(self.graph.nodes()) > 100:
-			# big_e = 0.0
-			big_combo = 0.0
-			e_pair = None
-			for e in self.graph.edges():
-				if e[0].find(";") > -1 and e[1].find(";") > -1:
-					my_semi = min(e[0].count(";"), e[1].count(";"))
-					my_big_e = self.graph[e[0]][e[1]]['homology_dist']
-					my_big_combo = float(my_semi) * my_big_e
-					if my_big_combo > big_combo:
-						e_pair = e
-						big_combo = my_big_combo
-			return (-1.0, e_pair, len(self.graph.nodes()))
+			limit = len(self.graph.nodes()) / 2
+			right_stack = self.graph.nodes()[0]
+			left_stack = []
+			degrees = {right_stack[0]: 1}
+			while True:
+				if right_stack:
+					current_node = right_stack.pop()
+				else:
+					(current_node, to_degree) = left_stack.pop()
+					neighbors = self.graph[to_degree].keys().remove(current_node)
+					degrees[to_degree] = degrees[neighbors[0]] + degrees[neighbors[1]]
+					if degrees[to_degree] >= limit:
+						pair = neighbors[0] if degrees[neighbors[0]] >= degrees[neighbors[1]] else neighbors[1]
+						return (-1.0, [to_degree, pair], len(self.graph.nodes()))
+				right = False
+				neighbors = self.graph[current_node].keys()
+				if len(neighbors) == 1:
+					degrees[current_node] = 1
+				else:
+					for neighbor in neighbors:
+						if neighbor in degrees:
+							continue
+						if not right:
+							right_stack.append(neighbor)
+							right = True
+						else:
+							left_stack.append([neighbor, current_node])
+
+			# # big_e = 0.0
+			# big_combo = 0.0
+			# e_pair = None
+			# for e in self.graph.edges():
+			# 	if e[0].find(";") > -1 and e[1].find(";") > -1:
+			# 		my_semi = min(e[0].count(";"), e[1].count(";"))
+			# 		my_big_e = self.graph[e[0]][e[1]]['homology_dist']
+			# 		my_big_combo = float(my_semi) * my_big_e
+			# 		if my_big_combo > big_combo:
+			# 			e_pair = e
+			# 			big_combo = my_big_combo
+			# return (-1.0, e_pair, len(self.graph.nodes()))
 
 		else:
 			# self.paths = nx.shortest_path(self.graph, None, None)
