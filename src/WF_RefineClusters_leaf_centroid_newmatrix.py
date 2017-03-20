@@ -328,9 +328,9 @@ def main():
 							if n.count(";") == 0:
 								format_nodes.append(n)
 						if myTree.OK == "true":
-							ok_trees.append([format_nodes, myTree.getNewick(args.synteny), True])
+							ok_trees.append([format_nodes, myTree.getNewick(), True])
 						else:  # parcimony
-							ok_trees.append([format_nodes, myTree.getNewick(args.synteny), False])
+							ok_trees.append([format_nodes, myTree.getNewick(), False])
 						logger.debug("Got some OKtree for " + cluster + " in " + str(time.time() - TIMESTAMP))
 						TIMESTAMP = time.time()
 					# tree is invalid, added to unchecked trees unless it is an orphan
@@ -341,7 +341,7 @@ def main():
 							# unchecked_trees.append((NJ.NJTree.splitNewTree(myTree), myTree.OK)) # need to return both subtrees + myTree.OK in list
 						else:
 							# (myNewicks, myMatrices) = myTree.splitTree(root)
-							(new_trees, new_root_edges) = myTree.splitNewTree(root, args.synteny)
+							(new_trees, new_root_edges) = myTree.splitNewTree(root)
 							# for m in myMatrices:
 							for new_tree in new_trees:
 								unchecked_trees.append((new_tree, myTree.OK))
