@@ -192,7 +192,7 @@ def main():
 				if child[0] not in graph.nodes():
 					graph.add_node(child[0])
 					leaves.append(child[0])
-				graph.add_edge(group, child[0], dist=(float(child[1]) * lengths[child[0]]))  # child[1] is a rate, so scaling based on sequence length
+				graph.add_edge(group, child[0], homology_dist=(float(child[1]) * lengths[child[0]]))  # child[1] is a rate, so scaling based on sequence length
 				new_length += lengths[child[0]]
 			lengths[group] = new_length / 2
 			output = output[:l] + group + output[r + 1:]
@@ -220,7 +220,7 @@ def main():
 			pos = 0
 			# max_neighbors_count = max([len(syn[k]) for k in syn])
 			longest_hom = float("-Inf")
-			hom_distances = nxe.all_pairs_path_length(graph, ['dist'])[0][0]
+			hom_distances = nxe.all_pairs_path_length(graph, ['homology_dist'])[0][0]
 			for m in leaves[1:]:
 				syn_m = set(syn[m])
 				mSeqs = len(syn[m])
