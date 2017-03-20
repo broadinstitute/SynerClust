@@ -172,7 +172,7 @@ def main():
 		graph = nx.Graph()
 		counter = 1
 		leaves = []
-		while(True):
+		while(True):  ### add 'species' field to nodes
 			r = output.find(")")
 			l = output[:r].rfind("(")
 
@@ -190,7 +190,7 @@ def main():
 			for child in children_string:
 				child = child.split(":")
 				if child[0] not in graph.nodes():
-					graph.add_node(child[0])
+					graph.add_node(child[0], species="_".join(child.split("_")[:-1]))
 					leaves.append(child[0])
 				graph.add_edge(group, child[0], homology_dist=(float(child[1]) * lengths[child[0]]))  # child[1] is a rate, so scaling based on sequence length
 				new_length += lengths[child[0]]

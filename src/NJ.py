@@ -28,7 +28,7 @@ class NJTree:
 		self.hom_shortest_paths = None
 		self.syn_shortest_paths = None
 		self.paths = None
-		self.gl_map = {}  # node -> gain/loss tuple
+		# self.gl_map = {}  # node -> gain/loss tuple
 
 	def readDistanceMatrix(self):
 		return self.distance_matrix
@@ -84,7 +84,7 @@ class NJTree:
 			if self.graph.node[unadded_nodes[minp[0]]]['species'] == self.graph.node[unadded_nodes[minp[1]]]['species']:
 				my_species = self.graph.node[unadded_nodes[minp[0]]]['species']
 			else:
-				my_species = self.mrca  # TODO update this, because if both children are not the same species, it doesnt mean they are the mrca since they are more than 2 species now
+				my_species = self.mrca
 			self.graph.add_node(newNode, species=my_species)
 			# replace first merged leave by newNode then shift everything after the 2nd merged leave
 			self.graph.add_edge(unadded_nodes[minp[0]], newNode, homology_dist=mp0_mp_dist, synteny_dist=syn0_mp_dist)
@@ -414,39 +414,39 @@ class NJTree:
 		while len(up) > 0:
 			curNode = (NJTree.calcMostEdgesToLeaves(up, leaf, tGraph))[0]  # curNode = AA node instead of root?
 			curNodeSpecies = ""
-			if curNode in self.gl_map:
-				gain += self.gl_map[curNode]['gain']
-				loss += self.gl_map[curNode]['loss']
-				curNodeSpecies = self.gl_map[curNode]['species']
-				gl_total = gain + loss
-			else:
-				childSpecies = set([])
-				child = []
-				for e in tGraph[curNode]:
-					e_leaf = None
-					for l in leaf:
-						if l[0] == e:
-							e_leaf = l
-					if e_leaf:
-						e_i = leaf.index(e_leaf)
-						leaf.pop(e_i)
-						childSpecies.add(e_leaf[1])
-						child.append(e_leaf)
-				if len(childSpecies) == 1:
-					if self.mrca in childSpecies:
-						curNodeSpecies = self.mrca
-						pass  # useless?
-					else:
-						curNodeSpecies = child[0][1]
-						gain += 1
-						gl_total += 1
-				else:
+			# if curNode in self.gl_map:
+			# 	gain += self.gl_map[curNode]['gain']
+			# 	loss += self.gl_map[curNode]['loss']
+			# 	curNodeSpecies = self.gl_map[curNode]['species']
+			# 	gl_total = gain + loss
+		# else:
+			childSpecies = set([])
+			child = []
+			for e in tGraph[curNode]:
+				e_leaf = None
+				for l in leaf:
+					if l[0] == e:
+						e_leaf = l
+				if e_leaf:
+					e_i = leaf.index(e_leaf)
+					leaf.pop(e_i)
+					childSpecies.add(e_leaf[1])
+					child.append(e_leaf)
+			if len(childSpecies) == 1:
+				if self.mrca in childSpecies:
 					curNodeSpecies = self.mrca
-					# 2 child species
-					if self.mrca in childSpecies:
-						# shouldn't there be a gain somewhere too in this case?
-						loss += 1
-						gl_total += 1
+					pass  # useless?
+				else:
+					curNodeSpecies = child[0][1]
+					gain += 1
+					gl_total += 1
+			else:
+				curNodeSpecies = self.mrca
+				# 2 child species
+				if self.mrca in childSpecies:
+					# shouldn't there be a gain somewhere too in this case?
+					loss += 1
+					gl_total += 1
 				# ~ self.gl_map[curNode] = {'gain':gain,'loss':loss, 'species':curNodeSpecies}
 			cn_i = up.index(curNode)
 			up.pop(cn_i)
