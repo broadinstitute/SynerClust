@@ -524,7 +524,7 @@ class NJTree:
 			for futur_root in futur_roots:  # loop here, but next if selects only 1 iteration
 				if futur_root in n.nodes():
 					new_tree = NJTree(self.mrca, self.alpha, self.beta, self.gamma, self.gain, self.loss, self.synteny)
-					if futur_root.count(";") == 0:  # only 1 leave on this half
+					if len(n.nodes()) == 1:  # only 1 leaf on this half
 						new_tree.bigNode = futur_root
 						new_tree.rootEdge = (futur_root, futur_root)
 						new_root_edges.append(new_tree.rootEdge)
@@ -553,7 +553,7 @@ class NJTree:
 					for pair in to_remove:
 						n.remove_edge(pair[0], pair[1])
 					n.remove_node(futur_root)
-					new_BigNode = ";".join([f for f in n.nodes() if f.count(";") == 0])
+					new_BigNode = ";".join([f for f in n.nodes() if len(n[f]) == 1])
 					if self.synteny:
 						n.add_edge(children[0], children[1], homology_dist=new_hom_weight, synteny_dist=new_syn_weight)
 					else:
