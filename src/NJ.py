@@ -237,6 +237,7 @@ class NJTree:
 			degrees = {}
 			right_stack = []
 			left_stack = []
+			to_degree_stack = []
 			for n in self.graph.nodes():
 				if len(self.graph[n]) == 1:
 					degrees[n] = 1
@@ -246,7 +247,8 @@ class NJTree:
 				if right_stack:
 					current_node = right_stack.pop()
 				else:
-					(current_node, to_degree) = left_stack.pop()
+					current_node = left_stack.pop()
+					to_degree = to_degree_stack.pop()
 					neighbors = self.graph[to_degree].keys()
 					neighbors.remove(current_node)
 					degrees[to_degree] = degrees[neighbors[0]] + degrees[neighbors[1]]
@@ -259,13 +261,14 @@ class NJTree:
 					degrees[current_node] = 1
 				else:
 					for neighbor in neighbors:
-						if neighbor in degrees:
+						if neighbor in to_degree_stack or neighbor in degrees:
 							continue
 						if not right:
 							right_stack.append(neighbor)
 							right = True
 						else:
-							left_stack.append([neighbor, current_node])
+							left_stack.append(neighbor, current_node)
+							to_degree_stack.append(current_node)
 
 			# # big_e = 0.0
 			# big_combo = 0.0
