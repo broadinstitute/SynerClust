@@ -247,7 +247,8 @@ class NJTree:
 					current_node = right_stack.pop()
 				else:
 					(current_node, to_degree) = left_stack.pop()
-					neighbors = self.graph[to_degree].keys().remove(current_node)
+					neighbors = self.graph[to_degree].keys()
+					neighbors.remove(current_node)
 					degrees[to_degree] = degrees[neighbors[0]] + degrees[neighbors[1]]
 					if degrees[to_degree] >= limit:
 						pair = neighbors[0] if degrees[neighbors[0]] >= degrees[neighbors[1]] else neighbors[1]
