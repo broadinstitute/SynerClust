@@ -234,9 +234,13 @@ class NJTree:
 		# store shortest path matrix - it is the same for everyone
 		if len(self.graph.nodes()) > 100:
 			limit = len(self.graph.nodes()) / 2
-			right_stack = [self.graph.nodes()[0]]
+			degrees = {}
+			right_stack = []
 			left_stack = []
-			degrees = {right_stack[0]: 1}
+			for n in self.graph.nodes():
+				if len(self.graph[n]) == 1:
+					degrees[n] = 1
+					right_stack.append(self.graph[n].keys()[0])
 			while True:
 				if right_stack:
 					current_node = right_stack.pop()
