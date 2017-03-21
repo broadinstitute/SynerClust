@@ -267,7 +267,7 @@ class NJTree:
 							right_stack.append(neighbor)
 							right = True
 						else:
-							left_stack.append(neighbor, current_node)
+							left_stack.append(neighbor)
 							to_degree_stack.append(current_node)
 
 			# # big_e = 0.0
