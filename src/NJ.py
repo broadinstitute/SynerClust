@@ -265,8 +265,8 @@ class NJTree:
 				if not right:
 					while True:
 						to_degree = to_degree_stack[len(to_degree_stack) - 1]
-						neighbors = self.graph[to_degree]
-						for neighbor in self.graph[to_degree]:
+						neighbors = self.graph[to_degree].keys()
+						for neighbor in self.graph[to_degree].keys():
 							if neighbor not in degrees:
 								neighbors.remove(neighbor)
 						if len(neighbors) == 2:
