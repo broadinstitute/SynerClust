@@ -241,6 +241,7 @@ class NJTree:
 				if len(self.graph[n]) == 1:
 					degrees[n] = 1
 					right_stack.append(self.graph[n].keys()[0])
+					break
 			while True:
 				if right_stack:
 					current_node = right_stack.pop()
