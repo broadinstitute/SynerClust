@@ -160,7 +160,7 @@ class NJTree:
 			if self.synteny:
 				return [nwk, nwk2]
 			else:
-				return [nwk]
+				return [nwk, ""]
 		else:
 			NJTree.logger.critical("Tried to get Newick from a tree that has no rootTree: %s" % (self.bigNode))
 

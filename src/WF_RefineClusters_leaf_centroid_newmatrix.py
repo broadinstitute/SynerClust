@@ -183,6 +183,7 @@ def main():
 			if len(children_string) == 1:
 				if len(graph.nodes()) == 0:
 					ok_trees.append(output.split(":")[0][1:])
+					logger.critical("Orphan added to ok_trees with missing info")
 				break
 
 			if output.count(":") == 2:  # last edge
@@ -372,8 +373,12 @@ def main():
 	# special_pep = {}
 	childToCluster = {}  # child gene/og --> og.id for this node
 
-	for o in orphans:
-		ok_trees.insert(0, [[o.rstrip()], [o.rstrip(), o.rstrip()], True])  #### TODO add tree here
+	if args.synteny:
+		for o in orphans:
+			ok_trees.insert(0, [[o.rstrip()], [o.rstrip(), o.rstrip()], True])
+	else:
+		for o in orphans:
+			ok_trees.insert(0, [[o.rstrip()], [o.rstrip(), ""], True])
 
 	blast_pep = {}
 	for c in args.children:
