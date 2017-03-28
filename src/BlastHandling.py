@@ -220,6 +220,45 @@ class BlastParse:
 		return (maxi, maxj, maximal_overlap)
 
 	@staticmethod
+	def overlap_intervals(hits):
+		starts = []
+		ends = []
+		for hit in hits:
+			starts.append((hit[2].qstart, hit[2].target))
+			ends.append((hit[2].qend, hit[2].target))
+		starts.sort(key=lambda tup: tup[0])
+		ends.sort(key=lambda tup: tup[0])
+		n = len(hits)
+		i = j = 0
+		# maxi = maxj = -1
+		# maximal_overlap = 0
+		# current_overlap = 0
+		intervals = []
+		current_targets = set()
+		last_position = 0
+		while i < n and j < n:
+			if starts[i][0] < ends[j][0]:
+				# current_overlap += 1
+				current_targets.add(starts[i][1])
+				# if current_overlap > maximal_overlap:
+				# 	maximal_overlap = current_overlap
+				# 	maxi = i
+				# 	maxj = j
+				# elif current_overlap == maximal_overlap:
+				# 	if ends[j] - starts[i] > ends[maxj] - starts[maxi]:  # keep longest
+				# 		maxi = i
+				# 		maxj = j
+				intervals.append(last_position, starts[i], current_targets.copy())
+				last_position = starts[i]
+				i += 1
+			else:
+				# current_overlap -= 1
+				current_targets.remove(ends[j][1])
+				last_position = ends[j]
+				j += 1
+	return intervals
+
+	@staticmethod
 	def readBlastM8FromFile(f):
 		data = open(f, "r").readlines()
 		return BlastParse.readBlastM8(data)
