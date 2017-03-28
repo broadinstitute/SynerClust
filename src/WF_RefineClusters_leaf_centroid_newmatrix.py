@@ -38,6 +38,7 @@ def main():
 	parser.add_argument('-gamma', type=float, dest="gamma", required=True, help="Gain/Loss weight. (Required)")
 	parser.add_argument('-gain', type=float, dest="gain", required=True, help="Duplication rate for Poisson distribution. (Required)")
 	parser.add_argument('-loss', type=float, dest="loss", required=True, help="Deletion rate for Poisson distribution. (Required)")
+	parser.add_argument('--no-synteny', dest="synteny", default=True, action='store_false', required=False, help="Disable use of synteny (required is information not available).")
 	parser.add_argument('children', nargs=2, help="Children nodes. (Required)")
 	args = parser.parse_args()
 
@@ -87,10 +88,11 @@ def main():
 		pklFile = open(mapFile, 'rb')
 		pickleMaps[c] = pickle.load(pklFile)
 		pklFile.close()
-		synFile = args.node_dir + c + "/synteny_data.pkl"
-		pklFile = open(synFile, 'rb')
-		synteny_data[c] = pickle.load(pklFile)
-		pklFile.close()
+		if args.synteny:
+			synFile = args.node_dir + c + "/synteny_data.pkl"
+			pklFile = open(synFile, 'rb')
+			synteny_data[c] = pickle.load(pklFile)
+			pklFile.close()
 		if c[0] == "L":
 			with open(args.node_dir + c + "/" + c + ".pkl", "r") as f:
 				childrenpkls[c] = pickle.load(f)
@@ -108,8 +110,9 @@ def main():
 	orphans = []
 	ok_trees = []
 
-	with open(repo_path + "nodes/" + args.node + "/trees/gene_to_cluster.pkl", "r") as f:
-		gene_to_cluster = pickle.load(f)
+	if args.synteny:
+		with open(repo_path + "nodes/" + args.node + "/trees/gene_to_cluster.pkl", "r") as f:
+			gene_to_cluster = pickle.load(f)
 	with open(repo_path + "nodes/" + args.node + "/trees/cluster_to_genes.pkl", "r") as f:
 		cluster_to_genes = pickle.load(f)
 
@@ -173,11 +176,26 @@ def main():
 			r = output.find(")")
 			l = output[:r].rfind("(")
 
+			if r == -1 and l == -1:  # only last 3-way node left
+				break
+
 			children_string = output[l + 1:r].split(",")
 			if len(children_string) == 1:
 				if len(graph.nodes()) == 0:
 					ok_trees.append(output.split(":")[0][1:])
+					logger.critical("Orphan added to ok_trees with missing info")
 				break
+
+			if output.count(":") == 2:  # last edge
+				children = [children_string[0].split(":")]
+				children.append(children_string[1].split(":"))
+				for child in children:
+					if child[0] not in graph.nodes():
+						graph.add_node(child[0], species="_".join(child[0].split("_")[:-1]))
+						leaves.append(child[0])
+				graph.add_edge(children[0][0], children[1][0], homology_dist=float(children[0][1]) + float(children[1][1]))
+				break
+
 			group = "node" + str(counter)
 			counter += 1
 
@@ -187,11 +205,11 @@ def main():
 			for child in children_string:
 				child = child.split(":")
 				if child[0] not in graph.nodes():
-					graph.add_node(child[0])
+					graph.add_node(child[0], species="_".join(child[0].split("_")[:-1]))
 					leaves.append(child[0])
-				graph.add_edge(group, child[0], dist=(float(child[1]) * lengths[child[0]]))  # child[1] is a rate, so scaling based on sequence length
+				graph.add_edge(group, child[0], homology_dist=(float(child[1]) * lengths[child[0]]))  # child[1] is a rate, so scaling based on sequence length
 				new_length += lengths[child[0]]
-			lengths[group] = new_length / 2
+			lengths[group] = new_length / len(children_string)
 			output = output[:l] + group + output[r + 1:]
 
 		leaves.sort()
@@ -202,84 +220,87 @@ def main():
 		logger.debug("Read fasttree for " + cluster + " in " + str(time.time() - TIMESTAMP))
 		TIMESTAMP = time.time()
 
-		leaves.sort()
-		syn = {}
-		for n in leaves:  # genes
-			syn[n] = []
-			leaf = "_".join(n.split("_")[:-1])
-			for m in synteny_data[leaf][n]['neighbors']:
-				syn[n].append(gene_to_cluster[m])
+		if args.synteny:
+			leaves.sort()
+			syn = {}
+			for n in leaves:  # genes
+				syn[n] = []
+				leaf = "_".join(n.split("_")[:-1])
+				for m in synteny_data[leaf][n]['neighbors']:
+					syn[n].append(gene_to_cluster[m])
 
-		hom_matrix = numpy.empty(len(leaves) * (len(leaves) - 1) / 2)
-		syn_matrix = numpy.empty(len(leaves) * (len(leaves) - 1) / 2)
-		i = 1
-		pos = 0
-		# max_neighbors_count = max([len(syn[k]) for k in syn])
-		longest_hom = float("-Inf")
-		hom_distances = nxe.all_pairs_path_length(graph, "dist")[0]
-		for m in leaves[1:]:
-			syn_m = set(syn[m])
-			mSeqs = len(syn[m])
-# 			for n in graph.nodes():
-			for n in leaves[:i]:
-				# hom_matrix[pos] = nx.shortest_path_length(graph, n, m, "dist")
-				hom_matrix[pos] = hom_distances[n][m]
-				if hom_matrix[pos] > longest_hom:
-					longest_hom = hom_matrix[pos]
-				nSeqs = len(syn[n])
-				matches = 0
-				if mSeqs == 0 or nSeqs == 0:
-					syn_matrix[pos] = 1.0  # no neighbors in common if someone has no neighbors  # -= 0 ? does it change anything?
+			hom_matrix = numpy.empty(len(leaves) * (len(leaves) - 1) / 2)
+			syn_matrix = numpy.empty(len(leaves) * (len(leaves) - 1) / 2)
+			i = 1
+			pos = 0
+			# max_neighbors_count = max([len(syn[k]) for k in syn])
+			longest_hom = float("-Inf")
+			hom_distances = nxe.all_pairs_path_length(graph, ['homology_dist'])[0][0]
+			for m in leaves[1:]:
+				syn_m = set(syn[m])
+				mSeqs = len(syn[m])
+	# 			for n in graph.nodes():
+				for n in leaves[:i]:
+					# hom_matrix[pos] = nx.shortest_path_length(graph, n, m, "dist")
+					hom_matrix[pos] = hom_distances[n][m]
+					if hom_matrix[pos] > longest_hom:
+						longest_hom = hom_matrix[pos]
+					nSeqs = len(syn[n])
+					matches = 0
+					if mSeqs == 0 or nSeqs == 0:
+						syn_matrix[pos] = 1.0  # no neighbors in common if someone has no neighbors  # -= 0 ? does it change anything?
+						pos += 1
+						continue
+					all_neighbors = syn_m & set(syn[n])
+					for a in all_neighbors:
+						t_m = max(syn[m].count(a), 0)
+						t_n = max(syn[n].count(a), 0)
+						matches += min(t_m, t_n)
+					# synFrac = float(matches) / float(max(mSeqs, nSeqs))
+					synFrac = float(matches) / float(mSeqs + nSeqs)
+					# synFrac = float(matches) / float(max_neighbors_count)
+					syn_matrix[pos] = 1.0 - synFrac
 					pos += 1
-					continue
-				all_neighbors = syn_m & set(syn[n])
-				for a in all_neighbors:
-					t_m = max(syn[m].count(a), 0)
-					t_n = max(syn[n].count(a), 0)
-					matches += min(t_m, t_n)
-				# synFrac = float(matches) / float(max(mSeqs, nSeqs))
-				synFrac = float(matches) / float(mSeqs + nSeqs)
-				# synFrac = float(matches) / float(max_neighbors_count)
-				syn_matrix[pos] = 1.0 - synFrac
-				pos += 1
-			i += 1
-		if longest_hom > 0.0:  # to prevent dividing by zero
-			for pos in xrange(len(hom_matrix)):
-				hom_matrix[pos] /= longest_hom
+				i += 1
+			if longest_hom > 0.0:  # to prevent dividing by zero
+				for pos in xrange(len(hom_matrix)):
+					hom_matrix[pos] /= longest_hom
 
-		logger.debug("Built matrices for " + cluster + " in " + str(time.time() - TIMESTAMP))
-		# formatting matrices for output
-		i = 0
-		j = 1
-		hom_buff = leaves[0] + "\n" + leaves[1] + "\t"
-		syn_buff = leaves[0] + "\n" + leaves[1] + "\t"
-		for x, y in numpy.nditer([hom_matrix, syn_matrix]):
-			hom_buff += str(x) + "\t"
-			syn_buff += str(y) + "\t"
-			i += 1
-			if i >= j:
-				i = 0
-				j += 1
-				if j < len(leaves):
-					hom_buff += "\n" + leaves[j] + "\t"
-					syn_buff += "\n" + leaves[j] + "\t"
-				else:
-					hom_buff += "\n"
-					syn_buff += "\n"
-		logger.debug("Homology matrix for " + cluster + ":\n" + hom_buff)
-		logger.debug("Synteny matrix for " + cluster + ":\n" + syn_buff)
-		TIMESTAMP = time.time()
+			logger.debug("Built matrices for " + cluster + " in " + str(time.time() - TIMESTAMP))
+			# formatting matrices for output
+			i = 0
+			j = 1
+			hom_buff = leaves[0] + "\n" + leaves[1] + "\t"
+			syn_buff = leaves[0] + "\n" + leaves[1] + "\t"
+			for x, y in numpy.nditer([hom_matrix, syn_matrix]):
+				hom_buff += str(x) + "\t"
+				syn_buff += str(y) + "\t"
+				i += 1
+				if i >= j:
+					i = 0
+					j += 1
+					if j < len(leaves):
+						hom_buff += "\n" + leaves[j] + "\t"
+						syn_buff += "\n" + leaves[j] + "\t"
+					else:
+						hom_buff += "\n"
+						syn_buff += "\n"
+			logger.debug("Homology matrix for " + cluster + ":\n" + hom_buff)
+			logger.debug("Synteny matrix for " + cluster + ":\n" + syn_buff)
+			TIMESTAMP = time.time()
 
 		# Root, evaluate and split every tree until all trees are OK
 		unchecked_trees = []
 		# Could probably replace these lines by directly reading the distance matrix file into the list without needing to create a NJ.NJTree
 # 			myTree = NJ.NJTree(hom_mat, syn_mat, mrca, alpha, beta, gamma, gain, loss)
-		myTree = NJ.NJTree(mrca, args.alpha, args.beta, args.gamma, args.gain, args.loss)
-		myTree.buildGraphFromNewDistanceMatrix(hom_matrix, syn_matrix, leaves)
-
-		logger.debug("Built NJtree for " + cluster + " in " + str(time.time() - TIMESTAMP) + "\n" + "\n".join([e[0] + " " + e[1] + " " + str(myTree.graph[e[0]][e[1]]['homology_dist']) + " " + str(myTree.graph[e[0]][e[1]]['synteny_dist']) for e in myTree.graph.edges()]))
-
-		TIMESTAMP = time.time()
+		myTree = NJ.NJTree(mrca, args.alpha, args.beta, args.gamma, args.gain, args.loss, args.synteny)
+		if args.synteny:
+			myTree.buildGraphFromNewDistanceMatrix(hom_matrix, syn_matrix, leaves)
+			logger.debug("Built NJtree for " + cluster + " in " + str(time.time() - TIMESTAMP) + "\n" + "\n".join([e[0] + " " + e[1] + " " + str(myTree.graph[e[0]][e[1]]['homology_dist']) + " " + str(myTree.graph[e[0]][e[1]]['synteny_dist']) for e in myTree.graph.edges()]))
+			TIMESTAMP = time.time()
+		else:
+			myTree.graph = graph
+			myTree.bigNode = ";".join(leaves)
 
 # 		myTree = NJ.NJTree(tree_file, syn_file, mrca, alpha, beta, gamma, gain, loss)
 		# If "false" refers to orphan status, why are there also both "true" and "orphan"?
@@ -319,7 +340,7 @@ def main():
 						format_nodes = []
 						#### TODO store rooted tree as newick string from graph
 						for n in myTree.graph.nodes():
-							if n.count(";") == 0:
+							if n.count(";") == 0 and n[:4] != "node":
 								format_nodes.append(n)
 						if myTree.OK == "true":
 							ok_trees.append([format_nodes, myTree.getNewick(), True])
@@ -346,13 +367,18 @@ def main():
 	TIMESTAMP = time.time()
 
 	newPickleMap = {}  # this will turn into the locus mappings for this node
-	newSyntenyMap = {}
+	if args.synteny:
+		newSyntenyMap = {}
 	newNewickMap = {"children": [set(args.children)]}
 	# special_pep = {}
 	childToCluster = {}  # child gene/og --> og.id for this node
 
-	for o in orphans:
-		ok_trees.insert(0, [[o.rstrip()], [o.rstrip(), o.rstrip()], True])  #### TODO add tree here
+	if args.synteny:
+		for o in orphans:
+			ok_trees.insert(0, [[o.rstrip()], [o.rstrip(), o.rstrip()], True])
+	else:
+		for o in orphans:
+			ok_trees.insert(0, [[o.rstrip()], [o.rstrip(), ""], True])
 
 	blast_pep = {}
 	for c in args.children:
@@ -391,7 +417,8 @@ def main():
 			c = "0" + c
 		clusterID = mrca + "_" + c
 		newPickleMap[clusterID] = []
-		newSyntenyMap[clusterID] = {'count': 0, 'neighbors': [], 'children': []}
+		if args.synteny:
+			newSyntenyMap[clusterID] = {'count': 0, 'neighbors': [], 'children': []}
 
 		# get list of leaf sequences to pull and organize in treeSeqs
 		treeSeqs = {}
@@ -402,7 +429,8 @@ def main():
 		taxa_map = {}
 		for g in ok[0]:
 			child = "_".join(g.split("_")[:-1])
-			newSyntenyMap[clusterID]['children'].append(g)
+			if args.synteny:
+				newSyntenyMap[clusterID]['children'].append(g)
 			childToCluster[g] = clusterID
 			leafKids = pickleMaps[child][g]
 			if child not in child_leaves:
@@ -426,7 +454,8 @@ def main():
 					treeSeqs[seq] = []
 				treeSeqs[seq].append(l)
 				tree_seq_count += 1
-				newSyntenyMap[clusterID]['count'] += 1
+				if args.synteny:
+					newSyntenyMap[clusterID]['count'] += 1
 		newNewickMap[clusterID] = [ok[1], ok[2]]  ###### CHANGE ok[1] or change reading in ClusterPostProcessing
 
 		my_lengths = []
@@ -535,18 +564,19 @@ def main():
 		pickle.dump(singletons_pep, f)
 
 	# update synteny data
-	for clust in newSyntenyMap:
-		for child in newSyntenyMap[clust]['children']:
-			lc = "_".join(child.split("_")[:-1])
-			# logger.debug("%s splitted to %s" % (child, lc))
-			for neigh in synteny_data[lc][child]['neighbors']:
-				# logger.debug("newSyntenyMap[%s]['neighbors'].append(childToCluster[%s]" % (clust, neigh))
-				newSyntenyMap[clust]['neighbors'].append(childToCluster[neigh])
-	# pickle synteny data
-	pklSyn = my_dir + "synteny_data.pkl"
-	sdat = open(pklSyn, 'wb')
-	pickle.dump(newSyntenyMap, sdat)
-	sdat.close()
+	if args.synteny:
+		for clust in newSyntenyMap:
+			for child in newSyntenyMap[clust]['children']:
+				lc = "_".join(child.split("_")[:-1])
+				# logger.debug("%s splitted to %s" % (child, lc))
+				for neigh in synteny_data[lc][child]['neighbors']:
+					# logger.debug("newSyntenyMap[%s]['neighbors'].append(childToCluster[%s]" % (clust, neigh))
+					newSyntenyMap[clust]['neighbors'].append(childToCluster[neigh])
+		# pickle synteny data
+		pklSyn = my_dir + "synteny_data.pkl"
+		sdat = open(pklSyn, 'wb')
+		pickle.dump(newSyntenyMap, sdat)
+		sdat.close()
 
 	# pickle the locus mappings
 	pklMap = my_dir + "locus_mappings.pkl"

@@ -3,7 +3,7 @@
 import sys
 import os
 import BlastHandling
-import pickle
+# import pickle
 import logging
 import shutil
 import argparse
@@ -56,38 +56,33 @@ def main():
 	logger.addHandler(ch)
 	logger.info('Started')
 
-	# get synteny data
-	pickleSyn = {}
-	for c in args.children:
-		synFile = args.node_dir + c + "/synteny_data.pkl"
-		pklFile = open(synFile, 'rb')
-		pickleSyn[c] = pickle.load(pklFile)
-		pklFile.close()
-	logger.debug("Loaded synteny_data")
+	# # get synteny data
+	# pickleSyn = {}
+	# for c in args.children:
+	# 	synFile = args.node_dir + c + "/synteny_data.pkl"
+	# 	pklFile = open(synFile, 'rb')
+	# 	pickleSyn[c] = pickle.load(pklFile)
+	# 	pklFile.close()
+	# logger.debug("Loaded synteny_data")
 
 	# Create rough clusters with trees
-	bp = BlastHandling.BlastParse(blast_out, args.max_size_diff)
+	bp = BlastHandling.BlastParse(args.max_size_diff, args.node_dir + args.node + "/")
 	logger.debug("Parsed Blast")
-	hits = bp.readBlastM8()
+	hits = BlastHandling.BlastParse.readBlastM8FromFile(blast_out)
 	logger.debug("Read Blast")
 	# hits = bp.readBlat()
 
-	bestReciprocalHits = bp.scoreHits(hits, n_head, args.min_best_hit, pickleSyn, args.minSynFrac)
+	bestReciprocalHits = bp.scoreHits(hits, n_head, args.min_best_hit, args.minSynFrac)
 	logger.debug("Scored Hits")
 	tree_dir = my_dir + "trees"
-	# if "trees" in os.listdir(my_dir):
 	if os.path.exists(tree_dir):
 		if "old" not in os.listdir(my_dir):
 			os.mkdir(os.path.join(my_dir, "old"))
-			# os.system("mkdir "+my_dir+"old")
-		# os.system("mv -f "+tree_dir+"/ "+my_dir+"old/")
 		shutil.move(tree_dir, os.path.join(my_dir, "old"))
-	# os.system("mkdir "+tree_dir)
 	os.mkdir(tree_dir)
 	tree_dir = tree_dir + os.sep
-	retval = bp.makePutativeClusters(tree_dir, pickleSyn, bestReciprocalHits)
+	retval = bp.makePutativeClusters(tree_dir, bestReciprocalHits)
 	logger.debug("Made Putative Clusters")
-# 	sys.exit()
 	if retval > 0:
 		sys.exit(retval)
 

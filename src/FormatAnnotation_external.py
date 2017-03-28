@@ -231,6 +231,7 @@ def extractAnnotation(gff3_file, seq_file, genome_name, locus, out_file, stat_fi
 				# cds_tups_primary = False
 				# primary_done = False
 				for d in data:
+					d = d.split(",")[0]
 					if d.find("ID=") == 0:
 						curID = d.split("=")[1]
 					if d.find("Dbxref=") == 0:  # added for NCBI's genbank in gff3 format
