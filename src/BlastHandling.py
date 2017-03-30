@@ -261,7 +261,7 @@ class BlastParse:
 				current_targets.remove(ends[j][1])
 				last_position = ends[j]
 				j += 1
-	return intervals
+		return intervals
 
 	@staticmethod
 	def readBlastM8FromFile(f):
@@ -299,11 +299,13 @@ def remove_weak_links(graph):
 	nodes = graph.nodes()
 	to_remove = []
 	for i in xrange(len(nodes)):
-		for j in xrange(i, len(nodes)):
-			if jaccard_similarity(graph, nodes[i], nodes[j]) < JACCARD_THRESHOLD:
-				to_remove.append((nodes[i], nodes[j]))
+		for j in graph[nodes[i]].keys():
+			if j in nodes[:i + 1]:
+				continue
+			if jaccard_similarity(graph, nodes[i], j) < JACCARD_THRESHOLD:
+				to_remove.append((nodes[i], j))
 	for tr in to_remove:
-		graph.remove_edge(tr)
+		graph.remove_edge(tr[0], tr[1])
 	return list(nx.connected_component_subgraphs(graph))
 
 
