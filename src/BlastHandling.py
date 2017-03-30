@@ -8,6 +8,7 @@ import os
 import subprocess
 
 DEVNULL = open(os.devnull, 'w')
+JACCARD_THRESHOLD = 0.2
 
 
 class BlastSegment:
@@ -93,43 +94,43 @@ class BlastParse:
 			if len(q_best) >= BlastParse.CORE_HITS_COUNT_THRESHOLD:
 				# identifying the potential domain
 				(overlap_start, overlap_end, overlap_count) = BlastParse.longest_maximal_overlap_interval(q_best)
-				if overlap_count >= BlastParse.CORE_HITS_COUNT_THRESHOLD and (overlap_end - overlap_start < q_best[0][2].qLength * BlastParse.OVERLAP_PROPORTION_THRESHOLD):
-					BlastParse.logger.debug("Masking a region for query q = " + q)
-					target_child = q_best[0][0][:q_best[0][0].rfind("_")]
-					query_child = q[:q.rfind("_")]
+				# if overlap_count >= BlastParse.CORE_HITS_COUNT_THRESHOLD and (overlap_end - overlap_start < q_best[0][2].qLength * BlastParse.OVERLAP_PROPORTION_THRESHOLD):
+				# 	BlastParse.logger.debug("Masking a region for query q = " + q)
+				# 	target_child = q_best[0][0][:q_best[0][0].rfind("_")]
+				# 	query_child = q[:q.rfind("_")]
 
-					# get query sequence
-					cmd = ["cat", BlastParse.node_path + query_child + ".blast.fa"]
-					cmd2 = ["grep", "-A", "1", q_best[0][2].query]
-					process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
-					fasta_file = process.communicate()[0]
-					process = subprocess.Popen(cmd2, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
-					query_seq = process.communicate(fasta_file)[0].split("\n")
+				# 	# get query sequence
+				# 	cmd = ["cat", BlastParse.node_path + query_child + ".blast.fa"]
+				# 	cmd2 = ["grep", "-A", "1", q_best[0][2].query]
+				# 	process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
+				# 	fasta_file = process.communicate()[0]
+				# 	process = subprocess.Popen(cmd2, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
+				# 	query_seq = process.communicate(fasta_file)[0].split("\n")
 
-					# masking domain
-					new_query = query_seq[0] + "\n" + query_seq[1][:overlap_start] + query_seq[1][overlap_start:overlap_end].lower() + query_seq[1][overlap_end:] + "\n"
+				# 	# masking domain
+				# 	new_query = query_seq[0] + "\n" + query_seq[1][:overlap_start] + query_seq[1][overlap_start:overlap_end].lower() + query_seq[1][overlap_end:] + "\n"
 
-					# run blastp
-					db = BlastParse.node_path + target_child + ".blast.fa"
-					cmd = ["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", "1", "-lcase_masking", "-db", db]
-					process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
-					output = process.communicate(new_query)[0]
+				# 	# run blastp
+				# 	db = BlastParse.node_path + target_child + ".blast.fa"
+				# 	cmd = ["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", "1", "-lcase_masking", "-db", db]
+				# 	process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
+				# 	output = process.communicate(new_query)[0]
 
-					# parse output
-					new_q_hits = BlastParse.readBlastM8(output.split("\n"))
-					new_q_best = BlastParse.getBestHits([new_q_hits[q][t] for t in new_q_hits[new_q_hits.keys()[0]]], min_best_hit)
+				# 	# parse output
+				# 	new_q_hits = BlastParse.readBlastM8(output.split("\n"))
+				# 	new_q_best = BlastParse.getBestHits([new_q_hits[q][t] for t in new_q_hits[new_q_hits.keys()[0]]], min_best_hit)
 
-					# combine new hits with original ones
-					filtered_q_best = []
-					for new_h in new_q_best:
-						for h in q_best:
-							if new_h[0] == h[0]:
-								filtered_q_best.append(h)
-								break
-					BlastParse.logger.debug("Query q = " + q + "\nPre-masking: " + str(len(q_best)) + " hits; Post-masking: " + str(len(filtered_q_best)) + " hits; Masked length = " + str(overlap_end - overlap_start) + " on " + str(overlap_count) + "sequences.")
-					### Verify whether there is at least 1 hit left
-					# assign new result to be used in the graph
-					q_best = filtered_q_best
+				# 	# combine new hits with original ones
+				# 	filtered_q_best = []
+				# 	for new_h in new_q_best:
+				# 		for h in q_best:
+				# 			if new_h[0] == h[0]:
+				# 				filtered_q_best.append(h)
+				# 				break
+				# 	BlastParse.logger.debug("Query q = " + q + "\nPre-masking: " + str(len(q_best)) + " hits; Post-masking: " + str(len(filtered_q_best)) + " hits; Masked length = " + str(overlap_end - overlap_start) + " on " + str(overlap_count) + "sequences.")
+				# 	### Verify whether there is at least 1 hit left
+				# 	# assign new result to be used in the graph
+				# 	q_best = filtered_q_best
 
 			# q_best = sorted(q_best, key=lambda tup: tup[2])
 			q_best = sorted(q_best, key=lambda tup: tup[1])
@@ -157,27 +158,31 @@ class BlastParse:
 		# map child genes to rough clusters and vice versa
 		geneToCluster = {}
 		clusterToGenes = {}
-		clusterToSub = {}
+		# clusterToSub = {}
 		gene_count = 0
 		for s in subs:  # each subgraph is an initial cluster
-			clusterID = "cluster_" + str(count)
 			if len(s.nodes()) == 1:
-				locus = s.nodes()[0]
-				orphans.write(locus + "\n")
-				geneToCluster[locus] = clusterID
-				if clusterID not in clusterToGenes:
-					clusterToGenes[clusterID] = []
-				clusterToGenes[clusterID].append(locus)
+				orphans.write(s.nodes()[0] + "\n")
+				# locus = s.nodes()[0]
+				# geneToCluster[locus] = clusterID
+				# if clusterID not in clusterToGenes:
+				# 	clusterToGenes[clusterID] = []
+				# clusterToGenes[clusterID].append(locus)
+			# else:
+				# clusterToSub[clusterID] = s  # s is a graph object
+			if len(s.nodes()) > BlastParse.CORE_HITS_COUNT_THRESHOLD:
+				s2 = remove_weak_links(s)
 			else:
-				clusterToSub[clusterID] = s  # s is a graph object
+				s2 = [s]
+			for s in s2:
+				clusterID = "cluster_" + str(count)
 				for locus in s.nodes():
 					geneToCluster[locus] = clusterID
 					if clusterID not in clusterToGenes:
 						clusterToGenes[clusterID] = []
 					clusterToGenes[clusterID].append(locus)
-					# BlastParse.logger()
-			count += 1
-			gene_count += len(s.nodes())
+				count += 1
+				gene_count += len(s.nodes())
 		orphans.close()
 		BlastParse.logger.info("gene count = %d" % (gene_count))
 		BlastParse.logger.info("count = %d" % (count))
@@ -288,3 +293,21 @@ class BlastParse:
 			elif mySeg.bitScore > hits[Q][T].bitScore:  # Is this possible to find?
 				hits[Q][T] = mySeg
 		return hits
+
+
+def remove_weak_links(graph):
+	nodes = graph.nodes()
+	to_remove = []
+	for i in xrange(len(nodes)):
+		for j in xrange(i, len(nodes)):
+			if jaccard_similarity(graph, nodes[i], nodes[j]) < JACCARD_THRESHOLD:
+				to_remove.append((nodes[i], nodes[j]))
+	for tr in to_remove:
+		graph.remove_edge(tr)
+	return list(nx.connected_component_subgraphs(graph))
+
+
+def jaccard_similarity(graph, n1, n2):
+	s1 = set(graph[n1].keys())
+	s2 = set(graph[n2].keys())
+	return len(s1 & s2) / float(len(s1 | s2))
