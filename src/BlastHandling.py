@@ -312,6 +312,8 @@ def remove_weak_links(graph):
 
 
 def jaccard_similarity(graph, n1, n2):
-	s1 = set(graph[n1].keys())  ## remove self
-	s2 = set(graph[n2].keys())  ## remove self
+	s1 = set(graph[n1].keys())
+	s1.remove(n2)
+	s2 = set(graph[n2].keys())
+	s2.remove(n1)
 	return len(s1 & s2) / float(len(s1 | s2))
