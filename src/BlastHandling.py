@@ -90,7 +90,8 @@ class BlastParse:
 			q_hits.sort(key=operator.attrgetter('bitScore'), reverse=True)
 			q_best = BlastParse.getBestHits(q_hits, min_best_hit)
 
-			BlastParse.logger.debug("len(q_best) = " + str(len(q_best)) + " for " + q_best[0][2].query)
+			# if q_best:
+			# 	BlastParse.logger.debug("len(q_best) = " + str(len(q_best)) + " for " + q_best[0][2].query)
 			# checking for protein domain increasing number of hits
 			# if len(q_best) >= BlastParse.CORE_HITS_COUNT_THRESHOLD:
 				# identifying the potential domain
@@ -311,6 +312,6 @@ def remove_weak_links(graph):
 
 
 def jaccard_similarity(graph, n1, n2):
-	s1 = set(graph[n1].keys())
-	s2 = set(graph[n2].keys())
+	s1 = set(graph[n1].keys())  ## remove self
+	s2 = set(graph[n2].keys())  ## remove self
 	return len(s1 & s2) / float(len(s1 | s2))
