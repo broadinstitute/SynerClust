@@ -91,7 +91,7 @@ class BlastParse:
 			q_best = BlastParse.getBestHits(q_hits, min_best_hit)
 
 			# checking for protein domain increasing number of hits, for now only for in between genomes blast, not self blast
-			q_self = [res for res in q_best if res.target[:res.target.rfind("_")] != res.query[:res.target.rfind("_")]]
+			q_self = [res for res in q_best if res[2].target[:res[2].target.rfind("_")] != res[2].query[:res[2].target.rfind("_")]]
 			if len(q_self) >= BlastParse.CORE_HITS_COUNT_THRESHOLD:
 				# identifying the potential domain
 				(overlap_start, overlap_end, overlap_count) = BlastParse.longest_maximal_overlap_interval(q_best)
