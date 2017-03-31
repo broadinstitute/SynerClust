@@ -90,8 +90,9 @@ class BlastParse:
 			q_hits.sort(key=operator.attrgetter('bitScore'), reverse=True)
 			q_best = BlastParse.getBestHits(q_hits, min_best_hit)
 
-			# checking for protein domain increasing number of hits
-			if len(q_best) >= BlastParse.CORE_HITS_COUNT_THRESHOLD:
+			# checking for protein domain increasing number of hits, for now only for in between genomes blast, not self blast
+			q_self = [res in q_best if res.target[:res.target.rfind("_")] != res.query[:res.target.rfind("_")]]
+			if len(q_self) >= BlastParse.CORE_HITS_COUNT_THRESHOLD:
 				# identifying the potential domain
 				(overlap_start, overlap_end, overlap_count) = BlastParse.longest_maximal_overlap_interval(q_best)
 				if overlap_count >= BlastParse.CORE_HITS_COUNT_THRESHOLD and (overlap_end - overlap_start < q_best[0][2].qLength * BlastParse.OVERLAP_PROPORTION_THRESHOLD):
@@ -131,6 +132,7 @@ class BlastParse:
 					# assign new result to be used in the graph
 					if len(filtered_q_best) > 0:
 						q_best = filtered_q_best
+						q_best.extend(q_self)
 
 			# q_best = sorted(q_best, key=lambda tup: tup[2])
 			q_best = sorted(q_best, key=lambda tup: tup[1])
