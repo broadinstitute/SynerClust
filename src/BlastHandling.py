@@ -90,7 +90,7 @@ class BlastParse:
 			q_hits.sort(key=operator.attrgetter('bitScore'), reverse=True)
 			q_best = BlastParse.getBestHits(q_hits, min_best_hit)
 
-			BlastParse.logger.debug("len(q_best) = " + str(len(q_best)) + " for " + q_hits[0][2].query)
+			BlastParse.logger.debug("len(q_best) = " + str(len(q_best)) + " for " + q_best[0][2].query)
 			# checking for protein domain increasing number of hits
 			# if len(q_best) >= BlastParse.CORE_HITS_COUNT_THRESHOLD:
 				# identifying the potential domain
