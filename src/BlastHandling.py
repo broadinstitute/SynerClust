@@ -90,10 +90,11 @@ class BlastParse:
 			q_hits.sort(key=operator.attrgetter('bitScore'), reverse=True)
 			q_best = BlastParse.getBestHits(q_hits, min_best_hit)
 
+			BlastParse.logger.debug("len(q_best) = " + str(len(q_best)) + " for " + q_hits[0][2].query)
 			# checking for protein domain increasing number of hits
-			if len(q_best) >= BlastParse.CORE_HITS_COUNT_THRESHOLD:
+			# if len(q_best) >= BlastParse.CORE_HITS_COUNT_THRESHOLD:
 				# identifying the potential domain
-				(overlap_start, overlap_end, overlap_count) = BlastParse.longest_maximal_overlap_interval(q_best)
+				# (overlap_start, overlap_end, overlap_count) = BlastParse.longest_maximal_overlap_interval(q_best)
 				# if overlap_count >= BlastParse.CORE_HITS_COUNT_THRESHOLD and (overlap_end - overlap_start < q_best[0][2].qLength * BlastParse.OVERLAP_PROPORTION_THRESHOLD):
 				# 	BlastParse.logger.debug("Masking a region for query q = " + q)
 				# 	target_child = q_best[0][0][:q_best[0][0].rfind("_")]
