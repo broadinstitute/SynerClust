@@ -143,7 +143,7 @@ class BlastParse:
 					# bestReciprocalHits.add_edge(hit[0], hit[1], weight=hit[2])
 				if not bestHits.has_edge(q, hit[0]):
 					bestHits.add_edge(q, hit[0], weight=hit[1], query="_".join(q.split("_")[:-1]))
-				elif bestHits[q][hit[0]]["query"] != "_".join(q.split("_")[:-1]):  # not to add an edge in the reciprocal graph if there are simply multiple matches between same query and target
+				elif bestHits[q][hit[0]]["query"] != "_".join(q.split("_")[:-1]):  # not to add an edge in the reciprocal graph if there are simply multiple matches between same query and target <-- readBlastM8 only returns the best match for each query->target
 					bestReciprocalHits.add_edge(q, hit[0], weight=hit[1])
 		return bestReciprocalHits
 
