@@ -119,20 +119,21 @@ class BlastParse:
 
 					# parse output
 					new_q_hits = BlastParse.readBlastM8(output.split("\n"))
-					new_q_best = BlastParse.getBestHits([new_q_hits[q][t] for t in new_q_hits[new_q_hits.keys()[0]]], min_best_hit)
+					if new_q_hits:  # if any hit
+						new_q_best = BlastParse.getBestHits([new_q_hits[q][t] for t in new_q_hits[new_q_hits.keys()[0]]], min_best_hit)
 
-					# combine new hits with original ones
-					filtered_q_best = []
-					for new_h in new_q_best:
-						for h in q_best:
-							if new_h[0] == h[0]:
-								filtered_q_best.append(h)
-								break
-					BlastParse.logger.debug("Query q = " + q + "\nPre-masking: " + str(len(q_best)) + " hits; Post-masking: " + str(len(filtered_q_best)) + " hits; Masked length = " + str(overlap_end - overlap_start) + " on " + str(overlap_count) + "sequences.")
-					# assign new result to be used in the graph
-					if len(filtered_q_best) > 0:
-						q_best = filtered_q_best
-						q_best.extend(q_self)  # re-add self hits
+						# combine new hits with original ones
+						filtered_q_best = []
+						for new_h in new_q_best:
+							for h in q_best:
+								if new_h[0] == h[0]:
+									filtered_q_best.append(h)
+									break
+						BlastParse.logger.debug("Query q = " + q + "\nPre-masking: " + str(len(q_best)) + " hits; Post-masking: " + str(len(filtered_q_best)) + " hits; Masked length = " + str(overlap_end - overlap_start) + " on " + str(overlap_count) + "sequences.")
+						# assign new result to be used in the graph
+						if len(filtered_q_best) > 0:
+							q_best = filtered_q_best
+							q_best.extend(q_self)  # re-add self hits
 
 			# q_best = sorted(q_best, key=lambda tup: tup[2])
 			q_best = sorted(q_best, key=lambda tup: tup[1])
