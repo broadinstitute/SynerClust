@@ -200,8 +200,10 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 			resultsQueue.put(cons_res)
 			break
 
-		except:
+		except Exception as e:
 			QUEUE_ERROR = True
+			print "Unexpected error in queue."
+			raise e
 
 
 if __name__ == "__main__":
@@ -234,28 +236,33 @@ if __name__ == "__main__":
 	pickleSeqs = pickle.load(sdat)
 	sdat.close()
 
-	notOKQ = Queue(0)
-	resultsQueue = Queue(0)
-	consensus_pep = args.node_dir + args.node + ".pep"
-	os.system("rm " + consensus_pep)  # since the file is opened in append mode every time, we need to delete anything from a previous run
+	try:
+		notOKQ = Queue(0)
+		resultsQueue = Queue(0)
+		consensus_pep = args.node_dir + args.node + ".pep"
+		os.system("rm " + consensus_pep)  # since the file is opened in append mode every time, we need to delete anything from a previous run
 
-	cons_out = open(consensus_pep, "a")
-	with open(args.node_dir + "consensus_data.pkl", "r") as f:
-		cons_pkl = pickle.load(f)
+		cons_out = open(consensus_pep, "a")
+		with open(args.node_dir + "consensus_data.pkl", "r") as f:
+			cons_pkl = pickle.load(f)
 
-	processes = [Process(target=makeConsensus, args=(notOKQ, resultsQueue, args.dist, cons_out)) for i in xrange(args.numThreads)]
+		processes = [Process(target=makeConsensus, args=(notOKQ, resultsQueue, args.dist, cons_out)) for i in xrange(args.numThreads)]
 
-	for clusterID in pickleSeqs:
-		notOKQ.put((pickleSeqs[clusterID], clusterID))
+		for clusterID in pickleSeqs:
+			notOKQ.put((pickleSeqs[clusterID], clusterID))
+			time.sleep(0.01)
 
-	for p in processes:
-		p.start()
-		logger.info("Starting %s" % (p.pid))
+		for p in processes:
+			p.start()
+			logger.info("Starting %s" % (p.pid))
 
-	for i in xrange(args.numThreads):
-		cons_pkl.update(resultsQueue.get())
+		for i in xrange(args.numThreads):
+			cons_pkl.update(resultsQueue.get())
 
-	cons_out.close()
+		cons_out.close()
+	except Exception as e:
+		logger.critical("Unexpected error:", sys.exc_info()[0])
+		sys.exit(1)
 
 	if QUEUE_ERROR:
 		sys.exit("Error in python queue")
