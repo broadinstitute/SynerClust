@@ -266,6 +266,8 @@ if __name__ == "__main__":
 
 	if QUEUE_ERROR:
 		sys.exit("Error in python queue")
+	if len(pickleSeqs) != len(cons_pkl):
+		sys.exit("Error, missing results.")
 
 	with open(args.node_dir + "consensus_data.pkl", "w") as f:
 		pickle.dump(cons_pkl, f)
