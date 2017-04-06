@@ -346,6 +346,7 @@ class Tree:
 						uge_out.write(" " + working_dir + "nodes/" + str(current[0]) + "/" + str(current[0]) + "_uge.sh\n")
 						out.write(working_dir + "nodes/" + str(current[0]) + "/" + str(current[0]) + ".sh\n")
 		os.chmod(working_dir + "uger_jobs.sh", 0775)
+		os.chmod(working_dir + "jobs.sh", 0775)
 		all_proc_nodes = []
 		serial_sets = {}
 		sets = 1
@@ -447,66 +448,6 @@ class Tree:
 		my_sh = open(my_sh_file, 'w')
 		my_sh.write(s_file)
 		my_sh.close()
-
-	# def toNewick(self, graph):
-	# 	up = []  # unprocessed
-	# 	leaf = []
-	# 	for n in graph.nodes():
-	# 		if len(graph[n]) > 1:
-	# 			up.append(n)
-	# 		else:
-	# 			leaf.append((n, n[0]))
-	# 	curNode = None
-	# 	last_string = ""
-	# 	if len(graph.nodes()) == 2:
-	# 		ew = str(graph[leaf[0][0]][leaf[1][0]]['weight'])
-	# 		last_string = "(" + leaf[0][0] + ":" + ew + "," + leaf[1][0] + ":" + ew + ")"
-	# 	while len(up) > 0:
-	# 		(curNode, e_count) = self.calcMostEdgesToLeaves(up, leaf, graph)
-	# 		leaves = []
-	# 		for e in graph[curNode]:
-	# 			for l in leaf:
-	# 				if l[0] == e:
-	# 					e_i = leaf.index(l)
-	# 					e_text = e
-	# 					if 'child_newick' in graph.node[e]:
-	# 						if e_count > 2 and len(up) > 1:
-	# 							continue
-	# 						e_text = graph.node[e]['child_newick']
-	# 					leaf.pop(e_i)
-	# 					ew = graph[curNode][e]['weight']
-	# 					text = e_text + ":" + str(ew)
-	# 					leaves.append(text)
-	# 		# add newick text to curNode
-	# 		node_text = "(" + ",".join(leaves) + ")"
-	# 		last_string = node_text
-	# 		graph.node[curNode]['child_newick'] = node_text
-	# 		# change curNode to leaf
-	# 		cn_i = up.index(curNode)
-	# 		up.pop(cn_i)
-	# 		leaf.append((curNode, curNode[0]))
-	# 	if len(leaf) == 2 and len(up) == 0 and len(graph.nodes()) > 2:
-	# 		ew = str(graph[leaf[0][0]][leaf[1][0]]['weight'])
-	# 		last_string = "(" + graph.node[leaf[0][0]]['child_newick'] + ":" + ew + "," + graph.node[leaf[1][0]]['child_newick'] + ":" + ew + ")"
-	# 	last_string = last_string.replace("(", "(\n")
-	# 	last_string = last_string.replace(",", ",\n")
-	# 	last_string = last_string.replace(")", ")\n")
-	# 	last_string = last_string.rstrip()
-	# 	return last_string + ";"
-
-	# def calcMostEdgesToLeaves(self, unprocN, leaf, TG):
-	# 	mostLeaves = -1
-	# 	retNode = None
-	# 	for n in unprocN:
-	# 		e_count = 0
-	# 		for e in TG[n]:
-	# 			for l in leaf:
-	# 				if e == l[0]:
-	# 					e_count += 1
-	# 		if e_count > mostLeaves:
-	# 			mostLeaves = e_count
-	# 			retNode = n
-	# 	return (retNode, mostLeaves)
 
 	def getGenomeToLocus(self):
 		return self.genomeToLocus
