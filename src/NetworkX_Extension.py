@@ -42,3 +42,18 @@ def all_pairs_path_length(G, weight=['weight']):
 				t += 1
 			s += 1
 	return (distances, paths)
+
+
+def merge(graph, left, right, middle):
+	graph.add_node(middle)
+	commons = graph[left].keys() and graph[right].keys()
+	for common in commons:
+		graph.add_edge(common, middle, rank=max(graph[common][left]['rank'], graph[common][right]['rank']))
+	for target in graph[left]:
+		if target not in commons:
+			graph.add_edge(target, middle, rank=graph[target][left]['rank'])
+	for target in graph[right]:
+		if target not in commons:
+			graph.add_edge(target, middle, rank=graph[target][right]['rank'])
+	graph.remove_node(left)
+	graph.remove_node(right)

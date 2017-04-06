@@ -2,7 +2,7 @@
 
 import sys
 import os
-import BlastHandling
+import BlastHandling_bis
 # import pickle
 import logging
 import shutil
