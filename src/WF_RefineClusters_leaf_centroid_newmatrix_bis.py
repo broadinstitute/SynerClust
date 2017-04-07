@@ -15,6 +15,7 @@ from operator import itemgetter
 
 DEVNULL = open(os.devnull, 'w')
 BEST_HIT_PROPORTION_THRESHOLD = 0.95
+SYNTENY_THRESHOLD = 0.3
 
 
 def usage():
@@ -154,7 +155,7 @@ def main():
 		with open(repo_path + "nodes/" + args.node + "/trees/gene_to_cluster.pkl", "r") as f:
 			gene_to_cluster = pickle.load(f)
 	graphs = {}
-	with open(repo_path + "nodes/" + args.node + "trees/cluster_graphs.dat", "r") as f:
+	with open(repo_path + "nodes/" + args.node + "/trees/cluster_graphs.dat", "r") as f:
 		to_parse = []
 		clusterID = None
 		for line in f:
@@ -165,7 +166,7 @@ def main():
 				clusterID = None
 			else:
 				if clusterID:
-					to_parse.add(line.rstrip())
+					to_parse.append(line.rstrip())
 				else:
 					clusterID = line.rstrip()
 
@@ -182,6 +183,8 @@ def main():
 
 	for cluster in graphs:
 		TIMESTAMP = time.time()
+
+		graph = graphs[cluster]
 
 		if args.synteny:
 			leaves = graph.nodes()
@@ -239,7 +242,7 @@ def main():
 		# lowest_synteny = SYNTENY_THRESHOLD
 		# low_positions = []
 		# lowest_positions = []
-		# it = np.nditer(syn_matrix, flags=['f_index'])
+		# it = numpy.nditer(syn_matrix, flags=['f_index'])
 		# while not it.finished:
 		# 	if it[0] <= SYNTENY_THRESHOLD:
 		# 		if it[0] < lowest_synteny:
@@ -258,17 +261,17 @@ def main():
 		# 	low_is.append(i - 1)  # formula is for lower triangular matrix, so need to offset distance matrix columns because we start at 0
 		# 	low_js.append(j)  # no need for row offset because row 0 is empty in distance matrix
 
-		graph = graphs[cluster]
 		new_graph = graph.copy()
 		# check synteny matrix for cells lowest synteny (below a threshold, 0.2-0.5?)
 		syntenic = []
-		it = np.nditer(syn_matrix, flags=['f_index'])
+		it = numpy.nditer(syn_matrix, flags=['f_index'])
 		while not it.finished:
 			if it[0] <= SYNTENY_THRESHOLD:
 				position = it.index + 1  # formula works for indexes starting at 1, so need to offset
 				i = math.ceil(math.sqrt(2 * position + 0.25) - 0.5)  # formula is for lower triangular matrix, so need to offset distance matrix columns because we start at 0
 				j = position - ((i - 1) * i / 2)  # no need for row offset because row 0 is empty in distance matrix
 				syntenic.append((it[0], it.index, i - 1, j))
+			it.iternext()
 		syntenic.sort(key=itemgetter(0))  # key precised so that sort is only done on first element of lists and not on other ones for potential ties
 
 		for pair in syntenic:  # loop twice to allow pairs where best hit got pulled into another pair to be clustered on 2nd round?
@@ -320,22 +323,34 @@ def main():
 						good += 1
 				# if graph[leaves[i]][leaves[j]]['m'] >= BEST_HIT_PROPORTION_THRESHOLD and graph[leaves[j]][leaves[i]]['m'] >= BEST_HIT_PROPORTION_THRESHOLD:
 				if good == 2:
-					##### MERGE leaves[i] and leaves[j]
-					# remove other edges pointing to those nodes
-					nxe.merge(new_graph, leaves[i], leaves[j], mrca + str(cluster_counter))
+					# merge leaves[i] and leaves[j]
+					syn_dist = ":" + str(pair[0] / 2.0)
+					new_node = "%s_%07d" % (mrca, cluster_counter)
 					cluster_counter += 1
+					ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + graph[leaves[i]][leaves[j]]['rank'] + "," + leaves[j] + ":" + graph[leaves[j]][leaves[i]]['rank'] + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
+					nxe.merge(new_graph, leaves[i], leaves[j], new_node)
+					genes_to_cluster[leaves[i]] = (new_node, True)
+					genes_to_cluster[leaves[j]] = (new_node, True)
+					# remove other edges pointing to those nodes
 					graph.remove_node(leaves[i])
 					graph.remove_node(leaves[j])
 		# check for remaining RBH and cluster
 		edges = graph.edges()
 		i = 0
 		while i < len(edges):
+			e = edges[i]
 			if graph[e[0]][e[1]]['rank'] == 1 and graph[e[1]][e[0]]['rank'] == 1:
 				##### MERGE e[0] and e[1]
-				nxe.merge(new_graph, e[0], e[1], mrca + str(cluster_counter))
+				syn_dist = ":" + str(pair[0] / 2.0)
+				new_node = "%s_%07d" % (mrca, cluster_counter)
 				cluster_counter += 1
-				graph.remove_node(e[0])
-				graph.remove_node(e[1])
+				ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":1," + leaves[j] + ":1)", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
+				nxe.merge(new_graph, leaves[i], leaves[j], new_node)
+				genes_to_cluster[leaves[i]] = (new_node, True)
+				genes_to_cluster[leaves[j]] = (new_node, True)
+				# remove other edges pointing to those nodes
+				graph.remove_node(leaves[i])
+				graph.remove_node(leaves[j])
 				del edges[i]  # edges.remove(e)
 				edges.remove((e[1], e[0]))  # no need to i -= 1 because reciprocity implies the first edge of the pair encountered will trigger the merging
 			else:
