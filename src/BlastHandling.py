@@ -8,6 +8,7 @@ import os
 import subprocess
 
 DEVNULL = open(os.devnull, 'w')
+JACCARD_THRESHOLD = 0.2
 
 
 class BlastSegment:
@@ -89,8 +90,9 @@ class BlastParse:
 			q_hits.sort(key=operator.attrgetter('bitScore'), reverse=True)
 			q_best = BlastParse.getBestHits(q_hits, min_best_hit)
 
-			# checking for protein domain increasing number of hits
-			if len(q_best) >= BlastParse.CORE_HITS_COUNT_THRESHOLD:
+			# checking for protein domain increasing number of hits, for now only for in between genomes blast, not self blast
+			q_self = [res for res in q_best if res[2].target[:res[2].target.rfind("_")] != res[2].query[:res[2].target.rfind("_")]]
+			if len(q_self) >= BlastParse.CORE_HITS_COUNT_THRESHOLD:
 				# identifying the potential domain
 				(overlap_start, overlap_end, overlap_count) = BlastParse.longest_maximal_overlap_interval(q_best)
 				if overlap_count >= BlastParse.CORE_HITS_COUNT_THRESHOLD and (overlap_end - overlap_start < q_best[0][2].qLength * BlastParse.OVERLAP_PROPORTION_THRESHOLD):
@@ -117,19 +119,21 @@ class BlastParse:
 
 					# parse output
 					new_q_hits = BlastParse.readBlastM8(output.split("\n"))
-					new_q_best = BlastParse.getBestHits([new_q_hits[q][t] for t in new_q_hits[new_q_hits.keys()[0]]], min_best_hit)
+					if new_q_hits:  # if any hit
+						new_q_best = BlastParse.getBestHits([new_q_hits[q][t] for t in new_q_hits[new_q_hits.keys()[0]]], min_best_hit)
 
-					# combine new hits with original ones
-					filtered_q_best = []
-					for new_h in new_q_best:
-						for h in q_best:
-							if new_h[0] == h[0]:
-								filtered_q_best.append(h)
-								break
-					BlastParse.logger.debug("Query q = " + q + "\nPre-masking: " + str(len(q_best)) + " hits; Post-masking: " + str(len(filtered_q_best)) + " hits; Masked length = " + str(overlap_end - overlap_start) + " on " + str(overlap_count) + "sequences.")
-					### Verify whether there is at least 1 hit left
-					# assign new result to be used in the graph
-					q_best = filtered_q_best
+						# combine new hits with original ones
+						filtered_q_best = []
+						for new_h in new_q_best:
+							for h in q_best:
+								if new_h[0] == h[0]:
+									filtered_q_best.append(h)
+									break
+						BlastParse.logger.debug("Query q = " + q + "\nPre-masking: " + str(len(q_best)) + " hits; Post-masking: " + str(len(filtered_q_best)) + " hits; Masked length = " + str(overlap_end - overlap_start) + " on " + str(overlap_count) + "sequences.")
+						# assign new result to be used in the graph
+						if len(filtered_q_best) > 0:
+							q_best = filtered_q_best
+							q_best.extend(q_self)  # re-add self hits
 
 			# q_best = sorted(q_best, key=lambda tup: tup[2])
 			q_best = sorted(q_best, key=lambda tup: tup[1])
@@ -140,7 +144,7 @@ class BlastParse:
 					# bestReciprocalHits.add_edge(hit[0], hit[1], weight=hit[2])
 				if not bestHits.has_edge(q, hit[0]):
 					bestHits.add_edge(q, hit[0], weight=hit[1], query="_".join(q.split("_")[:-1]))
-				elif bestHits[q][hit[0]]["query"] != "_".join(q.split("_")[:-1]):  # not to add an edge in the reciprocal graph if there are simply multiple matches between same query and target
+				elif bestHits[q][hit[0]]["query"] != "_".join(q.split("_")[:-1]):  # not to add an edge in the reciprocal graph if there are simply multiple matches between same query and target <-- readBlastM8 only returns the best match for each query->target
 					bestReciprocalHits.add_edge(q, hit[0], weight=hit[1])
 		return bestReciprocalHits
 
@@ -157,27 +161,32 @@ class BlastParse:
 		# map child genes to rough clusters and vice versa
 		geneToCluster = {}
 		clusterToGenes = {}
-		clusterToSub = {}
+		# clusterToSub = {}
 		gene_count = 0
 		for s in subs:  # each subgraph is an initial cluster
-			clusterID = "cluster_" + str(count)
 			if len(s.nodes()) == 1:
-				locus = s.nodes()[0]
-				orphans.write(locus + "\n")
-				geneToCluster[locus] = clusterID
-				if clusterID not in clusterToGenes:
-					clusterToGenes[clusterID] = []
-				clusterToGenes[clusterID].append(locus)
-			else:
-				clusterToSub[clusterID] = s  # s is a graph object
+				orphans.write(s.nodes()[0] + "\n")
+				# locus = s.nodes()[0]
+				# geneToCluster[locus] = clusterID
+				# if clusterID not in clusterToGenes:
+				# 	clusterToGenes[clusterID] = []
+				# clusterToGenes[clusterID].append(locus)
+			# else:
+				# clusterToSub[clusterID] = s  # s is a graph object
+			# if len(s.nodes()) > BlastParse.CORE_HITS_COUNT_THRESHOLD:
+			# 	s2 = remove_weak_links(s)
+			# else:
+			# 	s2 = [s]
+			s2 = [s]
+			for s in s2:
+				clusterID = "cluster_" + str(count)
 				for locus in s.nodes():
 					geneToCluster[locus] = clusterID
 					if clusterID not in clusterToGenes:
 						clusterToGenes[clusterID] = []
 					clusterToGenes[clusterID].append(locus)
-					# BlastParse.logger()
-			count += 1
-			gene_count += len(s.nodes())
+				count += 1
+				gene_count += len(s.nodes())
 		orphans.close()
 		BlastParse.logger.info("gene count = %d" % (gene_count))
 		BlastParse.logger.info("count = %d" % (count))
@@ -217,7 +226,46 @@ class BlastParse:
 			else:
 				current_overlap -= 1
 				j += 1
-		return (maxi, maxj, maximal_overlap)
+		return (starts[maxi], ends[maxj], maximal_overlap)
+
+	@staticmethod
+	def overlap_intervals(hits):
+		starts = []
+		ends = []
+		for hit in hits:
+			starts.append((hit[2].qstart, hit[2].target))
+			ends.append((hit[2].qend, hit[2].target))
+		starts.sort(key=lambda tup: tup[0])
+		ends.sort(key=lambda tup: tup[0])
+		n = len(hits)
+		i = j = 0
+		# maxi = maxj = -1
+		# maximal_overlap = 0
+		# current_overlap = 0
+		intervals = []
+		current_targets = set()
+		last_position = 0
+		while i < n and j < n:
+			if starts[i][0] < ends[j][0]:
+				# current_overlap += 1
+				current_targets.add(starts[i][1])
+				# if current_overlap > maximal_overlap:
+				# 	maximal_overlap = current_overlap
+				# 	maxi = i
+				# 	maxj = j
+				# elif current_overlap == maximal_overlap:
+				# 	if ends[j] - starts[i] > ends[maxj] - starts[maxi]:  # keep longest
+				# 		maxi = i
+				# 		maxj = j
+				intervals.append(last_position, starts[i], current_targets.copy())
+				last_position = starts[i]
+				i += 1
+			else:
+				# current_overlap -= 1
+				current_targets.remove(ends[j][1])
+				last_position = ends[j]
+				j += 1
+		return intervals
 
 	@staticmethod
 	def readBlastM8FromFile(f):
@@ -249,3 +297,23 @@ class BlastParse:
 			elif mySeg.bitScore > hits[Q][T].bitScore:  # Is this possible to find?
 				hits[Q][T] = mySeg
 		return hits
+
+
+def remove_weak_links(graph):
+	nodes = graph.nodes()
+	to_remove = []
+	for i in xrange(len(nodes)):
+		for j in graph[nodes[i]].keys():
+			if j in nodes[:i + 1]:
+				continue
+			if jaccard_similarity(graph, nodes[i], j) < JACCARD_THRESHOLD:
+				to_remove.append((nodes[i], j))
+	for tr in to_remove:
+		graph.remove_edge(tr[0], tr[1])
+	return list(nx.connected_component_subgraphs(graph))
+
+
+def jaccard_similarity(graph, n1, n2):
+	s1 = set(graph[n1].keys())
+	s2 = set(graph[n2].keys())
+	return len(s1 & s2) / float(len(s1 | s2))
