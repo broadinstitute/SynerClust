@@ -46,7 +46,8 @@ def all_pairs_path_length(G, weight=['weight']):
 
 def merge(graph, old_graph, left, right, middle):
 	graph.add_node(middle)
-	commons = old_graph[left].keys() and old_graph[right].keys()
+	# commons = old_graph[left].keys() and old_graph[right].keys()
+	commons = [l for l in old_graph[left].keys() if l in old_graph[right].keys()]
 	for common in commons:
 		graph.add_edge(common, middle, rank=max(old_graph[common][left]['rank'], old_graph[common][right]['rank']))
 	for target in old_graph[left]:
