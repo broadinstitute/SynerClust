@@ -289,7 +289,7 @@ def main():
 					new_node = "%s_%07d" % (mrca, cluster_counter)
 					cluster_counter += 1
 					ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + graph[leaves[i]][leaves[j]]['rank'] + "," + leaves[j] + ":" + graph[leaves[j]][leaves[i]]['rank'] + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
-					nxe.merge(new_graph, leaves[i], leaves[j], new_node)
+					nxe.merge(new_graph, graph, leaves[i], leaves[j], new_node)
 					genes_to_cluster[leaves[i]] = (new_node, True)
 					genes_to_cluster[leaves[j]] = (new_node, True)
 					# remove other edges pointing to those nodes
@@ -328,7 +328,7 @@ def main():
 					new_node = "%s_%07d" % (mrca, cluster_counter)
 					cluster_counter += 1
 					ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + graph[leaves[i]][leaves[j]]['rank'] + "," + leaves[j] + ":" + graph[leaves[j]][leaves[i]]['rank'] + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
-					nxe.merge(new_graph, leaves[i], leaves[j], new_node)
+					nxe.merge(new_graph, graph, leaves[i], leaves[j], new_node)
 					genes_to_cluster[leaves[i]] = (new_node, True)
 					genes_to_cluster[leaves[j]] = (new_node, True)
 					# remove other edges pointing to those nodes
@@ -350,7 +350,7 @@ def main():
 				new_node = "%s_%07d" % (mrca, cluster_counter)
 				cluster_counter += 1
 				ok_trees.append((new_node, (e[0], e[1]), ("(" + e[0] + ":1," + e[1] + ":1)", "(" + e[0] + syn_dist + "," + e[1] + syn_dist + ")")))
-				nxe.merge(new_graph, e[0], e[1], new_node)
+				nxe.merge(new_graph, graph, e[0], e[1], new_node)
 				genes_to_cluster[e[0]] = (new_node, True)
 				genes_to_cluster[e[1]] = (new_node, True)
 				# remove other edges pointing to those nodes

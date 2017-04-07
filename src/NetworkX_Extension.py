@@ -44,16 +44,16 @@ def all_pairs_path_length(G, weight=['weight']):
 	return (distances, paths)
 
 
-def merge(graph, left, right, middle):
+def merge(graph, old_graph, left, right, middle):
 	graph.add_node(middle)
-	commons = graph[left].keys() and graph[right].keys()
+	commons = old_graph[left].keys() and old_graph[right].keys()
 	for common in commons:
-		graph.add_edge(common, middle, rank=max(graph[common][left]['rank'], graph[common][right]['rank']))
-	for target in graph[left]:
+		graph.add_edge(common, middle, rank=max(old_graph[common][left]['rank'], old_graph[common][right]['rank']))
+	for target in old_graph[left]:
 		if target not in commons:
-			graph.add_edge(target, middle, rank=graph[target][left]['rank'])
-	for target in graph[right]:
+			graph.add_edge(target, middle, rank=old_graph[target][left]['rank'])
+	for target in old_graph[right]:
 		if target not in commons:
-			graph.add_edge(target, middle, rank=graph[target][right]['rank'])
+			graph.add_edge(target, middle, rank=old_graph[target][right]['rank'])
 	graph.remove_node(left)
 	graph.remove_node(right)
