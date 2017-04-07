@@ -375,7 +375,7 @@ def main():
 				# 	potentials.append(n)
 				new_orphan = "%s_%07d" % (mrca, cluster_counter)
 				cluster_counter += 1
-				ok_trees.append((new_orphan, (node), (node, node)))
+				ok_trees.append((new_orphan, (node,), (node, node)))  # (node,) comma is required so its a tuple that can be looped on and not on the string itself
 				genes_to_cluster[node] = (new_orphan, False)
 
 
