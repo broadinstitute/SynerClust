@@ -460,8 +460,8 @@ def main():
 # 		sys.exit()
 		sstats.write("\t".join(out_dat) + "\n")
 
-		if len(ok[0]) == 1:
-			child = "_".join(ok[0][0].split("_")[:-1])
+		if len(ok[1]) == 1:
+			child = "_".join(ok[1][0].split("_")[:-1])
 # 			seq = children_cons[child][ok[0][0]]
 			seqs = {}
 			if child[0] == "L":
@@ -485,7 +485,7 @@ def main():
 		else:
 			pickleToCons[clusterID] = []
 			newNewickMap[clusterID].append([])
-			for g in ok[0]:
+			for g in ok[1]:
 				child = "_".join(g.split("_")[:-1])
 				seqs = {}
 				if child[0] == "L":
