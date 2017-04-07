@@ -339,7 +339,7 @@ def main():
 		i = 0
 		while i < len(edges):
 			e = edges[i]
-			if graph.has_edge([e[0]], [e[1]]):
+			if graph.has_edge(e[0], e[1]):
 				if graph[e[0]][e[1]]['rank'] == 1 and graph[e[1]][e[0]]['rank'] == 1:
 					##### MERGE e[0] and e[1]
 					ii = leaves.index(e[0])
