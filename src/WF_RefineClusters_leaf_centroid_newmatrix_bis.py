@@ -339,25 +339,26 @@ def main():
 		i = 0
 		while i < len(edges):
 			e = edges[i]
-			if graph[e[0]][e[1]]['rank'] == 1 and graph[e[1]][e[0]]['rank'] == 1:
-				##### MERGE e[0] and e[1]
-				ii = leaves.index(e[0])
-				jj = leaves.index(e[1])
-				ma = max(ii, jj)
-				mi = min(ii, jj)
-				pos = (ma * (ma - 1) / 2) + mi 
-				syn_dist = ":" + str(syn_matrix[pos] / 2.0)
-				new_node = "%s_%07d" % (mrca, cluster_counter)
-				cluster_counter += 1
-				ok_trees.append((new_node, (e[0], e[1]), ("(" + e[0] + ":1," + e[1] + ":1)", "(" + e[0] + syn_dist + "," + e[1] + syn_dist + ")")))
-				nxe.merge(new_graph, graph, e[0], e[1], new_node)
-				genes_to_cluster[e[0]] = (new_node, True)
-				genes_to_cluster[e[1]] = (new_node, True)
-				# remove other edges pointing to those nodes
-				# graph.remove_node(leaves[i])
-				# graph.remove_node(leaves[j])
-				del edges[i]  # edges.remove(e)
-				edges.remove((e[1], e[0]))  # no need to i -= 1 because reciprocity implies the first edge of the pair encountered will trigger the merging
+			if graph.has_edge([e[0]], [e[1]]):
+				if graph[e[0]][e[1]]['rank'] == 1 and graph[e[1]][e[0]]['rank'] == 1:
+					##### MERGE e[0] and e[1]
+					ii = leaves.index(e[0])
+					jj = leaves.index(e[1])
+					ma = max(ii, jj)
+					mi = min(ii, jj)
+					pos = (ma * (ma - 1) / 2) + mi 
+					syn_dist = ":" + str(syn_matrix[pos] / 2.0)
+					new_node = "%s_%07d" % (mrca, cluster_counter)
+					cluster_counter += 1
+					ok_trees.append((new_node, (e[0], e[1]), ("(" + e[0] + ":1," + e[1] + ":1)", "(" + e[0] + syn_dist + "," + e[1] + syn_dist + ")")))
+					nxe.merge(new_graph, graph, e[0], e[1], new_node)
+					genes_to_cluster[e[0]] = (new_node, True)
+					genes_to_cluster[e[1]] = (new_node, True)
+					# remove other edges pointing to those nodes
+					graph.remove_node(e[0])
+					graph.remove_node(e[1])
+					del edges[i]  # edges.remove(e)
+					edges.remove((e[1], e[0]))  # no need to i -= 1 because reciprocity implies the first edge of the pair encountered will trigger the merging
 			else:
 				i += 1
 
