@@ -67,7 +67,7 @@ class BlastParse:
 					q_best.append((t, current_rank, 1.0, ts))
 				elif (ts.getAdjPID() > bestAdjPID * min_best_hit):  # and best_evalue < 1.0:
 					# q_best.append((q, t, ts_score))
-					q_best.append((t, current_rank, bestAdjPID / ts.getAdjPID, ts))
+					q_best.append((t, current_rank, bestAdjPID / ts.getAdjPID(), ts))
 		return q_best
 
 	# hits are scored by cumulative percent identity
@@ -85,8 +85,8 @@ class BlastParse:
 			line = h.split(";")[0]  # mod for big BLAST
 			myHead.add(line)  # mod for big BLAST
 		head = None
-		bestHits.add_nodes_from(myHead)
-		bestReciprocalHits.add_nodes_from(myHead)
+		# bestHits.add_nodes_from(myHead)
+		bestReciprocalHits.add_nodes_from(myHead)  # need to add nodes this way and not only through edges to have orphans
 
 		for q in hits:
 			q_hits = [hits[q][t] for t in hits[q]]
@@ -164,14 +164,14 @@ class BlastParse:
 		# MAX_HITS = numHits
 		BlastParse.logger.info("len(best hits nodes) %d %d" % (len(bestReciprocalHits.nodes()), len(bestReciprocalHits.edges())))
 		# subs = list(nx.connected_component_subgraphs(bestReciprocalHits))
-		subs = list(nx.weakly_connected_componen_subgraphs(bestReciprocalHits))  # only need weakly connected because the graph is built so that only reciprocal hits are part of the graph
+		subs = list(nx.weakly_connected_component_subgraphs(bestReciprocalHits))  # only need weakly connected because the graph is built so that only reciprocal hits are part of the graph
 		count = 1
 		orphan_file = tree_dir + "orphan_genes.txt"
 		orphans = open(orphan_file, 'w')
 		BlastParse.logger.info("len(subs) = %s" % (len(subs)))
 		# map child genes to rough clusters and vice versa
 		geneToCluster = {}
-		graphClusters = {}
+		graphs = {}
 		# clusterToGenes = {}
 		# clusterToSub = {}
 		gene_count = 0
@@ -332,7 +332,7 @@ def remove_weak_links(graph):
 				to_remove.append((nodes[i], j))
 	for tr in to_remove:
 		graph.remove_edge(tr[0], tr[1])
-	return list(nx.connected_component_subgraphs(graph))
+	return list(nx.weakly_connected_component_subgraphs(graph))
 
 
 def jaccard_similarity(graph, n1, n2):

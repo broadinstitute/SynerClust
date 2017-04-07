@@ -76,10 +76,9 @@ def main():
 	logger.debug("Scored Hits")
 	tree_dir = my_dir + "trees"
 	if os.path.exists(tree_dir):
-		if "old" not in os.listdir(my_dir):
-			os.mkdir(os.path.join(my_dir, "old"))
-		else:
-			shutil.rmtree(os.path.join(my_dir, "old", "*"))
+		if "old" in os.listdir(my_dir):
+			shutil.rmtree(os.path.join(my_dir, "old"))
+		os.mkdir(os.path.join(my_dir, "old"))
 		shutil.move(tree_dir, os.path.join(my_dir, "old"))
 	os.mkdir(tree_dir)
 	tree_dir = tree_dir + os.sep
