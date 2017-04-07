@@ -345,12 +345,12 @@ def main():
 				jj = leaves.index(e[1])
 				ma = max(ii, jj)
 				mi = min(ii, jj)
-				pos = (m * (m - 1) / 2) + mi 
+				pos = (ma * (ma - 1) / 2) + mi 
 				syn_dist = ":" + str(syn_matrix[pos] / 2.0)
 				new_node = "%s_%07d" % (mrca, cluster_counter)
 				cluster_counter += 1
 				ok_trees.append((new_node, (e[0], e[1]), ("(" + e[0] + ":1," + e[1] + ":1)", "(" + e[0] + syn_dist + "," + e[1] + syn_dist + ")")))
-				nxe.merge(new_graph, leaves[i], leaves[j], new_node)
+				nxe.merge(new_graph, e[0], e[1], new_node)
 				genes_to_cluster[e[0]] = (new_node, True)
 				genes_to_cluster[e[1]] = (new_node, True)
 				# remove other edges pointing to those nodes
