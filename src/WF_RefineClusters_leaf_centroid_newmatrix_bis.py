@@ -161,7 +161,7 @@ def main():
 		for line in f:
 			if line == "//\n":
 				if to_parse:
-					graphs[clusterID] = nx.parse_edgelist(to_parse, nodetype=str)
+					graphs[clusterID] = nx.parse_edgelist(to_parse, create_using=nx.DiGraph(), nodetype=str)
 				to_parse = []
 				clusterID = None
 			else:
