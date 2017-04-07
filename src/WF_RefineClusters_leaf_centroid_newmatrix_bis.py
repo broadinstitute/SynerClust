@@ -170,7 +170,18 @@ def main():
 				else:
 					clusterID = line.rstrip()
 
+	cluster_counter = 1
 	ok_trees = []
+	genes_to_cluster = {}
+
+	with open(repo_path + "nodes/" + args.node + "trees/orphan_genes.txt", "r") as f:
+		for line in f:
+			node = line.rstrip()
+			new_orphan = "%s_%07d" % (mrca, cluster_counter)
+			cluster_counter += 1
+			ok_trees.append((new_orphan, (node,), (node, node)))  # (node,) comma is required so its a tuple that can be looped on and not on the string itself
+			genes_to_cluster[node] = (new_orphan, False)
+
 	potentials = []  # potential inparalogs
 
 	logger.debug("Loading files took " + str(time.time() - TIMESTAMP))
@@ -178,8 +189,6 @@ def main():
 
 # 	for clusterID in pickleSeqs:
 	# for cluster in cluster_to_genes:
-	cluster_counter = 1
-	genes_to_cluster = {}
 
 	for cluster in graphs:
 		TIMESTAMP = time.time()
