@@ -174,7 +174,7 @@ def main():
 	ok_trees = []
 	genes_to_cluster = {}
 
-	with open(repo_path + "nodes/" + args.node + "trees/orphan_genes.txt", "r") as f:
+	with open(repo_path + "nodes/" + args.node + "/trees/orphan_genes.txt", "r") as f:
 		for line in f:
 			node = line.rstrip()
 			new_orphan = "%s_%07d" % (mrca, cluster_counter)

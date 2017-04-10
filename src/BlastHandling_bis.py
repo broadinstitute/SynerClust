@@ -65,9 +65,11 @@ class BlastParse:
 					best_evalue = ts.evalue
 					# q_best.append((q, t, ts_score))
 					q_best.append((t, current_rank, 1.0, ts))
+					current_rank += 1
 				elif (ts.getAdjPID() > bestAdjPID * min_best_hit):  # and best_evalue < 1.0:
 					# q_best.append((q, t, ts_score))
 					q_best.append((t, current_rank, bestAdjPID / ts.getAdjPID(), ts))
+					current_rank += 1
 		return q_best
 
 	# hits are scored by cumulative percent identity
@@ -185,10 +187,10 @@ class BlastParse:
 				# clusterToGenes[clusterID].append(locus)
 			# else:
 				# clusterToSub[clusterID] = s  # s is a graph object
-			if len(s.nodes()) > BlastParse.CORE_HITS_COUNT_THRESHOLD:
-				s2 = remove_weak_links(s)
-			else:
-				s2 = [s]
+			# if len(s.nodes()) > BlastParse.CORE_HITS_COUNT_THRESHOLD:
+			# 	s2 = remove_weak_links(s)
+			# else:
+			s2 = [s]
 			for s in s2:
 				clusterID = "cluster_" + str(count)
 				if len(s.nodes()) > 1:
