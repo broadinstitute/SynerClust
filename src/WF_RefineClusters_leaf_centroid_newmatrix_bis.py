@@ -295,7 +295,7 @@ def main():
 					# if yes, cluster
 					# merge leaves[i] and leaves[j]
 					syn_dist = ":" + str(pair[0] / 2.0)
-					new_node = "%s_%07d" % (mrca, cluster_counter)
+					new_node = "%s_%06d" % (mrca, cluster_counter)
 					cluster_counter += 1
 					ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + graph[leaves[i]][leaves[j]]['rank'] + "," + leaves[j] + ":" + graph[leaves[j]][leaves[i]]['rank'] + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
 					nxe.merge(new_graph, graph, leaves[i], leaves[j], new_node)
@@ -334,7 +334,7 @@ def main():
 				if good == 2:
 					# merge leaves[i] and leaves[j]
 					syn_dist = ":" + str(pair[0] / 2.0)
-					new_node = "%s_%07d" % (mrca, cluster_counter)
+					new_node = "%s_%06d" % (mrca, cluster_counter)
 					cluster_counter += 1
 					ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + graph[leaves[i]][leaves[j]]['rank'] + "," + leaves[j] + ":" + graph[leaves[j]][leaves[i]]['rank'] + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
 					nxe.merge(new_graph, graph, leaves[i], leaves[j], new_node)
@@ -348,7 +348,7 @@ def main():
 		i = 0
 		while i < len(edges):
 			e = edges[i]
-			if graph.has_edge(e[0], e[1]):
+			if e[0][:32] != e[1][:32] and graph.has_edge(e[0], e[1]):  # don't merge self-hits from leaves, and check that it's not 2nd edge from an already merged pair
 				if graph[e[0]][e[1]]['rank'] == 1 and graph[e[1]][e[0]]['rank'] == 1:
 					##### MERGE e[0] and e[1]
 					ii = leaves.index(e[0])
@@ -357,7 +357,7 @@ def main():
 					mi = min(ii, jj)
 					pos = (ma * (ma - 1) / 2) + mi 
 					syn_dist = ":" + str(syn_matrix[pos] / 2.0)
-					new_node = "%s_%07d" % (mrca, cluster_counter)
+					new_node = "%s_%06d" % (mrca, cluster_counter)
 					cluster_counter += 1
 					ok_trees.append((new_node, (e[0], e[1]), ("(" + e[0] + ":1," + e[1] + ":1)", "(" + e[0] + syn_dist + "," + e[1] + syn_dist + ")")))
 					nxe.merge(new_graph, graph, e[0], e[1], new_node)
@@ -367,9 +367,9 @@ def main():
 					graph.remove_node(e[0])
 					graph.remove_node(e[1])
 					del edges[i]  # edges.remove(e)
+					i -= 1
 					edges.remove((e[1], e[0]))  # no need to i -= 1 because reciprocity implies the first edge of the pair encountered will trigger the merging
-			else:
-				i += 1
+			i += 1
 
 		# check remaining, is there any match in between them directly, any synteny?
 		# remaining = all nodes in graph, check what are their edges in new_graph = potential inparalogs
@@ -377,15 +377,27 @@ def main():
 
 		for node in new_graph.nodes():
 			if mrca not in node:
-				(k, v) = min([[f, new_graph[node][f]['rank']] for f in new_graph[node]], key=itemgetter(1))
-				if mrca in k:
-					potentials.append((node, k[32:]))  # k[:32] == mrca
+				# (k, v) = min([[f, new_graph[node][f]['rank']] for f in new_graph[node]], key=itemgetter(1))
+				if node not in genes_to_cluster:
+					new_orphan = "%s_%06d" % (mrca, cluster_counter)
+					cluster_counter += 1
+					genes_to_cluster[node] = (new_orphan, False)
+				else:
+					new_orphan = gene_to_cluster[node]
+				for k in new_graph[node].keys():
+					if mrca in k:
+						potentials.append((new_orphan, k))
+					elif node[:32] == k[:32]:  # self hit, possible for full species tree leaves only
+						if k not in genes_to_cluster:
+							new_orphan2 = "%s_%06d" % (mrca, cluster_counter)
+							cluster_counter += 1
+							genes_to_cluster[k] = (new_orphan2, False)
+						else:
+							new_orphan2 = gene_to_cluster[k]
+						potentials.append((new_orphan, new_orphan2))
 				# elif node[:32] != n[:32]:  # from both children, not the same  # else self blast so leaves?
 				# 	potentials.append(n)
-				new_orphan = "%s_%07d" % (mrca, cluster_counter)
-				cluster_counter += 1
 				ok_trees.append((new_orphan, (node,), (node, node)))  # (node,) comma is required so its a tuple that can be looped on and not on the string itself
-				genes_to_cluster[node] = (new_orphan, False)
 
 
 	# if args.synteny:
