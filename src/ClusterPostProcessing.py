@@ -111,11 +111,11 @@ def main():
 					if len(s) == 39:
 						if s[0] == "N":
 							if nwksMap[s[:32]][s][0].count(",") > 0:  # first line is tree with homology distances, second is with synteny distances
-								nwksMap[current_root][k][0][0] = nwksMap[current_root][k][0][0].replace(s, "(" + nwksMap[s[:32]][s][0][0] + ")")
-								nwksMap[current_root][k][0][1] = nwksMap[current_root][k][0][1].replace(s, "(" + nwksMap[s[:32]][s][0][1] + ")")
+								nwksMap[current_root][k][0] = nwksMap[current_root][k][0].replace(s, "(" + nwksMap[s[:32]][s][0] + ")")
+								nwksMap[current_root][k][1] = nwksMap[current_root][k][1].replace(s, "(" + nwksMap[s[:32]][s][1] + ")")
 							else:
-								nwksMap[current_root][k][0][0] = nwksMap[current_root][k][0][0].replace(s, nwksMap[s[:32]][s][0][0])
-								nwksMap[current_root][k][0][1] = nwksMap[current_root][k][0][1].replace(s, nwksMap[s[:32]][s][0][1])
+								nwksMap[current_root][k][0] = nwksMap[current_root][k][0].replace(s, nwksMap[s[:32]][s][0])
+								nwksMap[current_root][k][1] = nwksMap[current_root][k][1].replace(s, nwksMap[s[:32]][s][1])
 						elif s[0] == "L":
 							nwksMap[current_root][k][0][0] = nwksMap[current_root][k][0][0].replace(s, tagToGenome[s[:32]] + "_" + l_t[s])
 							nwksMap[current_root][k][0][1] = nwksMap[current_root][k][0][1].replace(s, tagToGenome[s[:32]] + "_" + l_t[s])

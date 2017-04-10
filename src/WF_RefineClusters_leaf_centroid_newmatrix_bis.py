@@ -459,7 +459,7 @@ def main():
 				tree_seq_count += 1
 				if args.synteny:
 					newSyntenyMap[clusterID]['count'] += 1
-		newNewickMap[clusterID] = [ok[1], ok[2]]  ###### CHANGE ok[1] or change reading in ClusterPostProcessing
+		newNewickMap[clusterID] = list(ok[2])  ###### CHANGE ok[1] or change reading in ClusterPostProcessing
 
 		my_lengths = []
 		min_taxa = len(taxa)
@@ -505,7 +505,7 @@ def main():
 				singles.write(">" + clusterID + ";" + str(len(s)) + "\n" + s + "\n")
 		else:
 			pickleToCons[clusterID] = []
-			newNewickMap[clusterID].append([])
+			# newNewickMap[clusterID].append([])
 			for g in ok[1]:
 				child = "_".join(g.split("_")[:-1])
 				seqs = {}
@@ -527,7 +527,7 @@ def main():
 				i = 0
 				for k, s in seqs.iteritems():
 					pickleToCons[clusterID].append(">" + k + ";" + str(i) + ";" + str(len(s)) + "\n" + s + "\n")  # str(i) is a unique part in name so that all different names for muscle/fasttree
-					newNewickMap[clusterID][2].append(">" + k + ";" + str(len(s)) + "\n" + s + "\n")
+					# newNewickMap[clusterID][2].append(">" + k + ";" + str(len(s)) + "\n" + s + "\n")
 					i += 1
 		# cluster_counter += 1
 	singles.close()
