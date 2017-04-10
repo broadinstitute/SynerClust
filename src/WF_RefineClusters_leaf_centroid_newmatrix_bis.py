@@ -383,7 +383,7 @@ def main():
 					cluster_counter += 1
 					genes_to_cluster[node] = (new_orphan, False)
 				else:
-					new_orphan = genes_to_cluster[node]
+					new_orphan = genes_to_cluster[node][0]
 				for k in new_graph[node].keys():
 					if mrca in k:
 						potentials.append((new_orphan, k))
@@ -393,7 +393,7 @@ def main():
 							cluster_counter += 1
 							genes_to_cluster[k] = (new_orphan2, False)
 						else:
-							new_orphan2 = genes_to_cluster[k]
+							new_orphan2 = genes_to_cluster[k][0]
 						potentials.append((new_orphan, new_orphan2))
 				# elif node[:32] != n[:32]:  # from both children, not the same  # else self blast so leaves?
 				# 	potentials.append(n)
