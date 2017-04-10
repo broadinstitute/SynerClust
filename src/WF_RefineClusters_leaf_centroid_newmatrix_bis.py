@@ -153,7 +153,7 @@ def main():
 
 	if args.synteny:
 		with open(repo_path + "nodes/" + args.node + "/trees/gene_to_cluster.pkl", "r") as f:
-			gene_to_cluster = pickle.load(f)
+			gene_to_rough_cluster = pickle.load(f)  # 
 	graphs = {}
 	with open(repo_path + "nodes/" + args.node + "/trees/cluster_graphs.dat", "r") as f:
 		to_parse = []
@@ -172,12 +172,12 @@ def main():
 
 	cluster_counter = 1
 	ok_trees = []
-	genes_to_cluster = {}
+	genes_to_cluster = {}  # not to mistake with gene_to_cluster that contains rough clustering for synteny calculation
 
 	with open(repo_path + "nodes/" + args.node + "/trees/orphan_genes.txt", "r") as f:
 		for line in f:
 			node = line.rstrip()
-			new_orphan = "%s_%07d" % (mrca, cluster_counter)
+			new_orphan = "%s_%06d" % (mrca, cluster_counter)
 			cluster_counter += 1
 			ok_trees.append((new_orphan, (node,), (node, node)))  # (node,) comma is required so its a tuple that can be looped on and not on the string itself
 			genes_to_cluster[node] = (new_orphan, False)
@@ -203,7 +203,7 @@ def main():
 				syn[n] = []
 				leaf = "_".join(n.split("_")[:-1])
 				for m in synteny_data[leaf][n]['neighbors']:
-					syn[n].append(gene_to_cluster[m])
+					syn[n].append(gene_to_rough_cluster[m])
 			syn_matrix = numpy.empty(len(leaves) * (len(leaves) - 1) / 2)
 			i = 1
 			pos = 0
@@ -383,7 +383,7 @@ def main():
 					cluster_counter += 1
 					genes_to_cluster[node] = (new_orphan, False)
 				else:
-					new_orphan = gene_to_cluster[node]
+					new_orphan = genes_to_cluster[node]
 				for k in new_graph[node].keys():
 					if mrca in k:
 						potentials.append((new_orphan, k))
@@ -393,7 +393,7 @@ def main():
 							cluster_counter += 1
 							genes_to_cluster[k] = (new_orphan2, False)
 						else:
-							new_orphan2 = gene_to_cluster[k]
+							new_orphan2 = genes_to_cluster[k]
 						potentials.append((new_orphan, new_orphan2))
 				# elif node[:32] != n[:32]:  # from both children, not the same  # else self blast so leaves?
 				# 	potentials.append(n)
