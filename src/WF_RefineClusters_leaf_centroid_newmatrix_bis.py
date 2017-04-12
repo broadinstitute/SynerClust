@@ -407,9 +407,12 @@ def main():
 	# 	for o in orphans:
 	# 		ok_trees.insert(0, [[o.rstrip()], [o.rstrip(), ""], True])
 
+	in_paralogs = []
 	for old in old_potentials:
 		if genes_to_cluster[old[0]][1] is False:  # gene is still in an orphan cluster
-			potentials.append((genes_to_cluster[old[0]][0], genes_to_cluster[old[1]][0]))
+			# potentials.append((genes_to_cluster[old[0]][0], genes_to_cluster[old[1]][0]))
+			in_paralogs.append((genes_to_cluster[old[0]][0], genes_to_cluster[old[1]][0]))
+	potentials.extend(in_paralogs)
 
 
 	for ok in ok_trees:  #### TODO check ok[2] for True (solved) or False (3 gene node to solve at next node)
@@ -570,6 +573,10 @@ def main():
 
 	with open(my_dir + "potential_inparalogs.pkl", "w") as f:
 		pickle.dump(potentials, f)
+
+	with open(my_dir + "current_inparalogs.pkl", "w") as f:
+		pickle.dump(inparalogs, f)
+
 	# script complete call
 	clusters_done_file = my_dir + "CLUSTERS_REFINED"
 	cr = open(clusters_done_file, 'w')
