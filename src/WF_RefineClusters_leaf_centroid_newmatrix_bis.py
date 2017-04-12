@@ -182,7 +182,7 @@ def main():
 			ok_trees.append((new_orphan, (node,), (node, node)))  # (node,) comma is required so its a tuple that can be looped on and not on the string itself
 			genes_to_cluster[node] = (new_orphan, False)
 
-	potentials = []  # potential inparalogs
+	potentials = {}  # potential inparalogs
 
 	logger.debug("Loading files took " + str(time.time() - TIMESTAMP))
 	TIMESTAMP = time.time()
@@ -377,24 +377,32 @@ def main():
 
 		for node in new_graph.nodes():
 			if mrca not in node:
-				# (k, v) = min([[f, new_graph[node][f]['rank']] for f in new_graph[node]], key=itemgetter(1))
 				if node not in genes_to_cluster:
 					new_orphan = "%s_%06d" % (mrca, cluster_counter)
 					cluster_counter += 1
 					genes_to_cluster[node] = (new_orphan, False)
 				else:
 					new_orphan = genes_to_cluster[node][0]
-				for k in new_graph[node].keys():
-					if mrca in k:
-						potentials.append((new_orphan, k))
-					elif node[:32] == k[:32]:  # self hit, possible for full species tree leaves only
-						if k not in genes_to_cluster:
-							new_orphan2 = "%s_%06d" % (mrca, cluster_counter)
-							cluster_counter += 1
-							genes_to_cluster[k] = (new_orphan2, False)
-						else:
-							new_orphan2 = genes_to_cluster[k][0]
-						potentials.append((new_orphan, new_orphan2))
+				(k, v) = min([[f, new_graph[node][f]['rank']] for f in new_graph[node]], key=itemgetter(1))
+				# for k in new_graph[node].keys():
+				if mrca in k:
+					if new_orphan not in potentials:
+						potentials[new_orphan] = set(k)
+					else:  # never?
+						potentials[new_orphan].add(k)
+					# potentials.append((new_orphan, k))
+				elif node[:32] == k[:32]:  # self hit, possible for full species tree leaves only
+					if k not in genes_to_cluster:
+						new_orphan2 = "%s_%06d" % (mrca, cluster_counter)
+						cluster_counter += 1
+						genes_to_cluster[k] = (new_orphan2, False)
+					else:
+						new_orphan2 = genes_to_cluster[k][0]
+					if new_orphan not in potentials:
+						potentials[new_orphan] = set(new_orphan2)
+					else:  # never?
+						potentials[new_orphan].add(new_orphan2)
+					# potentials.append((new_orphan, new_orphan2))
 				# elif node[:32] != n[:32]:  # from both children, not the same  # else self blast so leaves?
 				# 	potentials.append(n)
 				ok_trees.append((new_orphan, (node,), (node, node)))  # (node,) comma is required so its a tuple that can be looped on and not on the string itself
@@ -412,7 +420,17 @@ def main():
 		if genes_to_cluster[old[0]][1] is False:  # gene is still in an orphan cluster
 			# potentials.append((genes_to_cluster[old[0]][0], genes_to_cluster[old[1]][0]))
 			in_paralogs.append((genes_to_cluster[old[0]][0], genes_to_cluster[old[1]][0]))
-	potentials.extend(in_paralogs)
+			if genes_to_cluster[old[0]][0] not in in_paralogs:
+				in_paralogs[genes_to_cluster[old[0]][0]] = set(genes_to_cluster[old[1]][0])
+			else:
+				in_paralogs[genes_to_cluster[old[0]][0]].add(genes_to_cluster[old[1]][0])
+
+	for (k, v) in in_paralogs.items():
+		if k not in potentials:
+			potentials[k] = v
+		else:
+			potentials[k].update(v)
+	# potentials.extend(in_paralogs)
 
 
 	for ok in ok_trees:  #### TODO check ok[2] for True (solved) or False (3 gene node to solve at next node)
