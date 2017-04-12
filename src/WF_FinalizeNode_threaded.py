@@ -11,6 +11,7 @@ import networkx as nx
 # import median_of_medians
 import numpy
 import argparse
+import time
 
 DEVNULL = open(os.devnull, 'w')
 # DIST_THRESHOLD = 0.7
