@@ -593,7 +593,7 @@ def main():
 		pickle.dump(potentials, f)
 
 	with open(my_dir + "current_inparalogs.pkl", "w") as f:
-		pickle.dump(inparalogs, f)
+		pickle.dump(in_paralogs, f)
 
 	# script complete call
 	clusters_done_file = my_dir + "CLUSTERS_REFINED"
