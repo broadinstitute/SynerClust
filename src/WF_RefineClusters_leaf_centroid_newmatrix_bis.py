@@ -415,11 +415,11 @@ def main():
 	# 	for o in orphans:
 	# 		ok_trees.insert(0, [[o.rstrip()], [o.rstrip(), ""], True])
 
-	in_paralogs = []
+	in_paralogs = {}
 	for old in old_potentials:
 		if genes_to_cluster[old[0]][1] is False:  # gene is still in an orphan cluster
 			# potentials.append((genes_to_cluster[old[0]][0], genes_to_cluster[old[1]][0]))
-			in_paralogs.append((genes_to_cluster[old[0]][0], genes_to_cluster[old[1]][0]))
+			# in_paralogs.append((genes_to_cluster[old[0]][0], genes_to_cluster[old[1]][0]))
 			if genes_to_cluster[old[0]][0] not in in_paralogs:
 				in_paralogs[genes_to_cluster[old[0]][0]] = set(genes_to_cluster[old[1]][0])
 			else:
