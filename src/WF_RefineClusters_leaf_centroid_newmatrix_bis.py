@@ -417,13 +417,13 @@ def main():
 
 	in_paralogs = {}
 	for old in old_potentials:
-		if genes_to_cluster[old[0]][1] is False:  # gene is still in an orphan cluster
+		if genes_to_cluster[old][1] is False:  # gene is still in an orphan cluster
 			# potentials.append((genes_to_cluster[old[0]][0], genes_to_cluster[old[1]][0]))
 			# in_paralogs.append((genes_to_cluster[old[0]][0], genes_to_cluster[old[1]][0]))
-			if genes_to_cluster[old[0]][0] not in in_paralogs:
-				in_paralogs[genes_to_cluster[old[0]][0]] = set([genes_to_cluster[old[1]][0]])
+			if genes_to_cluster[old][0] not in in_paralogs:
+				in_paralogs[genes_to_cluster[old][0]] = set([genes_to_cluster[g][0] for g in old_potentials[old]])
 			else:
-				in_paralogs[genes_to_cluster[old[0]][0]].add(genes_to_cluster[old[1]][0])
+				in_paralogs[genes_to_cluster[old][0]].update([genes_to_cluster[g][0] for g in old_potentials[old]])
 
 	for (k, v) in in_paralogs.items():
 		if k not in potentials:
