@@ -3,6 +3,7 @@ import sys
 import os
 import pickle
 import logging
+import subprocess
 
 
 def usage():
@@ -38,6 +39,7 @@ def main(argv):
 		m8 = my_dir + "blast.m8"
 		m8s = []
 		lengths = []
+		processes = []
 		for c in children:
 			pfile = node_dir + c + "/" + c + ".pep"
 			c_fasta = my_dir + c + ".blast.fa"
@@ -77,15 +79,24 @@ def main(argv):
 			if len(strains) == 1:
 				self_blast_out = my_dir + c + "_self.blast.m8"
 				# os.system("#BLAST_PATHblastall -p blastp -b 6 -m8 -e " + evalue + " -a " + cores + " -d " + c_fasta + " -i " + c_fasta + " -o " + self_blast_out)
-				os.system("#BLAST_PATHblastp -num_alignments 6 -outfmt 6 -evalue " + evalue + " -num_threads " + cores + " -db " + c_fasta + " -query " + c_fasta + " -out " + self_blast_out)
+				cmd = ["#BLAST_PATHblastp", "-outfmt", "6", "-evalue" , evalue, "-num_threads", cores, "-db", c_fasta, "-query", c_fasta, "-out", self_blast_out]
+				# os.system("#BLAST_PATHblastp -num_alignments 6 -outfmt 6 -evalue " + evalue + " -num_threads " + cores + " -db " + c_fasta + " -query " + c_fasta + " -out " + self_blast_out)
+				processes.append(subprocess.Popen(cmd))
 
 		cat_head_cmd = "cat " + heads[0] + " " + heads[1] + " > " + my_head
 		logger.info(cat_head_cmd)
 		os.system(cat_head_cmd)
 		# os.system("#BLAST_PATHblastall -p blastp -m8 -e " + evalue + " -a " + cores + " -d " + fastas[0] + " -i " + fastas[1] + " -o " + m8s[1])
-		os.system("#BLAST_PATHblastp -outfmt 6 -evalue " + evalue + " -num_threads " + cores + " -db " + fastas[0] + " -query " + fastas[1] + " -out " + m8s[1])
+		# os.system("#BLAST_PATHblastp -outfmt 6 -evalue " + evalue + " -num_threads " + cores + "-db " + fastas[0] + " -query " + fastas[1] + " -out " + m8s[1])
+		cmd = ["#BLAST_PATHblastp", "-outfmt", "6", "-evalue" , evalue, "-num_threads", cores, "-db", fastas[0], "-query", fastas[1], "-out", m8s[1]]
+		processes.append(subprocess.Popen(cmd))
 		# os.system("#BLAST_PATHblastall -p blastp -m8 -e " + evalue + " -a " + cores + " -d " + fastas[1] + " -i " + fastas[0] + " -o " + m8s[0])
-		os.system("#BLAST_PATHblastp -outfmt 6 -evalue " + evalue + " -num_threads " + cores + " -db " + fastas[1] + " -query " + fastas[0] + " -out " + m8s[0])
+		# os.system("#BLAST_PATHblastp -outfmt 6 -evalue " + evalue + " -num_threads " + cores + " -db " + fastas[1] + " -query " + fastas[0] + " -out " + m8s[0])
+		cmd = ["#BLAST_PATHblastp", "-outfmt", "6", "-evalue" , evalue, "-num_threads", cores, "-db", fastas[1], "-query", fastas[0], "-out", m8s[0]]
+		processes.append(subprocess.Popen(cmd))
+
+		for p in processes:
+			p.communicate()  # wait for execution to finish
 
 		my_m8s = my_dir + "*m8"
 		os.system("cat " + my_m8s + " > " + m8)
