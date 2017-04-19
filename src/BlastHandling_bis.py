@@ -5,7 +5,7 @@ import logging
 import networkx as nx
 import pickle
 import os
-import subprocess
+# import subprocess
 
 DEVNULL = open(os.devnull, 'w')
 JACCARD_THRESHOLD = 0.2
@@ -68,7 +68,7 @@ class BlastParse:
 					current_rank += 1
 				elif (ts.getAdjPID() > bestAdjPID * min_best_hit):  # and best_evalue < 1.0:
 					# q_best.append((q, t, ts_score))
-					q_best.append((t, current_rank, bestAdjPID / ts.getAdjPID(), ts))
+					q_best.append((t, current_rank, ts.getAdjPID() / bestAdjPID, ts))
 					current_rank += 1
 		return q_best
 
@@ -99,45 +99,45 @@ class BlastParse:
 			# 	BlastParse.logger.debug("len(q_best) = " + str(len(q_best)) + " for " + q_best[0][2].query)
 			# checking for protein domain increasing number of hits
 			# if len(q_best) >= BlastParse.CORE_HITS_COUNT_THRESHOLD:
-				# identifying the potential domain
-				# (overlap_start, overlap_end, overlap_count) = BlastParse.longest_maximal_overlap_interval(q_best)
-				# if overlap_count >= BlastParse.CORE_HITS_COUNT_THRESHOLD and (overlap_end - overlap_start < q_best[0][2].qLength * BlastParse.OVERLAP_PROPORTION_THRESHOLD):
-				# 	BlastParse.logger.debug("Masking a region for query q = " + q)
-				# 	target_child = q_best[0][0][:q_best[0][0].rfind("_")]
-				# 	query_child = q[:q.rfind("_")]
+			# 	identifying the potential domain
+			# 	(overlap_start, overlap_end, overlap_count) = BlastParse.longest_maximal_overlap_interval(q_best)
+			# 	if overlap_count >= BlastParse.CORE_HITS_COUNT_THRESHOLD and (overlap_end - overlap_start < q_best[0][2].qLength * BlastParse.OVERLAP_PROPORTION_THRESHOLD):
+			# 		BlastParse.logger.debug("Masking a region for query q = " + q)
+			# 		target_child = q_best[0][0][:q_best[0][0].rfind("_")]
+			# 		query_child = q[:q.rfind("_")]
 
-				# 	# get query sequence
-				# 	cmd = ["cat", BlastParse.node_path + query_child + ".blast.fa"]
-				# 	cmd2 = ["grep", "-A", "1", q_best[0][2].query]
-				# 	process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
-				# 	fasta_file = process.communicate()[0]
-				# 	process = subprocess.Popen(cmd2, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
-				# 	query_seq = process.communicate(fasta_file)[0].split("\n")
+			# 		# get query sequence
+			# 		cmd = ["cat", BlastParse.node_path + query_child + ".blast.fa"]
+			# 		cmd2 = ["grep", "-A", "1", q_best[0][2].query]
+			# 		process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
+			# 		fasta_file = process.communicate()[0]
+			# 		process = subprocess.Popen(cmd2, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
+			# 		query_seq = process.communicate(fasta_file)[0].split("\n")
 
-				# 	# masking domain
-				# 	new_query = query_seq[0] + "\n" + query_seq[1][:overlap_start] + query_seq[1][overlap_start:overlap_end].lower() + query_seq[1][overlap_end:] + "\n"
+			# 		# masking domain
+			# 		new_query = query_seq[0] + "\n" + query_seq[1][:overlap_start] + query_seq[1][overlap_start:overlap_end].lower() + query_seq[1][overlap_end:] + "\n"
 
-				# 	# run blastp
-				# 	db = BlastParse.node_path + target_child + ".blast.fa"
-				# 	cmd = ["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", "1", "-lcase_masking", "-db", db]
-				# 	process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
-				# 	output = process.communicate(new_query)[0]
+			# 		# run blastp
+			# 		db = BlastParse.node_path + target_child + ".blast.fa"
+			# 		cmd = ["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", "1", "-lcase_masking", "-db", db]
+			# 		process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
+			# 		output = process.communicate(new_query)[0]
 
-				# 	# parse output
-				# 	new_q_hits = BlastParse.readBlastM8(output.split("\n"))
-				# 	new_q_best = BlastParse.getBestHits([new_q_hits[q][t] for t in new_q_hits[new_q_hits.keys()[0]]], min_best_hit)
+			# 		# parse output
+			# 		new_q_hits = BlastParse.readBlastM8(output.split("\n"))
+			# 		new_q_best = BlastParse.getBestHits([new_q_hits[q][t] for t in new_q_hits[new_q_hits.keys()[0]]], min_best_hit)
 
-				# 	# combine new hits with original ones
-				# 	filtered_q_best = []
-				# 	for new_h in new_q_best:
-				# 		for h in q_best:
-				# 			if new_h[0] == h[0]:
-				# 				filtered_q_best.append(h)
-				# 				break
-				# 	BlastParse.logger.debug("Query q = " + q + "\nPre-masking: " + str(len(q_best)) + " hits; Post-masking: " + str(len(filtered_q_best)) + " hits; Masked length = " + str(overlap_end - overlap_start) + " on " + str(overlap_count) + "sequences.")
-				# 	### Verify whether there is at least 1 hit left
-				# 	# assign new result to be used in the graph
-				# 	q_best = filtered_q_best
+			# 		# combine new hits with original ones
+			# 		filtered_q_best = []
+			# 		for new_h in new_q_best:
+			# 			for h in q_best:
+			# 				if new_h[0] == h[0]:
+			# 					filtered_q_best.append(h)
+			# 					break
+			# 		BlastParse.logger.debug("Query q = " + q + "\nPre-masking: " + str(len(q_best)) + " hits; Post-masking: " + str(len(filtered_q_best)) + " hits; Masked length = " + str(overlap_end - overlap_start) + " on " + str(overlap_count) + "sequences.")
+			# 		### Verify whether there is at least 1 hit left
+			# 		# assign new result to be used in the graph
+			# 		q_best = filtered_q_best
 
 			# q_best = sorted(q_best, key=lambda tup: tup[2])
 			q_best = sorted(q_best, key=lambda tup: tup[1])
@@ -152,7 +152,6 @@ class BlastParse:
 					bestReciprocalHits.add_edge(q, hit[0], rank=hit[1], m=hit[2])
 					reciprocal_edge = to_add.pop((hit[0], q))
 					bestReciprocalHits.add_edge(hit[0], q, rank=reciprocal_edge[0], m=reciprocal_edge[1])
-
 
 				# if not bestHits.has_edge(q, hit[0]):
 				# 	bestHits.add_edge(q, hit[0], rank=hit[1], m=hit[2], query="_".join(q.split("_")[:-1]))
@@ -194,7 +193,6 @@ class BlastParse:
 			for s in s2:
 				clusterID = "cluster_" + str(count)
 				if len(s.nodes()) > 1:
-					##### NEED TO SAVE TO FILE EITHER AS PICKLE OR TEXT WITH SOME SEPARATOR
 					graphs[clusterID] = nx.generate_edgelist(s)  # data=True is default
 				else:
 					orphans.write(s.nodes()[0] + "\n")
@@ -313,7 +311,7 @@ class BlastParse:
 				continue
 			elif int(q.split(";")[1]) > BlastParse.max_size_diff * int(t.split(";")[1]) or int(t.split(";")[1]) > BlastParse.max_size_diff * int(q.split(";")[1]):  # size difference too big
 				continue
-			mySeg = BlastSegment(q, t, line[2], line[3], line[6], line[7], line[11], line[10])  # query,target,pID,length,bitScore,evalue
+			mySeg = BlastSegment(q, t, line[2], line[3], line[6], line[7], line[11], line[10])  # query,target,pID,length,qstart,qend,bitScore,evalue
 			if Q not in hits:
 				hits[Q] = {}
 			if T not in hits[Q]:
