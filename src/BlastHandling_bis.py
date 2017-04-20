@@ -53,6 +53,7 @@ class BlastParse:
 	@staticmethod
 	def getBestHits(q_hits, min_best_hit):
 		bestAdjPID = 0.0
+		lastAdjPID = 0.0
 		best_evalue = 1.0
 		current_rank = 1
 		q_best = []
@@ -62,14 +63,17 @@ class BlastParse:
 			if ts.evalue < float(BlastParse.EVALUE_THRESHOLD):
 				if best_evalue == 1.0:  # and ts.evalue < float(1e-3):  # TODO change hardcoded evalue threshold
 					bestAdjPID = ts.getAdjPID()
+					lastAdjPID = bestAdjPID
 					best_evalue = ts.evalue
 					# q_best.append((q, t, ts_score))
 					q_best.append((t, current_rank, 1.0, ts))
-					current_rank += 1
+					# current_rank += 1
 				elif (ts.getAdjPID() > bestAdjPID * min_best_hit):  # and best_evalue < 1.0:
 					# q_best.append((q, t, ts_score))
+					if ts.getAdjPID() != lastAdjPID:  # if not a tie
+						current_rank += 1
 					q_best.append((t, current_rank, ts.getAdjPID() / bestAdjPID, ts))
-					current_rank += 1
+					lastAdjPID = ts.getAdjPID()
 		return q_best
 
 	# hits are scored by cumulative percent identity

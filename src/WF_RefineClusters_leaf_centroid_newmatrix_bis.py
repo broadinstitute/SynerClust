@@ -2,19 +2,20 @@
 
 import sys
 import os
-import NJ
+# import NJ
 import pickle
 import networkx as nx
 import NetworkX_Extension as nxe
 import numpy
 import logging
-import subprocess
+# import subprocess
 import argparse
 import time
+import math
 from operator import itemgetter
 
 DEVNULL = open(os.devnull, 'w')
-BEST_HIT_PROPORTION_THRESHOLD = 0.95
+BEST_HIT_PROPORTION_THRESHOLD = 0.90
 SYNTENY_THRESHOLD = 0.3
 
 
@@ -148,12 +149,12 @@ def main():
 
 # 	old_orphans = open(tree_dir + "orphan_genes.txt", 'r').readlines()
 # 	orphans = open(tree_dir + "orphan_genes.txt", 'r').readlines()
-	orphans = []
+	# orphans = []
 	ok_trees = []
 
 	if args.synteny:
 		with open(repo_path + "nodes/" + args.node + "/trees/gene_to_cluster.pkl", "r") as f:
-			gene_to_rough_cluster = pickle.load(f)  # 
+			gene_to_rough_cluster = pickle.load(f)
 	graphs = {}
 	with open(repo_path + "nodes/" + args.node + "/trees/cluster_graphs.dat", "r") as f:
 		to_parse = []
@@ -344,32 +345,64 @@ def main():
 					graph.remove_node(leaves[i])
 					graph.remove_node(leaves[j])
 		# check for remaining RBH and cluster
-		edges = graph.edges()
+		# edges = graph.edges()    # replace with nodes that still have edges
+		# i = 0
+		# while i < len(edges):
+		# 	e = edges[i]
+
 		i = 0
-		while i < len(edges):
-			e = edges[i]
-			if e[0][:32] != e[1][:32] and graph.has_edge(e[0], e[1]):  # don't merge self-hits from leaves, and check that it's not 2nd edge from an already merged pair
-				if graph[e[0]][e[1]]['rank'] == 1 and graph[e[1]][e[0]]['rank'] == 1:
-					##### MERGE e[0] and e[1]
-					ii = leaves.index(e[0])
-					jj = leaves.index(e[1])
-					ma = max(ii, jj)
-					mi = min(ii, jj)
-					pos = (ma * (ma - 1) / 2) + mi 
-					syn_dist = ":" + str(syn_matrix[pos] / 2.0)
-					new_node = "%s_%06d" % (mrca, cluster_counter)
-					cluster_counter += 1
-					ok_trees.append((new_node, (e[0], e[1]), ("(" + e[0] + ":1," + e[1] + ":1)", "(" + e[0] + syn_dist + "," + e[1] + syn_dist + ")")))
-					nxe.merge(new_graph, graph, e[0], e[1], new_node)
-					genes_to_cluster[e[0]] = (new_node, True)
-					genes_to_cluster[e[1]] = (new_node, True)
-					# remove other edges pointing to those nodes
-					graph.remove_node(e[0])
-					graph.remove_node(e[1])
-					del edges[i]  # edges.remove(e)
-					i -= 1
-					edges.remove((e[1], e[0]))  # no need to i -= 1 because reciprocity implies the first edge of the pair encountered will trigger the merging
-			i += 1
+		nodes_left = [n for n in graph.nodes() if graph[n]]  # nodes left that still have edges connecting them to other nodes
+		while i < len(nodes_left):
+			n1 = nodes_left[i]
+			# if e[0][:32] != e[1][:32] and graph.has_edge(e[0], e[1]):  # don't merge self-hits from leaves, and check that it's not 2nd edge from an already merged pair or edge with a removed by merging node
+			targets = [n2 for n2 in graph[n1] if graph[n1][n2]['rank'] == 1 and n1[:32] != n2[:32]]  # don't merge self-hits from leaves
+			if len(targets) == 0:
+				i += 1
+				continue
+			if len(targets) > 1:
+				pairs = []
+				for n2 in targets:
+					ii = leaves.index(n1)
+					jj = leaves.index(n2)
+					syn = 1.0
+					if ii < jj:
+						syn = syn_matrix[(jj * (jj - 1) / 2) + ii]
+					else:
+						syn = syn_matrix[(ii * (ii - 1) / 2) + jj]
+					pairs.append(n2, syn)  # target, synteny
+				pairs.sort(key=itemgetter(1))  # sort by ascending synteny distance
+				if pairs[0][1] < 1.0 and pairs[0][1] != pairs[1][1]:  # synteny evidance and no ex-aequo
+					pair = pairs[0][0]
+				else:  # no evidance of which node is the good one to merge to
+					i += 1
+					continue
+			else:
+				pair = targets[0]
+				# if graph[e[0]][e[1]]['rank'] == 1 and graph[e[1]][e[0]]['rank'] == 1:
+				# MERGE e[0] and e[1]
+			ii = leaves.index(n1)
+			jj = leaves.index(pair)
+			ma = max(ii, jj)
+			mi = min(ii, jj)
+			pos = (ma * (ma - 1) / 2) + mi
+			syn_dist = ":" + str(syn_matrix[pos] / 2.0)
+			new_node = "%s_%06d" % (mrca, cluster_counter)
+			cluster_counter += 1
+			ok_trees.append((new_node, (n1, pair), ("(" + n1 + ":1," + pair + ":1)", "(" + n1 + syn_dist + "," + pair + syn_dist + ")")))
+			nxe.merge(new_graph, graph, n1, pair, new_node)
+			genes_to_cluster[n1] = (new_node, True)
+			genes_to_cluster[pair] = (new_node, True)
+			# remove other edges pointing to those nodes
+			graph.remove_node(n1)
+			graph.remove_node(pair)
+			if nodes_left.index(pair) < i:
+				i -= 1
+			nodes_left.remove(n1)
+			nodes_left.remove(pair)
+			# del edges[i]  # edges.remove(e)
+			# i -= 1
+			# edges.remove((pair, n1))  # no need to i -= 1 because reciprocity implies the first edge of the pair encountered will trigger the merging
+			# i += 1
 
 		# check remaining, is there any match in between them directly, any synteny?
 		# remaining = all nodes in graph, check what are their edges in new_graph = potential inparalogs
@@ -407,7 +440,6 @@ def main():
 				# 	potentials.append(n)
 				ok_trees.append((new_orphan, (node,), (node, node)))  # (node,) comma is required so its a tuple that can be looped on and not on the string itself
 
-
 	# if args.synteny:
 	# 	for o in orphans:
 	# 		ok_trees.insert(0, [[o.rstrip()], [o.rstrip(), o.rstrip()], True])
@@ -432,8 +464,7 @@ def main():
 			potentials[k].update(v)
 	# potentials.extend(in_paralogs)
 
-
-	for ok in ok_trees:  #### TODO check ok[2] for True (solved) or False (3 gene node to solve at next node)
+	for ok in ok_trees:
 		# c = str(cluster_counter)
 		# clusterID = ""
 		# while len(c) < 6:
@@ -480,7 +511,7 @@ def main():
 				tree_seq_count += 1
 				if args.synteny:
 					newSyntenyMap[clusterID]['count'] += 1
-		newNewickMap[clusterID] = list(ok[2])  ###### CHANGE ok[1] or change reading in ClusterPostProcessing
+		newNewickMap[clusterID] = list(ok[2])
 
 		my_lengths = []
 		min_taxa = len(taxa)
@@ -534,7 +565,7 @@ def main():
 					seqs[g] = children_cons[child][g]
 				else:
 					for seq in children_cons[child][g]:
-# 						if seq[0] == ">":  # else its a leaf so only sequence is present
+						# if seq[0] == ">":  # else its a leaf so only sequence is present
 						i = 0
 						identifier = None
 						for s in seq.rstrip().split("\n"):
