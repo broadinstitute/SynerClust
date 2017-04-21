@@ -354,8 +354,9 @@ def main():
 		nodes_left = [n for n in graph.nodes() if graph[n]]  # nodes left that still have edges connecting them to other nodes
 		while i < len(nodes_left):
 			n1 = nodes_left[i]
+			pair = None
 			# if e[0][:32] != e[1][:32] and graph.has_edge(e[0], e[1]):  # don't merge self-hits from leaves, and check that it's not 2nd edge from an already merged pair or edge with a removed by merging node
-			targets = [n2 for n2 in graph[n1] if graph[n1][n2]['rank'] == 1 and n1[:32] != n2[:32]]  # don't merge self-hits from leaves
+			targets = [n2 for n2 in graph[n1] if graph[n1][n2]['rank'] == 1 and graph[n2][n1]['rank'] and n1[:32] != n2[:32]]  # RBH, and don't merge self-hits from leaves
 			if len(targets) == 0:
 				i += 1
 				continue
@@ -369,10 +370,32 @@ def main():
 						syn = syn_matrix[(jj * (jj - 1) / 2) + ii]
 					else:
 						syn = syn_matrix[(ii * (ii - 1) / 2) + jj]
-					pairs.append(n2, syn)  # target, synteny
+					pairs.append([n2, syn])  # target, synteny
 				pairs.sort(key=itemgetter(1))  # sort by ascending synteny distance
 				if pairs[0][1] < 1.0 and pairs[0][1] != pairs[1][1]:  # synteny evidance and no ex-aequo
-					pair = pairs[0][0]
+					# CHECK IF THE 2ND NODE ALSO HAS THE LOWEST SYNTENY WITH THE CURRENT NODE
+					# CHECK SYNTENY MATRIX AT 2ND NODE VALUES FIRST? REVERT INDEX TO CHECK IF EDGE EXISTS AND GOOD HIT?
+					likely_pair = pairs[0][0]
+					targets2 = [n2 for n2 in graph[likely_pair] if graph[likely_pair][n2]['rank'] == 1 and graph[n2][likely_pair]['rank'] == 1 and likely_pair[:32] != n2[:32]]
+					if targets2 > 1:  # else it is the only hit so good
+						pairs2 = []
+						for n2 in targets2:
+							ii = leaves.index(n1)
+							jj = leaves.index(n2)
+							syn = 1.0
+							if ii < jj:
+								syn = syn_matrix[(jj * (jj - 1) / 2) + ii]
+							else:
+								syn = syn_matrix[(ii * (ii - 1) / 2) + jj]
+							pairs2.append([n2, syn])  # target, synteny
+						pairs2.sort(key=itemgetter(1))  # sort by ascending synteny distance
+						if pairs2[0][0] == n1 and pairs2[0][1] != pairs2[1][1]:  # synteny evidance to 1st node and no ex-aequo
+							pair = pairs[0][0]
+						else:  # best node to merge from n1 side is not the best from n2 side
+							i += 1
+							continue
+					else:
+						pair = pairs[0][0]
 				else:  # no evidance of which node is the good one to merge to
 					i += 1
 					continue
