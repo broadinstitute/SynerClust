@@ -360,7 +360,7 @@ def main():
 			if len(targets) == 0:
 				i += 1
 				continue
-			if len(targets) > 1:
+			if len(targets) >= 1:
 				pairs = []
 				for n2 in targets:
 					ii = leaves.index(n1)
@@ -372,15 +372,15 @@ def main():
 						syn = syn_matrix[(ii * (ii - 1) / 2) + jj]
 					pairs.append([n2, syn])  # target, synteny
 				pairs.sort(key=itemgetter(1))  # sort by ascending synteny distance
-				if pairs[0][1] < 1.0 and pairs[0][1] != pairs[1][1]:  # synteny evidance and no ex-aequo
+				if pairs[0][1] < 1.0 and (len(pairs) == 1 or pairs[0][1] != pairs[1][1]):  # synteny evidance and no ex-aequo
 					# CHECK IF THE 2ND NODE ALSO HAS THE LOWEST SYNTENY WITH THE CURRENT NODE
 					# CHECK SYNTENY MATRIX AT 2ND NODE VALUES FIRST? REVERT INDEX TO CHECK IF EDGE EXISTS AND GOOD HIT?
 					likely_pair = pairs[0][0]
 					targets2 = [n2 for n2 in graph[likely_pair] if graph[likely_pair][n2]['rank'] == 1 and graph[n2][likely_pair]['rank'] == 1 and likely_pair[:32] != n2[:32]]
-					if targets2 > 1:  # else it is the only hit so good
+					if len(targets2) > 1:  # else it is the only hit so good (because reciprocity previously checked)
 						pairs2 = []
 						for n2 in targets2:
-							ii = leaves.index(n1)
+							ii = leaves.index(likely_pair)
 							jj = leaves.index(n2)
 							syn = 1.0
 							if ii < jj:
