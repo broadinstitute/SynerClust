@@ -213,13 +213,16 @@ def main():
 				syn_m.discard(cluster)
 				mSeqs = len(syn[m]) - syn[m].count(cluster)
 				for n in leaves[:i]:
+					syn_n = set(syn[n])
+					syn_n.discard(cluster)
 					nSeqs = len(syn[n]) - syn[n].count(cluster)
 					matches = 0
 					if mSeqs == 0 or nSeqs == 0:
 						syn_matrix[pos] = 1.0  # no neighbors in common if someone has no neighbors  # -= 0 ? does it change anything?
 						pos += 1
 						continue
-					all_neighbors = syn_m & set(syn[n])  # no need to .discard(cluster) since already did in syn_m, so won't be present in union
+					# all_neighbors = syn_m & set(syn[n])  # no need to .discard(cluster) since already did in syn_m, so won't be present in union
+					all_neighbors = syn_m | syn_n
 					for a in all_neighbors:
 						t_m = max(syn[m].count(a), 0)
 						t_n = max(syn[n].count(a), 0)
@@ -411,7 +414,7 @@ def main():
 			syn_dist = ":" + str(syn_matrix[pos] / 2.0)
 			new_node = "%s_%06d" % (mrca, cluster_counter)
 			cluster_counter += 1
-			ok_trees.append((new_node, (n1, pair), ("(" + n1 + ":1," + pair + ":1)", "(" + n1 + syn_dist + "," + pair + syn_dist + ")")))
+			ok_trees.append((new_node, (n1, pair), ("(" + n1 + ":" + graph[n1][pair]['rank'] + "," + pair + ":" + graph[pair][n1]['rank'] + ")", "(" + n1 + syn_dist + "," + pair + syn_dist + ")")))
 			nxe.merge(new_graph, graph, n1, pair, new_node)
 			genes_to_cluster[n1] = (new_node, True)
 			genes_to_cluster[pair] = (new_node, True)
@@ -439,7 +442,7 @@ def main():
 					genes_to_cluster[node] = (new_orphan, False)
 				else:
 					new_orphan = genes_to_cluster[node][0]
-				(k, v) = min([[f, new_graph[node][f]['rank']] for f in new_graph[node]], key=itemgetter(1))
+				(k, v) = min([[f, new_graph[node][f]['rank']] for f in new_graph[node]], key=itemgetter(1))  # add secondary ranking by synteny?
 				# for k in new_graph[node].keys():
 				if mrca in k:
 					if new_orphan not in potentials:
