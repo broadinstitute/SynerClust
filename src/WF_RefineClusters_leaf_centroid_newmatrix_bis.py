@@ -340,7 +340,7 @@ def main():
 					syn_dist = ":" + str(pair[0] / 2.0)
 					new_node = "%s_%06d" % (mrca, cluster_counter)
 					cluster_counter += 1
-					ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + graph[leaves[i]][leaves[j]]['rank'] + "," + leaves[j] + ":" + graph[leaves[j]][leaves[i]]['rank'] + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
+					ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + str(graph[leaves[i]][leaves[j]]['rank']) + "," + leaves[j] + ":" + str(graph[leaves[j]][leaves[i]]['rank']) + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
 					nxe.merge(new_graph, graph, leaves[i], leaves[j], new_node)
 					genes_to_cluster[leaves[i]] = (new_node, True)
 					genes_to_cluster[leaves[j]] = (new_node, True)
@@ -414,7 +414,7 @@ def main():
 			syn_dist = ":" + str(syn_matrix[pos] / 2.0)
 			new_node = "%s_%06d" % (mrca, cluster_counter)
 			cluster_counter += 1
-			ok_trees.append((new_node, (n1, pair), ("(" + n1 + ":" + graph[n1][pair]['rank'] + "," + pair + ":" + graph[pair][n1]['rank'] + ")", "(" + n1 + syn_dist + "," + pair + syn_dist + ")")))
+			ok_trees.append((new_node, (n1, pair), ("(" + n1 + ":" + str(graph[n1][pair]['rank']) + "," + pair + ":" + str(graph[pair][n1]['rank']) + ")", "(" + n1 + syn_dist + "," + pair + syn_dist + ")")))
 			nxe.merge(new_graph, graph, n1, pair, new_node)
 			genes_to_cluster[n1] = (new_node, True)
 			genes_to_cluster[pair] = (new_node, True)
