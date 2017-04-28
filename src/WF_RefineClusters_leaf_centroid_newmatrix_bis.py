@@ -228,7 +228,7 @@ def main():
 						t_n = max(syn[n].count(a), 0)
 						matches += min(t_m, t_n)
 					# synFrac = float(matches) / float(max(mSeqs, nSeqs))
-					synFrac = float(matches) / float(mSeqs + nSeqs)
+					synFrac = float(matches) / float(mSeqs + nSeqs - matches)
 					# synFrac = float(matches) / float(max_neighbors_count)
 					syn_matrix[pos] = 1.0 - synFrac
 					pos += 1
