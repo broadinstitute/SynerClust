@@ -16,7 +16,7 @@ def usage():
 def main():
 	usage = "usage: ClusterPostProcessing [options] genomes_directory specific_node_directory number_of_genomes"
 	parser = argparse.ArgumentParser(usage)
-	parser.add_argument('-a', dest="alignement", type=bool, default=False, action='store_true', help="Whether to output whole cluster alignements (slow) (Default=False)")
+	parser.add_argument('-a', dest="alignement", default=False, action='store_true', help="Whether to output whole cluster alignements (slow) (Default=False)")
 	parser.add_argument('folders', nargs=3, help="genome_directory specific_node_directory/locus_mappings.pkl number_of_genomes (Required)")
 	args = parser.parse_args()
 

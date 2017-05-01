@@ -201,21 +201,23 @@ def main():
 			leaves.sort()
 			syn = {}
 			for n in leaves:  # genes
-				syn[n] = []
 				leaf = "_".join(n.split("_")[:-1])
+				syn[n] = [[], synteny_data[leaf][n]['count']]
 				for m in synteny_data[leaf][n]['neighbors']:
-					syn[n].append(gene_to_rough_cluster[m])
+					syn[n][0].append(gene_to_rough_cluster[m])
 			syn_matrix = numpy.empty(len(leaves) * (len(leaves) - 1) / 2)
 			i = 1
 			pos = 0
 			for m in leaves[1:]:
-				syn_m = set(syn[m])
+				syn_m = set(syn[m][0])
+				count_m = float(syn[m][1])
 				syn_m.discard(cluster)
-				mSeqs = len(syn[m]) - syn[m].count(cluster)
+				mSeqs = len(syn[m][0]) - syn[m][0].count(cluster)
 				for n in leaves[:i]:
-					syn_n = set(syn[n])
+					syn_n = set(syn[n][0])
+					count_n = float(syn[n][1])
 					syn_n.discard(cluster)
-					nSeqs = len(syn[n]) - syn[n].count(cluster)
+					nSeqs = len(syn[n][0]) - syn[n][0].count(cluster)
 					matches = 0
 					if mSeqs == 0 or nSeqs == 0:
 						syn_matrix[pos] = 1.0  # no neighbors in common if someone has no neighbors  # -= 0 ? does it change anything?
@@ -224,8 +226,8 @@ def main():
 					# all_neighbors = syn_m & set(syn[n])  # no need to .discard(cluster) since already did in syn_m, so won't be present in union
 					all_neighbors = syn_m | syn_n
 					for a in all_neighbors:
-						t_m = max(syn[m].count(a), 0)
-						t_n = max(syn[n].count(a), 0)
+						t_m = max(syn[m][0].count(a), 0) / count_m  # divide by count so that merging a level N nodes with a leaf doesn't give a max synteny of 1/N only
+						t_n = max(syn[n][0].count(a), 0) / count_n
 						matches += min(t_m, t_n)
 					# synFrac = float(matches) / float(max(mSeqs, nSeqs))
 					synFrac = float(matches) / float(mSeqs + nSeqs - matches)
@@ -281,8 +283,8 @@ def main():
 		while not it.finished:
 			if it[0] <= SYNTENY_THRESHOLD:
 				position = it.index + 1  # formula works for indexes starting at 1, so need to offset
-				i = math.ceil(math.sqrt(2 * position + 0.25) - 0.5)  # formula is for lower triangular matrix, so need to offset distance matrix columns because we start at 0
-				j = position - ((i - 1) * i / 2)  # no need for row offset because row 0 is empty in distance matrix
+				i = int(round(math.ceil(math.sqrt(2 * position + 0.25) - 0.5)))  # formula is for lower triangular matrix, so need to offset distance matrix columns because we start at 0
+				j = int(position - ((i - 1) * i / 2))  # no need for row offset because row 0 is empty in distance matrix
 				syntenic.append((it[0], it.index, i - 1, j))
 			it.iternext()
 		syntenic.sort(key=itemgetter(0))  # key precised so that sort is only done on first element of lists and not on other ones for potential ties
@@ -301,7 +303,7 @@ def main():
 					syn_dist = ":" + str(pair[0] / 2.0)
 					new_node = "%s_%06d" % (mrca, cluster_counter)
 					cluster_counter += 1
-					ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + graph[leaves[i]][leaves[j]]['rank'] + "," + leaves[j] + ":" + graph[leaves[j]][leaves[i]]['rank'] + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
+					ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + str(graph[leaves[i]][leaves[j]]['rank']) + "," + leaves[j] + ":" + str(graph[leaves[j]][leaves[i]]['rank']) + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
 					nxe.merge(new_graph, graph, leaves[i], leaves[j], new_node)
 					genes_to_cluster[leaves[i]] = (new_node, True)
 					genes_to_cluster[leaves[j]] = (new_node, True)
@@ -560,6 +562,7 @@ def main():
 		sstats.write("\t".join(out_dat) + "\n")
 
 		if len(ok[1]) == 1:
+			g = ok[1][0]
 			child = "_".join(ok[1][0].split("_")[:-1])
 # 			seq = children_cons[child][ok[0][0]]
 			seqs = {}

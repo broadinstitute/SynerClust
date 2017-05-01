@@ -59,6 +59,8 @@ class BlastParse:
 		q_best = []
 		for ts in q_hits:
 			# ts_score = ts.getScore()
+			if ts.pID < 0.5 or ts.length < 0.5 * ts.qLength:
+				continue
 			t = ts.target.split(";")[0]
 			if ts.evalue < float(BlastParse.EVALUE_THRESHOLD):
 				if best_evalue == 1.0:  # and ts.evalue < float(1e-3):  # TODO change hardcoded evalue threshold
