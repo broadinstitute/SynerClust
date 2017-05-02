@@ -448,9 +448,11 @@ def main():
 				# for k in new_graph[node].keys():
 				if mrca in k:
 					if new_orphan not in potentials:
-						potentials[new_orphan] = set([k])
+						potentials[new_orphan] = [k]
 					else:  # never?
-						potentials[new_orphan].add(k)
+						if k in potentials[new_orphan]:
+							potentials[new_orphan].append(k)
+						# potentials[new_orphan].add(k)
 					# potentials.append((new_orphan, k))
 				elif node[:32] == k[:32]:  # self hit, possible for full species tree leaves only
 					if k not in genes_to_cluster:
@@ -460,9 +462,10 @@ def main():
 					else:
 						new_orphan2 = genes_to_cluster[k][0]
 					if new_orphan not in potentials:
-						potentials[new_orphan] = set([new_orphan2])
+						potentials[new_orphan] = [new_orphan2]
 					else:  # never?
-						potentials[new_orphan].add(new_orphan2)
+						if new_orphan2 in potentials[new_orphan]:
+							potentials[new_orphan].append(new_orphan2)
 					# potentials.append((new_orphan, new_orphan2))
 				# elif node[:32] != n[:32]:  # from both children, not the same  # else self blast so leaves?
 				# 	potentials.append(n)
@@ -481,15 +484,15 @@ def main():
 			# potentials.append((genes_to_cluster[old[0]][0], genes_to_cluster[old[1]][0]))
 			# in_paralogs.append((genes_to_cluster[old[0]][0], genes_to_cluster[old[1]][0]))
 			if genes_to_cluster[old][0] not in in_paralogs:
-				in_paralogs[genes_to_cluster[old][0]] = set([genes_to_cluster[g][0] for g in old_potentials[old]])
+				in_paralogs[genes_to_cluster[old][0]] = [genes_to_cluster[g][0] for g in old_potentials[old]]
 			else:
-				in_paralogs[genes_to_cluster[old][0]].update([genes_to_cluster[g][0] for g in old_potentials[old]])
+				in_paralogs[genes_to_cluster[old][0]].extend([genes_to_cluster[g][0] for g in old_potentials[old]])
 
 	for (k, v) in in_paralogs.items():
 		if k not in potentials:
 			potentials[k] = v
 		else:
-			potentials[k].update(v)
+			potentials[k].extend(v)
 	# potentials.extend(in_paralogs)
 
 	for ok in ok_trees:
