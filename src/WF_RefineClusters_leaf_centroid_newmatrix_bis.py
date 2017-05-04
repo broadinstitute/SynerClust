@@ -15,7 +15,7 @@ import math
 from operator import itemgetter
 
 DEVNULL = open(os.devnull, 'w')
-BEST_HIT_PROPORTION_THRESHOLD = 0.90
+BEST_HIT_PROPORTION_THRESHOLD = 0.95
 SYNTENY_THRESHOLD = 0.3
 
 
@@ -320,13 +320,14 @@ def main():
 			# 	graph.remove_node(leaves[j])
 			else:
 				# if best hit for ones for which it isn't have -m close, cluster
-				## !! check first if best hit hasn't been clustered
+				# check first if best hit hasn't been clustered
 				good = 0
 				if graph[leaves[i]][leaves[j]]['rank'] == 1:
 					good += 1
 				elif max([f['rank'] for f in graph[leaves[i]].values()]) == graph[leaves[i]][leaves[j]]['rank']:  # best hit has been clustered, this is the best remaining hit
 					good += 1
 				elif [f for f in graph[leaves[i]].values() if f['rank'] == 1]:  # if best hit hasn't been clustered
+					#### check if better hits are syntenic?
 					if graph[leaves[i]][leaves[j]]['m'] >= BEST_HIT_PROPORTION_THRESHOLD:
 						good += 1
 				if graph[leaves[j]][leaves[i]]['rank'] == 1:
@@ -361,7 +362,7 @@ def main():
 			n1 = nodes_left[i]
 			pair = None
 			# if e[0][:32] != e[1][:32] and graph.has_edge(e[0], e[1]):  # don't merge self-hits from leaves, and check that it's not 2nd edge from an already merged pair or edge with a removed by merging node
-			targets = [n2 for n2 in graph[n1] if graph[n1][n2]['rank'] == 1 and graph[n2][n1]['rank'] and n1[:32] != n2[:32]]  # RBH, and don't merge self-hits from leaves
+			targets = [n2 for n2 in graph[n1] if graph[n1][n2]['rank'] == 1 and graph[n2][n1]['rank'] == 1 and n1[:32] != n2[:32]]  # RBH, and don't merge self-hits from leaves
 			if len(targets) == 0:
 				i += 1
 				continue
@@ -492,7 +493,12 @@ def main():
 		if k not in potentials:
 			potentials[k] = v
 		else:
-			potentials[k].extend(v)
+			i = 0
+			for o in v:
+				if o not in potentials[k]:
+					potentials[k].insert(i, o)  # use of counter to add in_paralogs at the begining of the list in the same order, because 1st inparalog should be the closest to leaves
+					i += 1
+			# potentials[k].extend(v)
 	# potentials.extend(in_paralogs)
 
 	for ok in ok_trees:
