@@ -283,8 +283,8 @@ def main():
 		while not it.finished:
 			if it[0] <= SYNTENY_THRESHOLD:
 				position = it.index + 1  # formula works for indexes starting at 1, so need to offset
-				i = int(round(math.ceil(math.sqrt(2 * position + 0.25) - 0.5)))  # formula is for lower triangular matrix, so need to offset distance matrix columns because we start at 0
-				j = int(position - ((i - 1) * i / 2))  # no need for row offset because row 0 is empty in distance matrix
+				j = int(round(math.ceil(math.sqrt(2 * position + 0.25) - 0.5)))  # formula is for lower triangular matrix, so need to offset distance matrix columns because we start at 0
+				i = int(position - ((j - 1) * j / 2))  # no need for row offset because row 0 is empty in distance matrix
 				syntenic.append((it[0], it.index, i - 1, j))
 			it.iternext()
 		syntenic.sort(key=itemgetter(0))  # key precised so that sort is only done on first element of lists and not on other ones for potential ties
