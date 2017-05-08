@@ -104,6 +104,8 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 					if value > max_len:
 						max_len = value
 						max_key = key
+					elif value == max_len:
+						max_key = min(max_key, key)
 				representative_sequences.append(max_key)
 				index = leaves.index(max_key)
 				# representative_sequences.append(leaves[index])
