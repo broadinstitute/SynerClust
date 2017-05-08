@@ -98,7 +98,7 @@ class BlastParse:
 
 		for q in hits:
 			q_hits = [hits[q][t] for t in hits[q]]
-			q_hits.sort(key=operator.attrgetter('bitScore'), reverse=True)
+			q_hits.sort(key=operator.attrgetter('bitScore', 'evalue', 'adjPID', 'target'), reverse=True)
 			q_best = BlastParse.getBestHits(q_hits, min_best_hit)
 
 			# if q_best:
