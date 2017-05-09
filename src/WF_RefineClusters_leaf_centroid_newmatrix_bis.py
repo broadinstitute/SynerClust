@@ -383,7 +383,7 @@ def main():
 						pairs.append([n2, syn])  # target, synteny
 					pairs.sort(key=itemgetter(1))  # sort by ascending synteny distance
 					# if pairs[0][1] < 1.0 and (len(pairs) == 1 or pairs[0][1] != pairs[1][1]):  # synteny evidance and no ex-aequo
-					if pairs[1][1] - pairs[0][1] > SYNTENY_DIFFERENCE_THRESHOLD:
+					if pairs[0][1] < 1.0 and (len(pairs) == 1 or pairs[1][1] - pairs[0][1] > SYNTENY_DIFFERENCE_THRESHOLD):
 						# CHECK IF THE 2ND NODE ALSO HAS THE LOWEST SYNTENY WITH THE CURRENT NODE
 						# CHECK SYNTENY MATRIX AT 2ND NODE VALUES FIRST? REVERT INDEX TO CHECK IF EDGE EXISTS AND GOOD HIT?
 						likely_pair = pairs[0][0]
