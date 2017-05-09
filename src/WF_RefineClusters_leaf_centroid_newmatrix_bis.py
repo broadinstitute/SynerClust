@@ -17,6 +17,7 @@ from operator import itemgetter
 DEVNULL = open(os.devnull, 'w')
 BEST_HIT_PROPORTION_THRESHOLD = 0.95
 SYNTENY_THRESHOLD = 0.3
+SYNTENY_DIFFERENCE_THRESHOLD = 0.2
 
 
 def usage():
@@ -356,82 +357,88 @@ def main():
 		# while i < len(edges):
 		# 	e = edges[i]
 
-		i = 0
-		nodes_left = [n for n in graph.nodes() if graph[n]]  # nodes left that still have edges connecting them to other nodes
-		while i < len(nodes_left):
-			n1 = nodes_left[i]
-			pair = None
-			# if e[0][:32] != e[1][:32] and graph.has_edge(e[0], e[1]):  # don't merge self-hits from leaves, and check that it's not 2nd edge from an already merged pair or edge with a removed by merging node
-			targets = [n2 for n2 in graph[n1] if graph[n1][n2]['rank'] == 1 and graph[n2][n1]['rank'] == 1 and n1[:32] != n2[:32]]  # RBH, and don't merge self-hits from leaves
-			if len(targets) == 0:
-				i += 1
-				continue
-			if len(targets) >= 1:
-				pairs = []
-				for n2 in targets:
-					ii = leaves.index(n1)
-					jj = leaves.index(n2)
-					syn = 1.0
-					if ii < jj:
-						syn = syn_matrix[(jj * (jj - 1) / 2) + ii]
-					else:
-						syn = syn_matrix[(ii * (ii - 1) / 2) + jj]
-					pairs.append([n2, syn])  # target, synteny
-				pairs.sort(key=itemgetter(1))  # sort by ascending synteny distance
-				if pairs[0][1] < 1.0 and (len(pairs) == 1 or pairs[0][1] != pairs[1][1]):  # synteny evidance and no ex-aequo
-					# CHECK IF THE 2ND NODE ALSO HAS THE LOWEST SYNTENY WITH THE CURRENT NODE
-					# CHECK SYNTENY MATRIX AT 2ND NODE VALUES FIRST? REVERT INDEX TO CHECK IF EDGE EXISTS AND GOOD HIT?
-					likely_pair = pairs[0][0]
-					targets2 = [n2 for n2 in graph[likely_pair] if graph[likely_pair][n2]['rank'] == 1 and graph[n2][likely_pair]['rank'] == 1 and likely_pair[:32] != n2[:32]]
-					if len(targets2) > 1:  # else it is the only hit so good (because reciprocity previously checked)
-						pairs2 = []
-						for n2 in targets2:
-							ii = leaves.index(likely_pair)
-							jj = leaves.index(n2)
-							syn = 1.0
-							if ii < jj:
-								syn = syn_matrix[(jj * (jj - 1) / 2) + ii]
-							else:
-								syn = syn_matrix[(ii * (ii - 1) / 2) + jj]
-							pairs2.append([n2, syn])  # target, synteny
-						pairs2.sort(key=itemgetter(1))  # sort by ascending synteny distance
-						if pairs2[0][0] == n1 and pairs2[0][1] != pairs2[1][1]:  # synteny evidance to 1st node and no ex-aequo
-							pair = pairs[0][0]
-						else:  # best node to merge from n1 side is not the best from n2 side
-							i += 1
-							continue
-					else:
-						pair = pairs[0][0]
-				else:  # no evidance of which node is the good one to merge to
+		changed = True
+		while changed:
+			changed = False
+			i = 0
+			nodes_left = [n for n in graph.nodes() if graph[n]]  # nodes left that still have edges connecting them to other nodes
+			while i < len(nodes_left):
+				n1 = nodes_left[i]
+				pair = None
+				# if e[0][:32] != e[1][:32] and graph.has_edge(e[0], e[1]):  # don't merge self-hits from leaves, and check that it's not 2nd edge from an already merged pair or edge with a removed by merging node
+				targets = [n2 for n2 in graph[n1] if graph[n1][n2]['rank'] == 1 and graph[n2][n1]['rank'] == 1 and n1[:32] != n2[:32]]  # RBH, and don't merge self-hits from leaves
+				if len(targets) == 0:
 					i += 1
 					continue
-			else:
-				pair = targets[0]
-				# if graph[e[0]][e[1]]['rank'] == 1 and graph[e[1]][e[0]]['rank'] == 1:
-				# MERGE e[0] and e[1]
-			ii = leaves.index(n1)
-			jj = leaves.index(pair)
-			ma = max(ii, jj)
-			mi = min(ii, jj)
-			pos = (ma * (ma - 1) / 2) + mi
-			syn_dist = ":" + str(syn_matrix[pos] / 2.0)
-			new_node = "%s_%06d" % (mrca, cluster_counter)
-			cluster_counter += 1
-			ok_trees.append((new_node, (n1, pair), ("(" + n1 + ":" + str(graph[n1][pair]['rank']) + "," + pair + ":" + str(graph[pair][n1]['rank']) + ")", "(" + n1 + syn_dist + "," + pair + syn_dist + ")")))
-			nxe.merge(new_graph, graph, n1, pair, new_node)
-			genes_to_cluster[n1] = (new_node, True)
-			genes_to_cluster[pair] = (new_node, True)
-			# remove other edges pointing to those nodes
-			graph.remove_node(n1)
-			graph.remove_node(pair)
-			if nodes_left.index(pair) < i:
-				i -= 1
-			nodes_left.remove(n1)
-			nodes_left.remove(pair)
-			# del edges[i]  # edges.remove(e)
-			# i -= 1
-			# edges.remove((pair, n1))  # no need to i -= 1 because reciprocity implies the first edge of the pair encountered will trigger the merging
-			# i += 1
+				if len(targets) >= 1:
+					pairs = []
+					for n2 in targets:
+						ii = leaves.index(n1)
+						jj = leaves.index(n2)
+						syn = 1.0
+						if ii < jj:
+							syn = syn_matrix[(jj * (jj - 1) / 2) + ii]
+						else:
+							syn = syn_matrix[(ii * (ii - 1) / 2) + jj]
+						pairs.append([n2, syn])  # target, synteny
+					pairs.sort(key=itemgetter(1))  # sort by ascending synteny distance
+					# if pairs[0][1] < 1.0 and (len(pairs) == 1 or pairs[0][1] != pairs[1][1]):  # synteny evidance and no ex-aequo
+					if pairs[1][1] - pairs[0][1] > SYNTENY_DIFFERENCE_THRESHOLD:
+						# CHECK IF THE 2ND NODE ALSO HAS THE LOWEST SYNTENY WITH THE CURRENT NODE
+						# CHECK SYNTENY MATRIX AT 2ND NODE VALUES FIRST? REVERT INDEX TO CHECK IF EDGE EXISTS AND GOOD HIT?
+						likely_pair = pairs[0][0]
+						targets2 = [n2 for n2 in graph[likely_pair] if graph[likely_pair][n2]['rank'] == 1 and graph[n2][likely_pair]['rank'] == 1 and likely_pair[:32] != n2[:32]]
+						if len(targets2) > 1:  # else it is the only hit so good (because reciprocity previously checked)
+							pairs2 = []
+							for n2 in targets2:
+								ii = leaves.index(likely_pair)
+								jj = leaves.index(n2)
+								syn = 1.0
+								if ii < jj:
+									syn = syn_matrix[(jj * (jj - 1) / 2) + ii]
+								else:
+									syn = syn_matrix[(ii * (ii - 1) / 2) + jj]
+								pairs2.append([n2, syn])  # target, synteny
+							pairs2.sort(key=itemgetter(1))  # sort by ascending synteny distance
+							# if pairs2[0][0] == n1 and pairs2[0][1] != pairs2[1][1]:  # synteny evidance to 1st node and no ex-aequo
+							if pairs2[0][0] == n1 and pairs[1][1] - pairs[0][1] > SYNTENY_DIFFERENCE_THRESHOLD:  # synteny evidance to 1st node and no ex-aequo
+								pair = pairs[0][0]
+							else:  # best node to merge from n1 side is not the best from n2 side
+								i += 1
+								continue
+						else:
+							pair = pairs[0][0]
+					else:  # no evidance of which node is the good one to merge to
+						i += 1
+						continue
+				else:
+					pair = targets[0]
+					# if graph[e[0]][e[1]]['rank'] == 1 and graph[e[1]][e[0]]['rank'] == 1:
+					# MERGE e[0] and e[1]
+				changed = True
+				ii = leaves.index(n1)
+				jj = leaves.index(pair)
+				ma = max(ii, jj)
+				mi = min(ii, jj)
+				pos = (ma * (ma - 1) / 2) + mi
+				syn_dist = ":" + str(syn_matrix[pos] / 2.0)
+				new_node = "%s_%06d" % (mrca, cluster_counter)
+				cluster_counter += 1
+				ok_trees.append((new_node, (n1, pair), ("(" + n1 + ":" + str(graph[n1][pair]['rank']) + "," + pair + ":" + str(graph[pair][n1]['rank']) + ")", "(" + n1 + syn_dist + "," + pair + syn_dist + ")")))
+				nxe.merge(new_graph, graph, n1, pair, new_node)
+				genes_to_cluster[n1] = (new_node, True)
+				genes_to_cluster[pair] = (new_node, True)
+				# remove other edges pointing to those nodes
+				graph.remove_node(n1)
+				graph.remove_node(pair)
+				if nodes_left.index(pair) < i:
+					i -= 1
+				nodes_left.remove(n1)
+				nodes_left.remove(pair)
+				# del edges[i]  # edges.remove(e)
+				# i -= 1
+				# edges.remove((pair, n1))  # no need to i -= 1 because reciprocity implies the first edge of the pair encountered will trigger the merging
+				# i += 1
 
 		# check remaining, is there any match in between them directly, any synteny?
 		# remaining = all nodes in graph, check what are their edges in new_graph = potential inparalogs
