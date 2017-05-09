@@ -401,7 +401,7 @@ def main():
 								pairs2.append([n2, syn])  # target, synteny
 							pairs2.sort(key=itemgetter(1))  # sort by ascending synteny distance
 							# if pairs2[0][0] == n1 and pairs2[0][1] != pairs2[1][1]:  # synteny evidance to 1st node and no ex-aequo
-							if pairs2[0][0] == n1 and pairs[1][1] - pairs[0][1] > SYNTENY_DIFFERENCE_THRESHOLD:  # synteny evidance to 1st node and no ex-aequo
+							if pairs2[0][0] == n1 and pairs2[1][1] - pairs2[0][1] > SYNTENY_DIFFERENCE_THRESHOLD:  # synteny evidance to 1st node and no ex-aequo
 								pair = pairs[0][0]
 							else:  # best node to merge from n1 side is not the best from n2 side
 								i += 1
