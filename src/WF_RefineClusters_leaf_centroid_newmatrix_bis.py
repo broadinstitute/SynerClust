@@ -290,10 +290,14 @@ def main():
 			it.iternext()
 		syntenic.sort(key=itemgetter(0))  # key precised so that sort is only done on first element of lists and not on other ones for potential ties
 
-		for pair in syntenic:  # loop twice to allow pairs where best hit got pulled into another pair to be clustered on 2nd round?
+		# for pair in syntenic:  # loop twice to allow pairs where best hit got pulled into another pair to be clustered on 2nd round?
+		k = 0
+		while k < len(syntenic):
+			pair = syntenic[k]
 			i = pair[2]
 			j = pair[3]
 			if not graph.has_edge(leaves[i], leaves[j]):  # if (i, j) is in the graph, (j, i) is also per construction/filtering of rough clusters; reverse is true too
+				k += 1
 				continue
 			# check if this cell is the only low synteny for each member of the pair
 			if len([p for p in syntenic if p[2] == i or p[3] == i or p[2] == j or p[3] == j]) == 1:
@@ -322,35 +326,63 @@ def main():
 			else:
 				# if best hit for ones for which it isn't have -m close, cluster
 				# check first if best hit hasn't been clustered
-				good = 0
-				if graph[leaves[i]][leaves[j]]['rank'] == 1:
-					good += 1
-				elif max([f['rank'] for f in graph[leaves[i]].values()]) == graph[leaves[i]][leaves[j]]['rank']:  # best hit has been clustered, this is the best remaining hit
-					good += 1
-				elif [f for f in graph[leaves[i]].values() if f['rank'] == 1]:  # if best hit hasn't been clustered
-					#### check if better hits are syntenic?
-					if graph[leaves[i]][leaves[j]]['m'] >= BEST_HIT_PROPORTION_THRESHOLD:
+				l = k + 1
+				ties = [k]
+				s = set(pair[2:])
+				while l < len(syntenic) and pair[0] == syntenic[l][0]:  # syntenic tie
+					if syntenic[l][2] in s or syntenic[l][3] in s:
+						ties.append(l)
+					l += 1
+				ties_results = []
+				for l in ties:
+					good = 0
+					sum_of_ranks = graph[leaves[i]][leaves[j]]['rank'] + graph[leaves[j]][leaves[i]]['rank']
+					sum_of_m = graph[leaves[i]][leaves[j]]['m'] + graph[leaves[j]][leaves[i]]['m']
+					if graph[leaves[i]][leaves[j]]['rank'] == 1:
 						good += 1
-				if graph[leaves[j]][leaves[i]]['rank'] == 1:
-					good += 1
-				elif max([f['rank'] for f in graph[leaves[j]].values()]) == graph[leaves[j]][leaves[i]]['rank']:
-					good += 1
-				elif [f for f in graph[leaves[j]].values() if f['rank'] == 1]:  # if best hit hasn't been clustered
-					if graph[leaves[j]][leaves[i]]['m'] >= BEST_HIT_PROPORTION_THRESHOLD:
+					elif max([f['rank'] for f in graph[leaves[i]].values()]) == graph[leaves[i]][leaves[j]]['rank']:  # best hit has been clustered, this is the best remaining hit
 						good += 1
-				# if graph[leaves[i]][leaves[j]]['m'] >= BEST_HIT_PROPORTION_THRESHOLD and graph[leaves[j]][leaves[i]]['m'] >= BEST_HIT_PROPORTION_THRESHOLD:
-				if good == 2:
-					# merge leaves[i] and leaves[j]
-					syn_dist = ":" + str(pair[0] / 2.0)
-					new_node = "%s_%06d" % (mrca, cluster_counter)
-					cluster_counter += 1
-					ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + str(graph[leaves[i]][leaves[j]]['rank']) + "," + leaves[j] + ":" + str(graph[leaves[j]][leaves[i]]['rank']) + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
-					nxe.merge(new_graph, graph, leaves[i], leaves[j], new_node)
-					genes_to_cluster[leaves[i]] = (new_node, True)
-					genes_to_cluster[leaves[j]] = (new_node, True)
-					# remove other edges pointing to those nodes
-					graph.remove_node(leaves[i])
-					graph.remove_node(leaves[j])
+					elif [f for f in graph[leaves[i]].values() if f['rank'] == 1]:  # if best hit hasn't been clustered
+						#### check if better hits are syntenic?
+						if graph[leaves[i]][leaves[j]]['m'] >= BEST_HIT_PROPORTION_THRESHOLD:
+							good += 1
+					if graph[leaves[j]][leaves[i]]['rank'] == 1:
+						good += 1
+					elif max([f['rank'] for f in graph[leaves[j]].values()]) == graph[leaves[j]][leaves[i]]['rank']:
+						good += 1
+					elif [f for f in graph[leaves[j]].values() if f['rank'] == 1]:  # if best hit hasn't been clustered
+						if graph[leaves[j]][leaves[i]]['m'] >= BEST_HIT_PROPORTION_THRESHOLD:
+							good += 1
+					ties_results.append((l, good, sum_of_ranks, sum_of_m))
+					# if graph[leaves[i]][leaves[j]]['m'] >= BEST_HIT_PROPORTION_THRESHOLD and graph[leaves[j]][leaves[i]]['m'] >= BEST_HIT_PROPORTION_THRESHOLD:
+				ties_results.sort(key=lambda tup: (-tup[1], tup[2]), -tup[3])
+				if ties_results[0][1] != 2:  # good != 2 for the best
+					ties_results.reverse()
+					for tr in ties_results:
+						del syntenic[tr[0]]
+					# k += len(ties_results)
+					continue
+				if len(ties_results) == 1 or (len(ties_results) > 1 and (ties_results[0][1] > ties_results[1][1] or ties_results[0][2] < ties_results[1][2] or ties_results[0][3] > ties_results[1][3])):  # triple "or" because results are sorted, so if not better, equal
+						pair = syntenic[ties_results[0][0]]
+						i = pair[2]
+						j = pair[3]
+						# merge leaves[i] and leaves[j]
+						syn_dist = ":" + str(pair[0] / 2.0)
+						new_node = "%s_%06d" % (mrca, cluster_counter)
+						cluster_counter += 1
+						ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + str(graph[leaves[i]][leaves[j]]['rank']) + "," + leaves[j] + ":" + str(graph[leaves[j]][leaves[i]]['rank']) + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
+						nxe.merge(new_graph, graph, leaves[i], leaves[j], new_node)
+						genes_to_cluster[leaves[i]] = (new_node, True)
+						genes_to_cluster[leaves[j]] = (new_node, True)
+						# remove other edges pointing to those nodes
+						graph.remove_node(leaves[i])
+						graph.remove_node(leaves[j])
+						ties_results.reverse()
+						for tr in ties_results:
+							del syntenic[tr[0]]
+						continue
+						# k += len(ties_results)
+			k += 1
 		# check for remaining RBH and cluster
 		# edges = graph.edges()    # replace with nodes that still have edges
 		# i = 0
