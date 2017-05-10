@@ -355,7 +355,7 @@ def main():
 							good += 1
 					ties_results.append((l, good, sum_of_ranks, sum_of_m))
 					# if graph[leaves[i]][leaves[j]]['m'] >= BEST_HIT_PROPORTION_THRESHOLD and graph[leaves[j]][leaves[i]]['m'] >= BEST_HIT_PROPORTION_THRESHOLD:
-				ties_results.sort(key=lambda tup: (-tup[1], tup[2]), -tup[3])
+				ties_results.sort(key=lambda tup: (-tup[1], tup[2], -tup[3]))
 				if ties_results[0][1] != 2:  # good != 2 for the best
 					ties_results.reverse()
 					for tr in ties_results:
