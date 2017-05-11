@@ -356,13 +356,13 @@ def main():
 					ties_results.append((l, good, sum_of_ranks, sum_of_m))
 					# if graph[leaves[i]][leaves[j]]['m'] >= BEST_HIT_PROPORTION_THRESHOLD and graph[leaves[j]][leaves[i]]['m'] >= BEST_HIT_PROPORTION_THRESHOLD:
 				ties_results.sort(key=lambda tup: (-tup[1], tup[2], -tup[3]))
-				if ties_results[0][1] != 2:  # good != 2 for the best
-					ties_results.reverse()
-					for tr in ties_results:
-						del syntenic[tr[0]]
-					# k += len(ties_results)
-					continue
-				if len(ties_results) == 1 or (len(ties_results) > 1 and (ties_results[0][1] > ties_results[1][1] or ties_results[0][2] < ties_results[1][2] or ties_results[0][3] > ties_results[1][3])):  # triple "or" because results are sorted, so if not better, equal
+				# if ties_results[0][1] != 2:  # good != 2 for the best
+				# 	ties_results.reverse()
+				# 	for tr in ties_results:
+				# 		del syntenic[tr[0]]
+				# 	# k += len(ties_results)
+				# 	continue
+				if ties_results[0][1] == 2 and (len(ties_results) == 1 or (len(ties_results) > 1 and (ties_results[0][1] > ties_results[1][1] or ties_results[0][2] < ties_results[1][2] or ties_results[0][3] > ties_results[1][3]))):  # triple "or" because results are sorted, so if not better, equal
 						pair = syntenic[ties_results[0][0]]
 						i = pair[2]
 						j = pair[3]
@@ -377,11 +377,10 @@ def main():
 						# remove other edges pointing to those nodes
 						graph.remove_node(leaves[i])
 						graph.remove_node(leaves[j])
-						ties_results.reverse()
-						for tr in ties_results:
-							del syntenic[tr[0]]
-						continue
-						# k += len(ties_results)
+				ties_results.reverse()
+				for tr in ties_results:
+					del syntenic[tr[0]]
+				continue
 			k += 1
 		# check for remaining RBH and cluster
 		# edges = graph.edges()    # replace with nodes that still have edges
