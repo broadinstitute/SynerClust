@@ -123,7 +123,7 @@ def main(argv):
 				self_blast_out = my_dir + c + "_self.blast.m8"
 				# os.system("#BLAST_PATHblastall -p blastp -b 6 -m8 -e " + evalue + " -a " + cores + " -d " + c_fasta + " -i " + c_fasta + " -o " + self_blast_out)
 				for i in xrange(cores):
-					blast_queue.put(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", evalue, "-num_threads", "1", "-db", c_fasta, "-query", c_fasta + "." + "%04d" % (i), "-out", self_blast_out + "." + "%04d" % (i)])
+					blast_queue.put(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", evalue, "-qcov_hsp_perc", "50", "-num_threads", "1", "-db", c_fasta, "-query", c_fasta + "." + "%04d" % (i), "-out", self_blast_out + "." + "%04d" % (i)])
 				combine_queue.append("cat " + self_blast_out + ".* >" + self_blast_out)
 				# cmd = ["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", evalue, "-num_threads", cores, "-db", c_fasta, "-query", c_fasta, "-out", self_blast_out]
 				# os.system("#BLAST_PATHblastp -num_alignments 6 -outfmt 6 -evalue " + evalue + " -num_threads " + cores + " -db " + c_fasta + " -query " + c_fasta + " -out " + self_blast_out)
@@ -134,8 +134,8 @@ def main(argv):
 		os.system(cat_head_cmd)
 
 		for i in xrange(cores):
-			blast_queue.put(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", evalue, "-num_threads", "1", "-db", fastas[0], "-query", fastas[1] + "." + "%04d" % (i), "-out", m8s[1] + "." + "%04d" % (i)])
-			blast_queue.put(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", evalue, "-num_threads", "1", "-db", fastas[1], "-query", fastas[0] + "." + "%04d" % (i), "-out", m8s[0] + "." + "%04d" % (i)])
+			blast_queue.put(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", evalue, "-qcov_hsp_perc", "50", "-num_threads", "1", "-db", fastas[0], "-query", fastas[1] + "." + "%04d" % (i), "-out", m8s[1] + "." + "%04d" % (i)])
+			blast_queue.put(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", evalue, "-qcov_hsp_perc", "50", "-num_threads", "1", "-db", fastas[1], "-query", fastas[0] + "." + "%04d" % (i), "-out", m8s[0] + "." + "%04d" % (i)])
 		combine_queue.append("cat " + m8s[1] + ".* > " + m8s[1])
 		combine_queue.append("cat " + m8s[0] + ".* > " + m8s[0])
 		# os.system("#BLAST_PATHblastall -p blastp -m8 -e " + evalue + " -a " + cores + " -d " + fastas[0] + " -i " + fastas[1] + " -o " + m8s[1])

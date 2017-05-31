@@ -43,8 +43,8 @@ class BlastParse:
 	logger = logging.getLogger("BlastParse")
 	node_path = None
 	EVALUE_THRESHOLD = 1e-4
-	CORE_HITS_COUNT_THRESHOLD = 5
-	OVERLAP_PROPORTION_THRESHOLD = 0.5
+	# CORE_HITS_COUNT_THRESHOLD = 5
+	# OVERLAP_PROPORTION_THRESHOLD = 0.5
 
 	def __init__(self, max_size_diff, node_path):
 		BlastParse.max_size_diff = max_size_diff
