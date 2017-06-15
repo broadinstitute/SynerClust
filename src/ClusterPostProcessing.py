@@ -16,7 +16,7 @@ def usage():
 def main():
 	usage = "usage: ClusterPostProcessing [options] genomes_directory specific_node_directory number_of_genomes"
 	parser = argparse.ArgumentParser(usage)
-	parser.add_argument('-a', dest="alignement", type=bool, default=False, help="Whether to output whole cluster alignements (slow) (Default=False)")
+	parser.add_argument('-a', dest="alignement", default=False, action='store_true', help="Whether to output whole cluster alignements (slow) (Default=False)")
 	parser.add_argument('folders', nargs=3, help="genome_directory specific_node_directory/locus_mappings.pkl number_of_genomes (Required)")
 	args = parser.parse_args()
 
@@ -107,18 +107,18 @@ def main():
 		modified = False
 		for k in nwksMap[current_root].keys():
 			if k != "children":
-				for s in query.findall(nwksMap[current_root][k][0][0]):
+				for s in query.findall(nwksMap[current_root][k][0]):
 					if len(s) == 39:
 						if s[0] == "N":
 							if nwksMap[s[:32]][s][0].count(",") > 0:  # first line is tree with homology distances, second is with synteny distances
-								nwksMap[current_root][k][0][0] = nwksMap[current_root][k][0][0].replace(s, "(" + nwksMap[s[:32]][s][0][0] + ")")
-								nwksMap[current_root][k][0][1] = nwksMap[current_root][k][0][1].replace(s, "(" + nwksMap[s[:32]][s][0][1] + ")")
+								nwksMap[current_root][k][0] = nwksMap[current_root][k][0].replace(s, "(" + nwksMap[s[:32]][s][0] + ")")
+								nwksMap[current_root][k][1] = nwksMap[current_root][k][1].replace(s, "(" + nwksMap[s[:32]][s][1] + ")")
 							else:
-								nwksMap[current_root][k][0][0] = nwksMap[current_root][k][0][0].replace(s, nwksMap[s[:32]][s][0][0])
-								nwksMap[current_root][k][0][1] = nwksMap[current_root][k][0][1].replace(s, nwksMap[s[:32]][s][0][1])
+								nwksMap[current_root][k][0] = nwksMap[current_root][k][0].replace(s, nwksMap[s[:32]][s][0])
+								nwksMap[current_root][k][1] = nwksMap[current_root][k][1].replace(s, nwksMap[s[:32]][s][1])
 						elif s[0] == "L":
-							nwksMap[current_root][k][0][0] = nwksMap[current_root][k][0][0].replace(s, tagToGenome[s[:32]] + "_" + l_t[s])
-							nwksMap[current_root][k][0][1] = nwksMap[current_root][k][0][1].replace(s, tagToGenome[s[:32]] + "_" + l_t[s])
+							nwksMap[current_root][k][0] = nwksMap[current_root][k][0].replace(s, tagToGenome[s[:32]] + "_" + l_t[s])
+							nwksMap[current_root][k][1] = nwksMap[current_root][k][1].replace(s, tagToGenome[s[:32]] + "_" + l_t[s])
 						else:
 							continue
 						modified = True
@@ -184,8 +184,8 @@ def main():
 		cout.write(cid + " (taxa: " + str(len(prefix_count)) + ", genes: " + str(len(leafKids)) + ")\t" + cout_buffer[:-1] + "\n")  # removing trailing space from cout_buffer
 		ct_out.write(ct_out_buffer)
 		distrib_out.write(distrib_buffer)
-		nwk_out.write(cid + ": (" + nwksMap[current_root][current_root + "_" + counter][0][0] + ");\n")
-		nwk_out.write(cid + ": (" + nwksMap[current_root][current_root + "_" + counter][0][1] + ");\n")
+		nwk_out.write(cid + ": (" + nwksMap[current_root][current_root + "_" + counter][0] + ");\n")
+		nwk_out.write(cid + ": (" + nwksMap[current_root][current_root + "_" + counter][1] + ");\n")
 		totalGenes += len(leafKids)
 		if len(leafKids) > 1:
 			cluster_noOrphan += 1

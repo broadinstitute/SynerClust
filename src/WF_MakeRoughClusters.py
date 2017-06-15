@@ -2,7 +2,7 @@
 
 import sys
 import os
-import BlastHandling
+import BlastHandling_bis
 # import pickle
 import logging
 import shutil
@@ -66,9 +66,9 @@ def main():
 	# logger.debug("Loaded synteny_data")
 
 	# Create rough clusters with trees
-	bp = BlastHandling.BlastParse(args.max_size_diff, args.node_dir + args.node + "/")
+	bp = BlastHandling_bis.BlastParse(args.max_size_diff, args.node_dir + args.node + "/")
 	logger.debug("Parsed Blast")
-	hits = BlastHandling.BlastParse.readBlastM8FromFile(blast_out)
+	hits = BlastHandling_bis.BlastParse.readBlastM8FromFile(blast_out)
 	logger.debug("Read Blast")
 	# hits = bp.readBlat()
 
@@ -76,10 +76,9 @@ def main():
 	logger.debug("Scored Hits")
 	tree_dir = my_dir + "trees"
 	if os.path.exists(tree_dir):
-		if "old" not in os.listdir(my_dir):
-			os.mkdir(os.path.join(my_dir, "old"))
-		else:
-			shutil.rmtree(os.path.join(my_dir, "old", "*"))
+		if "old" in os.listdir(my_dir):
+			shutil.rmtree(os.path.join(my_dir, "old"))
+		os.mkdir(os.path.join(my_dir, "old"))
 		shutil.move(tree_dir, os.path.join(my_dir, "old"))
 	os.mkdir(tree_dir)
 	tree_dir = tree_dir + os.sep
