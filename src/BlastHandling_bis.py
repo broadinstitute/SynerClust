@@ -315,6 +315,8 @@ class BlastParse:
 			T = t.split(";")[0]
 			if q == t:  # self hit
 				continue
+			elif line[2] < 50.0 or line[3] < 0.5 * int(q.split(";")[1]):  # filter less than 50% identity and less than 50% of sequence length matches
+				continue
 			elif int(q.split(";")[1]) > BlastParse.max_size_diff * int(t.split(";")[1]) or int(t.split(";")[1]) > BlastParse.max_size_diff * int(q.split(";")[1]):  # size difference too big
 				continue
 			mySeg = BlastSegment(q, t, line[2], line[3], line[6], line[7], line[11], line[10])  # query,target,pID,length,qstart,qend,bitScore,evalue

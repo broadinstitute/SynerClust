@@ -213,12 +213,12 @@ def main():
 				syn_m = set(syn[m][0])
 				count_m = float(syn[m][1])
 				syn_m.discard(cluster)
-				mSeqs = len(syn[m][0]) - syn[m][0].count(cluster)
+				mSeqs = (len(syn[m][0]) - syn[m][0].count(cluster)) / count_m  # divide by count of leaves
 				for n in leaves[:i]:
 					syn_n = set(syn[n][0])
 					count_n = float(syn[n][1])
 					syn_n.discard(cluster)
-					nSeqs = len(syn[n][0]) - syn[n][0].count(cluster)
+					nSeqs = (len(syn[n][0]) - syn[n][0].count(cluster)) / count_n  # divide by count of leaves
 					matches = 0
 					if mSeqs == 0 or nSeqs == 0:
 						syn_matrix[pos] = 1.0  # no neighbors in common if someone has no neighbors  # -= 0 ? does it change anything?
