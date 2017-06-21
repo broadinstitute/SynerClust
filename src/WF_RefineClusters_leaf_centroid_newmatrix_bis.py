@@ -26,9 +26,7 @@ def usage():
 	data about [node]. [flow_id] refers to a step in the workflow; [jobs_per_cmd] is the number of consensus sequence computations \
 	distributed to a single node.
 
-	[alpha], [gamma], [gain], and [loss] are parameters that impact the rooting of a tree
-
-	WF_RefineClusters.py [node_dir] [flow_id] [jobs_per_cmd] [node] [alpha] [gamma] [gain] [loss] [children...]
+	WF_RefineClusters.py [node_dir] [node] [children...]
 	"""
 	sys.exit(1)
 
@@ -38,11 +36,6 @@ def main():
 	parser = argparse.ArgumentParser(usage)
 	parser.add_argument('-dir', dest="node_dir", required=True, help="Path to the \"nodes\" folder. (Required)")
 	parser.add_argument('-node', dest="node", required=True, help="Current node name. (Required)")
-	parser.add_argument('-alpha', type=float, dest="alpha", required=True, help="Homology weight. (Required)")
-	parser.add_argument('-beta', type=float, dest="beta", required=True, help="Synteny weight. (Required)")
-	parser.add_argument('-gamma', type=float, dest="gamma", required=True, help="Gain/Loss weight. (Required)")
-	parser.add_argument('-gain', type=float, dest="gain", required=True, help="Duplication rate for Poisson distribution. (Required)")
-	parser.add_argument('-loss', type=float, dest="loss", required=True, help="Deletion rate for Poisson distribution. (Required)")
 	parser.add_argument('--no-synteny', dest="synteny", default=True, action='store_false', required=False, help="Disable use of synteny (required is information not available).")
 	parser.add_argument('children', nargs=2, help="Children nodes. (Required)")
 	args = parser.parse_args()

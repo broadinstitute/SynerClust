@@ -57,6 +57,10 @@ def main():
 			line = t.split()
 			tagToGenome[line[1]] = line[0]
 
+	inparalogs = None
+	with open(nodes_path + current_root + "/current_inparalogs.pkl") as f:
+		inparalogs = pickle.load(f)
+
 	genomes = []
 	nodes = [current_root]
 	inter_nodes = [current_root]
@@ -129,8 +133,8 @@ def main():
 	ct_out = open(cTt_out, 'w')
 	nwk_out = open(nodes_path + current_root + "/newicks_full.txt", "w")
 	totalGenes = 0
-	pairs = set([])
-	pairs2 = set([])
+	# pairs = set([])
+	# pairs2 = set([])
 	scc_count = 0
 	mcc_count = 0
 	cluster_noOrphan = 0
@@ -158,14 +162,14 @@ def main():
 		if args.alignement:
 			alignement_out.write(cid + "\n" + get_alignement(stdin_data) + "\n")
 
-		for i in xrange(len(leafKids)):
-			for j in xrange(i + 1, len(leafKids)):
-				if l_t[leafKids[i]] < l_t[leafKids[j]]:
-					pairs.add((l_t[leafKids[i]], l_t[leafKids[j]]))
-					pairs2.add((t_n[l_t[leafKids[i]]][2], t_n[l_t[leafKids[j]]][2]))
-				else:
-					pairs.add((l_t[leafKids[j]], l_t[leafKids[i]]))
-					pairs2.add((t_n[l_t[leafKids[j]]][2], t_n[l_t[leafKids[i]]][2]))
+		# for i in xrange(len(leafKids)):
+		# 	for j in xrange(i + 1, len(leafKids)):
+		# 		if l_t[leafKids[i]] < l_t[leafKids[j]]:
+		# 			pairs.add((l_t[leafKids[i]], l_t[leafKids[j]]))
+		# 			pairs2.add((t_n[l_t[leafKids[i]]][2], t_n[l_t[leafKids[j]]][2]))
+		# 		else:
+		# 			pairs.add((l_t[leafKids[j]], l_t[leafKids[i]]))
+		# 			pairs2.add((t_n[l_t[leafKids[j]]][2], t_n[l_t[leafKids[i]]][2]))
 
 		prefix_count = Counter(genomes)
 		distrib_buffer = ""
@@ -193,7 +197,7 @@ def main():
 	orphan_count = len(locusMap) - cluster_noOrphan
 	aux_count = cluster_noOrphan - mcc_count
 	print "total genes: ", totalGenes
-	print "pairs:", len(pairs)
+	# print "pairs:", len(pairs)
 	print "scc:", scc_count
 	print "mcc:", mcc_count
 	print "aux:", aux_count
@@ -207,17 +211,17 @@ def main():
 	if args.alignement:
 		alignement_out.close()
 
-	ds = locus_mapping.split("/")
-	ds.pop()
-	mydir = "/".join(ds) + "/"
-	pair_pkl = mydir + "tuple_pairs.pkl"
+	# ds = locus_mapping.split("/")
+	# ds.pop()
+	# mydir = "/".join(ds) + "/"
+	# pair_pkl = mydir + "tuple_pairs.pkl"
 
-	pdat = open(pair_pkl, 'wb')
-	pickle.dump(pairs, pdat)
-	pdat.close()
+	# pdat = open(pair_pkl, 'wb')
+	# pickle.dump(pairs, pdat)
+	# pdat.close()
 
-	with open(mydir + "tuple_pairs_locus.pkl", "w") as f:
-		pickle.dump(pairs2, f)
+	# with open(mydir + "tuple_pairs_locus.pkl", "w") as f:
+	# 	pickle.dump(pairs2, f)
 
 
 if __name__ == "__main__":

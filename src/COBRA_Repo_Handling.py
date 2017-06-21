@@ -161,10 +161,10 @@ class RepoParse:
 		code = "L_0000000_" + base64.urlsafe_b64encode(hashlib.md5(genome).digest())[:-2]
 		return code
 
-	def makeGenomeDirectories(self, genome_dir, distribute, synteny_window):
+	def makeGenomeDirectories(self, genome_dir, synteny_window):
 		command_lists = []
 		for g in self.genomes:
-			ret = g.setupDirectory(genome_dir, distribute, synteny_window)
+			ret = g.setupDirectory(genome_dir, synteny_window)
 			if ret:
 				command_lists.append(ret)
 		if len(command_lists) > 0:
@@ -193,7 +193,7 @@ class Genome:
 		self.transl_table = transl_table
 		Genome.logger.debug("Genome Initialized")
 
-	def setupDirectory(self, genomeDir, distribute, synteny_window):
+	def setupDirectory(self, genomeDir, synteny_window):
 		# make a directory for this genome in the genomeDir
 		# myCommands = []
 		myDir = genomeDir + self.genome + "/"
@@ -222,18 +222,18 @@ class Genome:
 			pickles = " 1 "
 		if pickles == " 0 " and annot == " 0 ":
 			return False
-		if distribute == 1:
-			if self.annotation is not "" and self.sequence is not "":
-				cmd = "#SYNERGY2_PATHFormatAnnotation_external.py -gff " + self.annotation + " -seq " + self.sequence + " -name " + self.genome + " --pep " + self.peptide + " -locus " + self.locus + " -out " + myDir + "annotation.txt -synteny " + str(synteny_window) + " --annot " + annot + " --pickle " + pickles + " --transl_table " + self.transl_table + "\n"
-			elif self.peptide is not "":
-				cmd = "#SYNERGY2_PATHFormatAnnotation_external.py -name " + self.genome + " --pep " + self.peptide + " -locus " + self.locus + " -out " + myDir + "annotation.txt --annot " + annot + " --pickle " + pickles + "\n"
-			return cmd
-		else:
+		# if distribute == 1:
+		if self.annotation is not "" and self.sequence is not "":
 			cmd = "#SYNERGY2_PATHFormatAnnotation_external.py -gff " + self.annotation + " -seq " + self.sequence + " -name " + self.genome + " --pep " + self.peptide + " -locus " + self.locus + " -out " + myDir + "annotation.txt -synteny " + str(synteny_window) + " --annot " + annot + " --pickle " + pickles + " --transl_table " + self.transl_table + "\n"
-			os.system(cmd)
-			# cmd2 = "cp "+self.sequence+" "+myDir+"."
-			# cmd3 ="mv "+myDir+self.sequence+" "+myDir+self.genome+".genome"
+		elif self.peptide is not "":
+			cmd = "#SYNERGY2_PATHFormatAnnotation_external.py -name " + self.genome + " --pep " + self.peptide + " -locus " + self.locus + " -out " + myDir + "annotation.txt --annot " + annot + " --pickle " + pickles + "\n"
+		return cmd
+		# else:
+		# 	cmd = "#SYNERGY2_PATHFormatAnnotation_external.py -gff " + self.annotation + " -seq " + self.sequence + " -name " + self.genome + " --pep " + self.peptide + " -locus " + self.locus + " -out " + myDir + "annotation.txt -synteny " + str(synteny_window) + " --annot " + annot + " --pickle " + pickles + " --transl_table " + self.transl_table + "\n"
+		# 	os.system(cmd)
+		# 	# cmd2 = "cp "+self.sequence+" "+myDir+"."
+		# 	# cmd3 ="mv "+myDir+self.sequence+" "+myDir+self.genome+".genome"
 
-			Genome.logger.info("Wrote annotation information for " + self.genome)
+		# 	Genome.logger.info("Wrote annotation information for " + self.genome)
 
-		return False
+		# return False

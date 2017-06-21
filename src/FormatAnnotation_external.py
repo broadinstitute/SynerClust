@@ -74,7 +74,7 @@ def makeSyntenyPickle(working_dir, genome, node, neighbors, SYNTENIC_WINDOW):
 	nsyn = {}
 	# +1 in size of the array because gene id counter starts at 0, so for later it's easier to just use that id without -1, leaving tsyn[0] empty
 	# tsyn = numpy.empty(sum([len(neighbors[i]) for i in neighbors]) + 1, dtype=list)
-	tsyn = numpy.empty(int(max([g[len(g) - 1][0] for g in [neighbors[n] for n in neighbors]]).split("_")[-1]) + 1, dtype=list)
+	# tsyn = numpy.empty(int(max([g[len(g) - 1][0] for g in [neighbors[n] for n in neighbors]]).split("_")[-1]) + 1, dtype=list)
 	MAX_DIST = SYNTENIC_WINDOW
 	for n in neighbors:
 		# n is a scaffold ID
@@ -91,8 +91,8 @@ def makeSyntenyPickle(working_dir, genome, node, neighbors, SYNTENIC_WINDOW):
 			nsyn[locus] = {}
 			nsyn[locus]['neighbors'] = []
 			nsyn[locus]['count'] = 1
-			tlocus = int(locus.split("_")[-1])
-			tsyn[tlocus] = []
+			# tlocus = int(locus.split("_")[-1])
+			# tsyn[tlocus] = []
 			gmid = (rend - lend + 1) / 2 + lend
 			minmid = lend - MAX_DIST
 			maxmid = rend + MAX_DIST
@@ -118,7 +118,7 @@ def makeSyntenyPickle(working_dir, genome, node, neighbors, SYNTENIC_WINDOW):
 					genome_tup = (h[0], h[1], h[2], dist, stream)
 					gsyn[locus].append(genome_tup)
 					nsyn[locus]['neighbors'].append(h[0])
-					tsyn[tlocus].append(h[0])
+					# tsyn[tlocus].append(h[0])
 				if mid > maxmid:
 					break
 # TODO inspect here
@@ -129,9 +129,9 @@ def makeSyntenyPickle(working_dir, genome, node, neighbors, SYNTENIC_WINDOW):
 	gdat = open(working_dir + "nodes/" + node + "/synteny_data.pkl", 'wb')
 	pickle.dump(nsyn, gdat)
 	gdat.close()
-	gdat = open(working_dir + "nodes/" + node + "/synteny_table.pkl", 'wb')
-	pickle.dump(tsyn, gdat)
-	gdat.close()
+	# gdat = open(working_dir + "nodes/" + node + "/synteny_table.pkl", 'wb')
+	# pickle.dump(tsyn, gdat)
+	# gdat.close()
 
 
 def extractAnnotation(gff3_file, seq_file, genome_name, locus, out_file, stat_file, peptide_file):
