@@ -183,7 +183,7 @@ def extractAnnotation(gff3_file, seq_file, genome_name, locus, out_file, stat_fi
 		alias = None
 		for g in gff3:
 			g = g.rstrip()
-			line = g.split()
+			line = g.split("\t")
 			if len(line) < 7:
 				continue
 			# for every "gene" in the gff3, get the ID= field, this is required, this becomes curID
