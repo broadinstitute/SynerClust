@@ -61,7 +61,6 @@ def main(argv):
 		my_head = my_dir + "blast_headers.txt"
 		m8 = my_dir + "blast.m8"
 		m8s = []
-		lengths = []
 		processes = []
 		for c in children:
 			cpath = node_dir + c + "/"
@@ -94,22 +93,11 @@ def main(argv):
 			elif platform.system() == "Darwin":
 				split_cmd = ["gsplit", "-d", "-a", "4", "-l", str(chunk_size), c_fasta, c_fasta + "."]
 			else:
-				exit("OS is neither Linux nor Mac")
+				exit("Error: OS is neither Linux nor Mac")
 			process = subprocess.Popen(split_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
 			output = process.communicate()
 			if output[1] is not None:
 				sys.exit("error")
-
-			header_file = open(c_head, 'r').readlines()
-			headers = {}
-			for head in header_file:
-				head = head.rstrip()
-				line = head.split(";")
-				headers[line[0]] = int(line[1])
-			effective_length = 0
-			for head in headers:
-				effective_length += headers[head]
-			lengths.append(effective_length)
 
 			l_map_file = node_dir + c + "/locus_mappings.pkl"
 			pklFile = open(l_map_file, 'rb')
@@ -124,13 +112,9 @@ def main(argv):
 
 			if len(strains) == 1:
 				self_blast_out = my_dir + c + "_self.blast.m8"
-				# os.system("#BLAST_PATHblastall -p blastp -b 6 -m8 -e " + evalue + " -a " + cores + " -d " + c_fasta + " -i " + c_fasta + " -o " + self_blast_out)
 				for i in xrange(cores):
 					blast_queue.put(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", evalue, "-qcov_hsp_perc", "50", "-num_threads", "1", "-db", c_fasta, "-query", c_fasta + "." + "%04d" % (i), "-out", self_blast_out + "." + "%04d" % (i)])
 				combine_queue.append("cat " + self_blast_out + ".* >" + self_blast_out)
-				# cmd = ["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", evalue, "-num_threads", cores, "-db", c_fasta, "-query", c_fasta, "-out", self_blast_out]
-				# os.system("#BLAST_PATHblastp -num_alignments 6 -outfmt 6 -evalue " + evalue + " -num_threads " + cores + " -db " + c_fasta + " -query " + c_fasta + " -out " + self_blast_out)
-				# processes.append(subprocess.Popen(cmd))
 
 		cat_head_cmd = "cat " + heads[0] + " " + heads[1] + " > " + my_head
 		logger.info(cat_head_cmd)
@@ -141,14 +125,6 @@ def main(argv):
 			blast_queue.put(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", evalue, "-qcov_hsp_perc", "50", "-num_threads", "1", "-db", fastas[1], "-query", fastas[0] + "." + "%04d" % (i), "-out", m8s[0] + "." + "%04d" % (i)])
 		combine_queue.append("cat " + m8s[1] + ".* > " + m8s[1])
 		combine_queue.append("cat " + m8s[0] + ".* > " + m8s[0])
-		# os.system("#BLAST_PATHblastall -p blastp -m8 -e " + evalue + " -a " + cores + " -d " + fastas[0] + " -i " + fastas[1] + " -o " + m8s[1])
-		# os.system("#BLAST_PATHblastp -outfmt 6 -evalue " + evalue + " -num_threads " + cores + "-db " + fastas[0] + " -query " + fastas[1] + " -out " + m8s[1])
-		# cmd = ["#BLAST_PATHblastp", "-outfmt", "6", "-evalue" , evalue, "-num_threads", cores, "-db", fastas[0], "-query", fastas[1], "-out", m8s[1]]
-		# processes.append(subprocess.Popen(cmd))
-		# os.system("#BLAST_PATHblastall -p blastp -m8 -e " + evalue + " -a " + cores + " -d " + fastas[1] + " -i " + fastas[0] + " -o " + m8s[0])
-		# os.system("#BLAST_PATHblastp -outfmt 6 -evalue " + evalue + " -num_threads " + cores + " -db " + fastas[1] + " -query " + fastas[0] + " -out " + m8s[0])
-		# cmd = ["#BLAST_PATHblastp", "-outfmt", "6", "-evalue" , evalue, "-num_threads", cores, "-db", fastas[1], "-query", fastas[0], "-out", m8s[0]]
-		# processes.append(subprocess.Popen(cmd))
 
 		processes = [Process(target=run_blast, args=(blast_queue,)) for i in xrange(cores)]
 

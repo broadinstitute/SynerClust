@@ -189,7 +189,7 @@ def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
 				out_buffer = ""
 				cons_seq = mus_str_seqs[s]
 				cons_seq = cons_seq.replace("-", "")
-				out_buffer += ">" + clusterID + ";" + str(len(cons_seq)) + "\n"
+				out_buffer += ">" + clusterID + ";" + str(len(cons_seq) + 1) + "\n"
 				out_buffer += cons_seq + "*\n"
 				cons_res[clusterID].append(out_buffer)
 				cons_out.write(out_buffer)

@@ -62,19 +62,21 @@ class BlastParse:
 			if ts.pID < 0.5 or ts.length < 0.5 * ts.qLength:
 				continue
 			t = ts.target.split(";")[0]
+			if ts.length == ts.qLength and ts.length == ts.tLength and ts.pID == 1.0:  # identical
+				q_best.append((t, 1, 1.0, ts, 1))
 			if ts.evalue < float(BlastParse.EVALUE_THRESHOLD):
 				if best_evalue == 1.0:  # and ts.evalue < float(1e-3):  # TODO change hardcoded evalue threshold
 					bestAdjPID = ts.getAdjPID()
 					lastAdjPID = bestAdjPID
 					best_evalue = ts.evalue
 					# q_best.append((q, t, ts_score))
-					q_best.append((t, current_rank, 1.0, ts))
+					q_best.append((t, current_rank, 1.0, ts, 0))
 					# current_rank += 1
 				elif (ts.getAdjPID() > bestAdjPID * min_best_hit):  # and best_evalue < 1.0:
 					# q_best.append((q, t, ts_score))
 					if ts.getAdjPID() != lastAdjPID:  # if not a tie
 						current_rank += 1
-					q_best.append((t, current_rank, ts.getAdjPID() / bestAdjPID, ts))
+					q_best.append((t, current_rank, ts.getAdjPID() / bestAdjPID, ts, 0))
 					lastAdjPID = ts.getAdjPID()
 		return q_best
 
@@ -153,11 +155,11 @@ class BlastParse:
 				# elif bestHits[hit[0]][hit[1]]["query"] != "_".join(q.split("_")[:-1]):  # not to add an edge in the reciprocal graph if there are simply multiple matches between same query and target
 					# bestReciprocalHits.add_edge(hit[0], hit[1], weight=hit[2])
 				if (hit[0], q) not in to_add:
-					to_add[(q, hit[0])] = (hit[1], hit[2])
+					to_add[(q, hit[0])] = (hit[1], hit[2], hit[4])
 				else:
-					bestReciprocalHits.add_edge(q, hit[0], rank=hit[1], m=hit[2])
+					bestReciprocalHits.add_edge(q, hit[0], rank=hit[1], m=hit[2], identity=hit[4])
 					reciprocal_edge = to_add.pop((hit[0], q))
-					bestReciprocalHits.add_edge(hit[0], q, rank=reciprocal_edge[0], m=reciprocal_edge[1])
+					bestReciprocalHits.add_edge(hit[0], q, rank=reciprocal_edge[0], m=reciprocal_edge[1], identitiy=reciprocal_edge[2])
 
 				# if not bestHits.has_edge(q, hit[0]):
 				# 	bestHits.add_edge(q, hit[0], rank=hit[1], m=hit[2], query="_".join(q.split("_")[:-1]))
@@ -225,75 +227,75 @@ class BlastParse:
 		# 	pickle.dump(clusterToGenes, f)
 		return 0
 
-	@staticmethod
-	def longest_maximal_overlap_interval(hits):
-		starts = []
-		ends = []
-		for hit in hits:
-			starts.append(hit[2].qstart)
-			ends.append(hit[2].qend)
-		starts.sort()
-		ends.sort()
-		n = len(hits)
-		i = j = 0
-		maxi = maxj = -1
-		maximal_overlap = 0
-		current_overlap = 0
-		while i < n and j < n:
-			if starts[i] < ends[j]:
-				current_overlap += 1
-				if current_overlap > maximal_overlap:
-					maximal_overlap = current_overlap
-					maxi = i
-					maxj = j
-				elif current_overlap == maximal_overlap:
-					if ends[j] - starts[i] > ends[maxj] - starts[maxi]:  # keep longest
-						maxi = i
-						maxj = j
-				i += 1
-			else:
-				current_overlap -= 1
-				j += 1
-		return (maxi, maxj, maximal_overlap)
+	# @staticmethod
+	# def longest_maximal_overlap_interval(hits):
+	# 	starts = []
+	# 	ends = []
+	# 	for hit in hits:
+	# 		starts.append(hit[2].qstart)
+	# 		ends.append(hit[2].qend)
+	# 	starts.sort()
+	# 	ends.sort()
+	# 	n = len(hits)
+	# 	i = j = 0
+	# 	maxi = maxj = -1
+	# 	maximal_overlap = 0
+	# 	current_overlap = 0
+	# 	while i < n and j < n:
+	# 		if starts[i] < ends[j]:
+	# 			current_overlap += 1
+	# 			if current_overlap > maximal_overlap:
+	# 				maximal_overlap = current_overlap
+	# 				maxi = i
+	# 				maxj = j
+	# 			elif current_overlap == maximal_overlap:
+	# 				if ends[j] - starts[i] > ends[maxj] - starts[maxi]:  # keep longest
+	# 					maxi = i
+	# 					maxj = j
+	# 			i += 1
+	# 		else:
+	# 			current_overlap -= 1
+	# 			j += 1
+	# 	return (maxi, maxj, maximal_overlap)
 
-	@staticmethod
-	def overlap_intervals(hits):
-		starts = []
-		ends = []
-		for hit in hits:
-			starts.append((hit[2].qstart, hit[2].target))
-			ends.append((hit[2].qend, hit[2].target))
-		starts.sort(key=lambda tup: tup[0])
-		ends.sort(key=lambda tup: tup[0])
-		n = len(hits)
-		i = j = 0
-		# maxi = maxj = -1
-		# maximal_overlap = 0
-		# current_overlap = 0
-		intervals = []
-		current_targets = set()
-		last_position = 0
-		while i < n and j < n:
-			if starts[i][0] < ends[j][0]:
-				# current_overlap += 1
-				current_targets.add(starts[i][1])
-				# if current_overlap > maximal_overlap:
-				# 	maximal_overlap = current_overlap
-				# 	maxi = i
-				# 	maxj = j
-				# elif current_overlap == maximal_overlap:
-				# 	if ends[j] - starts[i] > ends[maxj] - starts[maxi]:  # keep longest
-				# 		maxi = i
-				# 		maxj = j
-				intervals.append(last_position, starts[i], current_targets.copy())
-				last_position = starts[i]
-				i += 1
-			else:
-				# current_overlap -= 1
-				current_targets.remove(ends[j][1])
-				last_position = ends[j]
-				j += 1
-		return intervals
+	# @staticmethod
+	# def overlap_intervals(hits):
+	# 	starts = []
+	# 	ends = []
+	# 	for hit in hits:
+	# 		starts.append((hit[2].qstart, hit[2].target))
+	# 		ends.append((hit[2].qend, hit[2].target))
+	# 	starts.sort(key=lambda tup: tup[0])
+	# 	ends.sort(key=lambda tup: tup[0])
+	# 	n = len(hits)
+	# 	i = j = 0
+	# 	# maxi = maxj = -1
+	# 	# maximal_overlap = 0
+	# 	# current_overlap = 0
+	# 	intervals = []
+	# 	current_targets = set()
+	# 	last_position = 0
+	# 	while i < n and j < n:
+	# 		if starts[i][0] < ends[j][0]:
+	# 			# current_overlap += 1
+	# 			current_targets.add(starts[i][1])
+	# 			# if current_overlap > maximal_overlap:
+	# 			# 	maximal_overlap = current_overlap
+	# 			# 	maxi = i
+	# 			# 	maxj = j
+	# 			# elif current_overlap == maximal_overlap:
+	# 			# 	if ends[j] - starts[i] > ends[maxj] - starts[maxi]:  # keep longest
+	# 			# 		maxi = i
+	# 			# 		maxj = j
+	# 			intervals.append(last_position, starts[i], current_targets.copy())
+	# 			last_position = starts[i]
+	# 			i += 1
+	# 		else:
+	# 			# current_overlap -= 1
+	# 			current_targets.remove(ends[j][1])
+	# 			last_position = ends[j]
+	# 			j += 1
+	# 	return intervals
 
 	@staticmethod
 	def readBlastM8FromFile(f):

@@ -505,6 +505,7 @@ def main():
 				# elif node[:32] != n[:32]:  # from both children, not the same  # else self blast so leaves?
 				# 	potentials.append(n)
 				ok_trees.append((new_orphan, (node,), (node, node)))  # (node,) comma is required so its a tuple that can be looped on and not on the string itself
+				# identicals = [f for f in new_graph[node] if new_graph[node][f]['identity'] == 1 and new_graph[f][node]['identity'] == 1]
 
 	# if args.synteny:
 	# 	for o in orphans:
