@@ -2,7 +2,6 @@
 
 # Gets the filesystem set prepped to run the actual algorithm and writes the commands to do so
 import os
-import pickle
 import logging
 import collections
 
@@ -32,20 +31,6 @@ class Tree:
 
 	def codeGenomeID(self, genome):
 		return self.genomeToLocus[genome]
-		# tag = ''
-		# if genome in self.genomeToLocus:
-		# 	tag = self.genomeToLocus[genome]
-		# else:
-		# 	# TODO CHECK IF THIS IS EVER CALLED
-		# 	Tree.logger.error("If this is called, check when and why to modify the tag generated.")
-		# 	import pdb
-		# 	pdb.set_trace()
-		# 	tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
-		# 	while tag in self.locusToGenome:
-		# 		tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
-		# self.genomeToLocus[genome] = tag
-		# self.locusToGenome[tag] = genome
-		# return tag
 
 	def reregisterGenomeID(self, identifier, newChildren):  # actually usefull?
 		oldGenome = self.locusToGenome[identifier]
@@ -82,114 +67,6 @@ class Tree:
 		nwk_str += ";\n"
 		with open(coded_nwk_out, 'w') as f:
 			f.write(nwk_str)
-
-# 	def makePicklesForSingleGenome(self, working_dir, genome, node):
-# 		gdat = open(working_dir + "genomes/" + genome + "/annotation.txt", 'r').readlines()
-# 		# this file might not be necessary in the long-term, in fact these genome directories may not be necessary at all
-# 		# everything should be pulled out and stored in pickles after the repo files are parsed.  Whatever.
-# 		ndat = open(working_dir + "nodes/" + node + "/" + node + ".pep", 'w')
-# 		# print node
-# 		x = gdat[1].split()[1]
-# 		y = "_".join(x.split("_")[:-1])
-# 		if not y == node:
-# 			Tree.logger.warning("%s %s", (node, y))
-# 			Tree.logger.warning("%s" % (gdat[1]))
-
-# 		# these hashes will be pickles
-# 		genes = {}
-# 		gene_map = {}
-# 		locusToTID = {}
-# 		# this dict is for synteny information, keys are scaffold IDs
-# 		neighbors = {}
-# 		for g in gdat[1:]:
-# 			g = g.rstrip()
-# 			l = g.split()
-# 			if len(l) < 8:
-# 				Tree.logger.warning(g)
-# 				continue
-# 			if not l[2] in neighbors:
-# 				neighbors[l[2]] = []
-# 			gene_tup = (l[1], int(l[3]), int(l[4]), l[5], int(l[6]))  # scaffold -> locus,start,stop,strand,length
-# 			locusToTID[l[1]] = l[0]
-# 			neighbors[l[2]].append(gene_tup)
-# 			genes[l[1]] = l[7]
-# 			gene_map[l[1]] = [l[1]]
-# 			line = ">" + l[1] + ";" + l[6] + "\n" + l[7] + "\n"
-# 			ndat.write(line)
-# 		ndat.close()
-
-# 		# make synteny pickle
-# 		self.makeSyntenyPickle(working_dir, genome, node, neighbors)
-# 		# dump pickles!
-# 		pdat = open(working_dir + "nodes/" + node + "/" + node + ".pkl", 'wb')
-# 		pickle.dump(genes, pdat)
-# 		pdat.close()
-# 		ldat = open(working_dir + "nodes/" + node + "/locus_mappings.pkl", 'wb')
-# 		pickle.dump(gene_map, ldat)
-# 		ldat.close()
-# 		tdat = open(working_dir + "genomes/" + genome + "/locusToTranscript.pkl", 'wb')
-# 		pickle.dump(locusToTID, tdat)
-# 		tdat.close()
-# 		pcomp = open(working_dir + "nodes/" + node + "/PICKLES_COMPLETE", 'w')
-# 		pcomp.write("Way to go!")
-# 		pcomp.close()
-# 		# print "Pickles complete for ", genome, node
-
-# 	def makeSyntenyPickle(self, working_dir, genome, node, neighbors):
-# 		# make a pickle!
-# 		gsyn = {}
-# 		nsyn = {}
-# 		MAX_DIST = self.syn_dist
-# 		for n in neighbors:
-# 			# n is a scaffold ID
-# 			genes = neighbors[n]
-# 			genes = sorted(genes, key=lambda tup: tup[1])
-# 			for g in genes:
-# 				# g_i = genes.index(g)
-# 				locus = g[0]
-# 				lend = g[1]
-# 				rend = g[2]
-# 				strand = g[3]
-# 				# length = g[4]
-# 				gsyn[locus] = []
-# 				nsyn[locus] = {}
-# 				nsyn[locus]['neighbors'] = []
-# 				nsyn[locus]['count'] = 1
-# 				gmid = (rend - lend + 1) / 2 + lend
-# 				minmid = lend - MAX_DIST
-# 				maxmid = rend + MAX_DIST
-# 				for h in genes:
-# 					mid = (h[2] - h[1] + 1) / 2 + h[1]
-# 					if h[0] == locus:
-# 						continue
-# 					if mid >= minmid and mid <= maxmid:
-# 						# here, direction AND strand yields stream direction, it's bitwise 'and' or something
-# 						stream = 0  # -1 means upstream, 1 means downstream
-# 						dist = -1
-# 						direction = None
-# 						if h[1] > lend:
-# 							dist = mid - gmid + 1
-# 							direction = "+"
-# 						else:
-# 							dist = gmid - mid + 1
-# 							direction = "-"
-# 						if direction == strand:
-# 							stream = -1
-# 						else:
-# 							stream = 1
-# 						genome_tup = (h[0], h[1], h[2], dist, stream)
-# 						gsyn[locus].append(genome_tup)
-# 						nsyn[locus]['neighbors'].append(h[0])
-# 					if mid > maxmid:
-# 						break
-# # TODO inspect here
-# # List of all genes. For each gene, list of all other genes in the form (gene, left end, right end, distance, stream(?))
-# 		gdat = open(working_dir + "genomes/" + genome + "/synteny_data.pkl", 'wb')
-# 		pickle.dump(gsyn, gdat)
-# 		gdat.close()
-# 		ndat = open(working_dir + "nodes/" + node + "/synteny_data.pkl", 'wb')
-# 		pickle.dump(nsyn, ndat)
-# 		ndat.close()
 
 	def calculateMinTotalSubTiers(self, subnodes, node):
 		minTotal = 1000000000
@@ -230,10 +107,6 @@ class Tree:
 				os.system("mkdir " + node_dir + "/" + n)
 			if len(noGene_nodes[n]) == 0:
 				pick_count += 1
-				# if "PICKLES_COMPLETE" not in os.listdir(node_dir + "/" + n):
-				# 	self.makePicklesForSingleGenome(working_dir, self.locusToGenome[n], n)
-				# 	Tree.logger.info("%s %s %s" % (pick_count, n, self.locusToGenome[n]))
-					# print pick_count, n, self.locusToGenome[n]
 
 		cmd_count = 0  # also tiers below
 		nodeTier = {}
@@ -338,34 +211,17 @@ class Tree:
 		os.chmod(working_dir + "uger_jobs.sh", 0775)
 		os.chmod(working_dir + "jobs.sh", 0775)
 		all_proc_nodes = []
-		# serial_sets = {}
-		# sets = 1
 		for n in nodeTier[1]:  # tier 1 is the first tier above the leaf nodes
-			# Tree.logger.info("set number %s %s" % (sets, n))
-			# print "set number ", sets, n
-			# local_proc_nodes = []
 			curNode = n
-			# set_cmd_count = 1
-			# next_cmd_id = "1." + str(sets) + "." + str(set_cmd_count)
 			while curNode not in all_proc_nodes:
 				kids = []
 				for e in self.rooted_tree.edges(curNode):
-					# print curNode, e
 					kids.append(e[1])
 				self.makeSingleNodeFlow(working_dir, curNode, kids)
 				all_proc_nodes.append(curNode)
-				# local_proc_nodes.append((next_cmd_id, curNode))
-				# set_cmd_count += 1
-				# next_cmd_id = "1." + str(sets) + "." + str(set_cmd_count)
 				if curNode not in childToParent:
 					break  # curNode is root
 				curNode = childToParent[curNode]
-			# serial_sets[sets] = local_proc_nodes
-			# sets += 1
-			# set_cmd_count = 1
-		# Tree.logger.info(serial_sets)
-		# print serial_sets
-		# self.makeNodeFlowLauncher(working_dir, serial_sets)
 
 	def makeSingleNodeFlow(self, working_dir, curNode, kids):
 		my_dir = working_dir + "nodes/" + curNode + "/"

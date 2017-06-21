@@ -222,6 +222,9 @@ if __name__ == "__main__":
 	# after consensus sequences are generated, concatenates them into one big file, NODE.pep, and creates a NODE_COMPLETE file
 	fileDir = args.node_dir + "clusters/"
 
+	if "CLUSTERS_REFINED" not in os.listdir(args.node_dir):
+		sys.exit("Error: Previous step (cluster refinement) has not been completed.\n")
+
 	if "NODE_COMPLETE" in os.listdir(args.node_dir):
 		sys.exit(0)
 

@@ -44,6 +44,9 @@ def main():
 	blast_out = my_dir + "blast.m8"
 	n_head = my_dir + "blast_headers.txt"
 
+	if "BLAST_FINISHED" not in os.listdir(my_dir):
+		sys.exit("Error: Previous step (running blast) has not been completed.\n")
+
 	if "TREES_FINISHED" in os.listdir(my_dir):
 		sys.exit(0)
 

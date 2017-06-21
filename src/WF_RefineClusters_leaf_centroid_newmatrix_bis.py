@@ -45,6 +45,9 @@ def main():
 
 	my_dir = args.node_dir + mrca + "/"
 
+	if "TREES_FINISHED" not in os.listdir(my_dir):
+		sys.exit("Error: Previous step (rough clustering) has not been completed.\n")
+
 	if "CLUSTERS_REFINED" in os.listdir(my_dir):
 		sys.exit(0)
 

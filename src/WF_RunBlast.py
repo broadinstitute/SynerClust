@@ -64,6 +64,9 @@ def main(argv):
 		lengths = []
 		processes = []
 		for c in children:
+			cpath = node_dir + c + "/"
+			if "NODE_COMPLETE" not in os.listdir(cpath) and "PICKLES_COMPLETE" not in os.listdir(cpath):
+				sys.exit("Error: Missing input for children " + c)
 			pfile = node_dir + c + "/" + c + ".pep"
 			c_fasta = my_dir + c + ".blast.fa"
 			fastas.append(c_fasta)

@@ -40,11 +40,15 @@ def main(argv):
 			complete = 1
 		elif lf.find(locus + ".pkl") > -1:
 			locus_pkl = lf
-	if complete == 0:
+	if complete == 0:  # give the error for missing children data
 		if len(locus_pkl) > 0:
-			os.system("#SYNERGY2_PATHWF_WaitForFile.py " + locus_dir + " PICKLES_COMPLETE")
+			if "PICKLES_COMPLETE" not in os.listdir(locus_dir):
+				exit("Error: Leaf data extraction in " + locus_dir + " not completed.")
+			# os.system("#SYNERGY2_PATHWF_WaitForFile.py " + locus_dir + " PICKLES_COMPLETE")
 		else:
-			os.system("#SYNERGY2_PATHWF_WaitForFile.py " + locus_dir + " NODE_COMPLETE")
+			if "NODE_COMPLETE" not in os.listdir(locus_dir):
+				exit("Error: Node " + locus_dir + " computation not completed.")
+			# os.system("#SYNERGY2_PATHWF_WaitForFile.py " + locus_dir + " NODE_COMPLETE")
 
 	pklFile = open(locus_mapping, 'rb')
 	locusMap = pickle.load(pklFile)
