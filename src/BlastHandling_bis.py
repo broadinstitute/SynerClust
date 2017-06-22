@@ -15,15 +15,15 @@ class BlastSegment:
 	# logger = logging.getLogger("BlastSegment")
 
 	def __init__(self, query, target, pID, align_length, qstart, qend, bitScore, evalue):
-		self.query = query
+		# self.query = query
 		self.target = target
 		# identity percentage
 		self.pID = float(pID) / 100.0
 		self.length = int(align_length)
-		self.qLength = int(self.query.split(";")[1])
-		self.qstart = int(qstart)
-		self.qend = int(qend)
-		self.tLength = int(self.target.split(";")[1])
+		self.qLength = int(query.split(";")[1])
+		# self.qstart = int(qstart)
+		# self.qend = int(qend)
+		# self.tLength = int(self.target.split(";")[1])
 		self.bitScore = float(bitScore)
 		self.evalue = float(evalue)
 		# percent = float(self.length) / float(min(self.qLength, self.tLength))  # mod for big BLAST
@@ -62,9 +62,9 @@ class BlastParse:
 			if ts.pID < 0.5 or ts.length < 0.5 * ts.qLength:
 				continue
 			t = ts.target.split(";")[0]
-			if ts.length == ts.qLength and ts.length == ts.tLength and ts.pID == 1.0:  # identical
+			if ts.length == ts.qLength and ts.length == ts.target.split(";")[1] and ts.pID == 1.0:  # identical
 				q_best.append((t, 1, 1.0, ts, 1))
-			if ts.evalue < float(BlastParse.EVALUE_THRESHOLD):
+			elif ts.evalue < float(BlastParse.EVALUE_THRESHOLD):
 				if best_evalue == 1.0:  # and ts.evalue < float(1e-3):  # TODO change hardcoded evalue threshold
 					bestAdjPID = ts.getAdjPID()
 					lastAdjPID = bestAdjPID
@@ -88,13 +88,15 @@ class BlastParse:
 		# bestReciprocalHits = nx.Graph()
 		bestReciprocalHits = nx.DiGraph()
 		to_add = {}
-		head = open(headers, 'r').readlines()
 		myHead = set([])
-		for h in head:
-			h = h.rstrip()
-			line = h.split(";")[0]  # mod for big BLAST
-			myHead.add(line)  # mod for big BLAST
-		head = None
+		# head = open(headers, 'r').readlines()
+		# for h in head:
+		with open(headers, 'r') as head:
+			for h in head:
+				h = h.rstrip()
+				line = h.split(";")[0]  # mod for big BLAST
+				myHead.add(line)  # mod for big BLAST
+		# head = None
 		# bestHits.add_nodes_from(myHead)
 		bestReciprocalHits.add_nodes_from(myHead)  # need to add nodes this way and not only through edges to have orphans
 
@@ -159,7 +161,7 @@ class BlastParse:
 				else:
 					bestReciprocalHits.add_edge(q, hit[0], rank=hit[1], m=hit[2], identity=hit[4])
 					reciprocal_edge = to_add.pop((hit[0], q))
-					bestReciprocalHits.add_edge(hit[0], q, rank=reciprocal_edge[0], m=reciprocal_edge[1], identitiy=reciprocal_edge[2])
+					bestReciprocalHits.add_edge(hit[0], q, rank=reciprocal_edge[0], m=reciprocal_edge[1], identity=reciprocal_edge[2])
 
 				# if not bestHits.has_edge(q, hit[0]):
 				# 	bestHits.add_edge(q, hit[0], rank=hit[1], m=hit[2], query="_".join(q.split("_")[:-1]))
@@ -298,13 +300,13 @@ class BlastParse:
 	# 	return intervals
 
 	@staticmethod
-	def readBlastM8FromFile(f):
+	def readBlastM8FromFile(f, translation_table):
 		data = open(f, "r").readlines()
-		return BlastParse.readBlastM8(data)
+		return BlastParse.readBlastM8(data, translation_table)
 
 	# reads in the m8 file and returns hits, which is a dict of BlastSegments
 	@staticmethod
-	def readBlastM8(data):
+	def readBlastM8(data, translation_table):
 		hits = {}
 		for m in data:
 			m = m.rstrip()
@@ -312,42 +314,54 @@ class BlastParse:
 			if len(line) < 5:
 				continue
 			q = line[0]
-			Q = q.split(";")[0]
 			t = line[1]
-			T = t.split(";")[0]
 			if q == t:  # self hit
 				continue
-			elif line[2] < 50.0 or line[3] < 0.5 * int(q.split(";")[1]):  # filter less than 50% identity and less than 50% of sequence length matches
-				continue
-			elif int(q.split(";")[1]) > BlastParse.max_size_diff * int(t.split(";")[1]) or int(t.split(";")[1]) > BlastParse.max_size_diff * int(q.split(";")[1]):  # size difference too big
-				continue
-			mySeg = BlastSegment(q, t, line[2], line[3], line[6], line[7], line[11], line[10])  # query,target,pID,length,qstart,qend,bitScore,evalue
-			if Q not in hits:
-				hits[Q] = {}
-			if T not in hits[Q]:
-				hits[Q][T] = mySeg
-			elif mySeg.bitScore > hits[Q][T].bitScore:  # Is this possible to find?
-				hits[Q][T] = mySeg
+			else:
+				# un-combined identical sequences
+				if q[:9] == "combined_":
+					qs = translation_table[q]
+				else:
+					qs = [q]
+				if t[:9] == "combined_":
+					ts = translation_table[t]
+				else:
+					ts = [t]
+				for q in qs:
+					for t in ts:
+						Q = q.split(";")[0]
+						T = t.split(";")[0]
+						if line[2] < 50.0 or line[3] < 0.5 * int(q.split(";")[1]):  # filter less than 50% identity and less than 50% of sequence length matches
+							continue
+						elif int(q.split(";")[1]) > BlastParse.max_size_diff * int(t.split(";")[1]) or int(t.split(";")[1]) > BlastParse.max_size_diff * int(q.split(";")[1]):  # size difference too big
+							continue
+						mySeg = BlastSegment(q, t, line[2], line[3], line[6], line[7], line[11], line[10])  # query,target,pID,length,qstart,qend,bitScore,evalue
+						if Q not in hits:
+							hits[Q] = {}
+						if T not in hits[Q]:
+							hits[Q][T] = mySeg
+						elif mySeg.bitScore > hits[Q][T].bitScore:  # Is this possible to find?
+							hits[Q][T] = mySeg
 		return hits
 
 
-def remove_weak_links(graph):
-	nodes = graph.nodes()
-	to_remove = []
-	for i in xrange(len(nodes)):
-		for j in graph[nodes[i]].keys():
-			if j in nodes[:i + 1]:
-				continue
-			if jaccard_similarity(graph, nodes[i], j) < JACCARD_THRESHOLD:
-				to_remove.append((nodes[i], j))
-	for tr in to_remove:
-		graph.remove_edge(tr[0], tr[1])
-	return list(nx.weakly_connected_component_subgraphs(graph))
+# def remove_weak_links(graph):
+# 	nodes = graph.nodes()
+# 	to_remove = []
+# 	for i in xrange(len(nodes)):
+# 		for j in graph[nodes[i]].keys():
+# 			if j in nodes[:i + 1]:
+# 				continue
+# 			if jaccard_similarity(graph, nodes[i], j) < JACCARD_THRESHOLD:
+# 				to_remove.append((nodes[i], j))
+# 	for tr in to_remove:
+# 		graph.remove_edge(tr[0], tr[1])
+# 	return list(nx.weakly_connected_component_subgraphs(graph))
 
 
-def jaccard_similarity(graph, n1, n2):
-	s1 = set(graph[n1].keys())
-	s1.remove(n2)
-	s2 = set(graph[n2].keys())
-	s2.remove(n1)
-	return len(s1 & s2) / float(len(s1 | s2))
+# def jaccard_similarity(graph, n1, n2):
+# 	s1 = set(graph[n1].keys())
+# 	s1.remove(n2)
+# 	s2 = set(graph[n2].keys())
+# 	s2.remove(n1)
+# 	return len(s1 & s2) / float(len(s1 | s2))

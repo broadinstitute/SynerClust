@@ -66,7 +66,8 @@ def main(argv):
 			cpath = node_dir + c + "/"
 			if "NODE_COMPLETE" not in os.listdir(cpath) and "PICKLES_COMPLETE" not in os.listdir(cpath):
 				sys.exit("Error: Missing input for children " + c)
-			pfile = node_dir + c + "/" + c + ".pep"
+			combined_orphans_header = cpath + c + ".combined_orphans_headers.txt"
+			pfile = cpath + c + ".pep"
 			c_fasta = my_dir + c + ".blast.fa"
 			fastas.append(c_fasta)
 			c_head = my_dir + c + ".blast_headers.txt"
@@ -75,7 +76,9 @@ def main(argv):
 			m8s.append(blast_out)
 			formatDB_log = my_dir + "formatdb.log"
 			os.system("cp " + pfile + " " + c_fasta)
-			os.system("grep '>' " + c_fasta + "| cut -f2 -d '>' > " + c_head)
+			os.system("grep '>' " + c_fasta + "| cut -f2 -d '>' | grep -v '^combined' > " + c_head)
+			if c[0] == 'N':  # if children is a node, so has the combined orphans header
+				os.system("cat " + combined_orphans_header + " >> " + c_head)
 			# os.system("#BLAST_PATHformatdb -i " + c_fasta + " -l " + formatDB_log)
 			os.system("#BLAST_PATHmakeblastdb -in " + c_fasta + " -dbtype prot -logfile " + formatDB_log)
 
@@ -99,7 +102,7 @@ def main(argv):
 			if output[1] is not None:
 				sys.exit("error")
 
-			l_map_file = node_dir + c + "/locus_mappings.pkl"
+			l_map_file = cpath + "/locus_mappings.pkl"
 			pklFile = open(l_map_file, 'rb')
 			locusMap = pickle.load(pklFile)
 			pklFile.close()

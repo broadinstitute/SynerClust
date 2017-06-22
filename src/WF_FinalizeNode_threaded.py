@@ -37,7 +37,7 @@ def get_fasttree(stdin_data):
 	return (output1, output2)
 
 
-def makeConsensus(tq, resultsQueue, dist_threshold, consensus_pep):
+def makeConsensus(tq, resultsQueue, dist_threshold, cons_out):
 	logger = logging.getLogger()
 	cons_res = {}
 	while True:
@@ -249,7 +249,7 @@ if __name__ == "__main__":
 		os.system("rm " + consensus_pep)  # since the file is opened in append mode every time, we need to delete anything from a previous run
 
 		cons_out = open(consensus_pep, "a")
-		with open(args.node_dir + "consensus_data.pkl", "r") as f:
+		with open(args.node_dir + "pre_consensus_data.pkl", "r") as f:
 			cons_pkl = pickle.load(f)
 
 		processes = [Process(target=makeConsensus, args=(notOKQ, resultsQueue, args.dist, cons_out)) for i in xrange(args.numThreads)]

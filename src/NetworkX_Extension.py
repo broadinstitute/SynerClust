@@ -52,9 +52,9 @@ def merge(graph, old_graph, left, right, middle):
 		graph.add_edge(common, middle, rank=max(old_graph[common][left]['rank'], old_graph[common][right]['rank']))
 	for target in old_graph[left]:
 		if target not in commons and target != right:
-			graph.add_edge(target, middle, rank=old_graph[target][left]['rank'])
+			graph.add_edge(target, middle, rank=old_graph[target][left]['rank'], identity=old_graph[target][left]['identity'])
 	for target in old_graph[right]:
 		if target not in commons and target != left:
-			graph.add_edge(target, middle, rank=old_graph[target][right]['rank'])
+			graph.add_edge(target, middle, rank=old_graph[target][right]['rank'], identity=old_graph[target][right]['identity'])
 	graph.remove_node(left)
 	graph.remove_node(right)

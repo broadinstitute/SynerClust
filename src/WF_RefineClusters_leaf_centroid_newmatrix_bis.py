@@ -75,9 +75,6 @@ def main():
 
 	cluster_counter = 1  # used to number clusters
 	synteny_data = {}
-	pickleSeqs = {}
-	pickleToCons = {}
-	singletons_pep = {}
 	pickleMaps = {}
 	# picklePeps = {}
 	# childrenpkls = {}
@@ -138,11 +135,7 @@ def main():
 
 	# make control files for consensus sequence formation
 	# cons_cmds = []
-	cons_pkl = {}
-	singletons = cluster_dir + "singletons.cons.pep"
-	singles = open(singletons, 'w')
-	sum_stats = my_dir + "summary_stats.txt"
-	sstats = open(sum_stats, 'w')
+
 
 # 	old_orphans = open(tree_dir + "orphan_genes.txt", 'r').readlines()
 # 	orphans = open(tree_dir + "orphan_genes.txt", 'r').readlines()
@@ -159,7 +152,7 @@ def main():
 		for line in f:
 			if line == "//\n":
 				if to_parse:
-					graphs[clusterID] = nx.parse_edgelist(to_parse, create_using=nx.DiGraph(), nodetype=str)
+					graphs[clusterID] = nx.parse_edgelist(to_parse, create_using=nx.DiGraph(), nodetype=str, data=True)
 				to_parse = []
 				clusterID = None
 			else:
@@ -187,6 +180,10 @@ def main():
 
 # 	for clusterID in pickleSeqs:
 	# for cluster in cluster_to_genes:
+
+	identical_orphans_to_check = []
+	identical_orphans_to_check_dict = {}
+	identical_index = 0
 
 	for cluster in graphs:
 		TIMESTAMP = time.time()
@@ -471,14 +468,22 @@ def main():
 		# remaining = all nodes in graph, check what are their edges in new_graph = potential inparalogs
 			# if none, keep as potential inparalogs but don't cluster
 
+		# current_cluster_identical_orphans = {}
 		for node in new_graph.nodes():
 			if mrca not in node:
 				if node not in genes_to_cluster:
 					new_orphan = "%s_%06d" % (mrca, cluster_counter)
 					cluster_counter += 1
 					genes_to_cluster[node] = (new_orphan, False)
-				else:
-					new_orphan = genes_to_cluster[node][0]
+
+		for node in new_graph.nodes():
+			if mrca not in node:
+				# if node not in genes_to_cluster:
+				# 	new_orphan = "%s_%06d" % (mrca, cluster_counter)
+				# 	cluster_counter += 1
+				# 	genes_to_cluster[node] = (new_orphan, False)
+				# else:
+				new_orphan = genes_to_cluster[node][0]
 				(k, v) = min([[f, new_graph[node][f]['rank']] for f in new_graph[node]], key=itemgetter(1))  # add secondary ranking by synteny?
 				# for k in new_graph[node].keys():
 				if mrca in k:
@@ -490,12 +495,12 @@ def main():
 						# potentials[new_orphan].add(k)
 					# potentials.append((new_orphan, k))
 				elif node[:32] == k[:32]:  # self hit, possible for full species tree leaves only
-					if k not in genes_to_cluster:
-						new_orphan2 = "%s_%06d" % (mrca, cluster_counter)
-						cluster_counter += 1
-						genes_to_cluster[k] = (new_orphan2, False)
-					else:
-						new_orphan2 = genes_to_cluster[k][0]
+					# if k not in genes_to_cluster:
+					# 	new_orphan2 = "%s_%06d" % (mrca, cluster_counter)
+					# 	cluster_counter += 1
+					# 	genes_to_cluster[k] = (new_orphan2, False)
+					# else:
+					new_orphan2 = genes_to_cluster[k][0]
 					if new_orphan not in potentials:
 						potentials[new_orphan] = [new_orphan2]
 					else:  # never?
@@ -505,7 +510,19 @@ def main():
 				# elif node[:32] != n[:32]:  # from both children, not the same  # else self blast so leaves?
 				# 	potentials.append(n)
 				ok_trees.append((new_orphan, (node,), (node, node)))  # (node,) comma is required so its a tuple that can be looped on and not on the string itself
-				# identicals = [f for f in new_graph[node] if new_graph[node][f]['identity'] == 1 and new_graph[f][node]['identity'] == 1]
+				# find all identical orphans to the current one, which should be the full set for this sequence since they would all be linked to each other
+				identicals = [(f, genes_to_cluster[f][0]) for f in new_graph[node] if mrca not in f and new_graph[node][f]['identity'] == 1 and node in new_graph[f] and new_graph[f][node]['identity'] == 1]
+				if identicals:
+					identicals.append((node, new_orphan))
+					# print identicals
+					# if identicals[0] not in current_cluster_identical_orphans:  # else this set has already been found by another member of the set
+					if identicals[0][1] not in identical_orphans_to_check_dict:  # else this set has already been found by another member of the set
+						identical_orphans_to_check.append(identicals)
+						for identical in identicals:  # identical = tuple(child_id, parent_id)
+							# current_cluster_identical_orphans[identical] = identical_index
+							identical_orphans_to_check_dict[identical[1]] = identical_index
+						identical_index += 1
+		# identical_orphans_to_check_dict.update(current_cluster_identical_orphans)
 
 	# if args.synteny:
 	# 	for o in orphans:
@@ -535,6 +552,20 @@ def main():
 					i += 1
 			# potentials[k].extend(v)
 	# potentials.extend(in_paralogs)
+
+	pickleSeqs = {}
+	pickleToCons = {}
+	# singletons_pep = {}
+	cons_pkl = {}
+	singletons = cluster_dir + "singletons.cons.pep"
+	combined_orphans_headers = open(my_dir + args.node + ".combined_orphans_headers.txt", "w")
+	combined_orphans_translation = {}
+	singles = open(singletons, 'w')
+	sum_stats = my_dir + "summary_stats.txt"
+	sstats = open(sum_stats, 'w')
+
+	identical_orphans_processed_indexes = set()
+	combined_orphans_list = {}
 
 	for ok in ok_trees:
 		# c = str(cluster_counter)
@@ -607,6 +638,26 @@ def main():
 
 		if len(ok[1]) == 1:
 			g = ok[1][0]
+			skip = False
+			unique = False
+
+			orphan_index = None
+			if clusterID in identical_orphans_to_check_dict:
+				if identical_orphans_to_check_dict[clusterID] not in identical_orphans_processed_indexes:
+					orphan_index = identical_orphans_to_check_dict[clusterID]
+					unique = True
+					combined_orphans_list = []
+					for identical_orphan_tuple in identical_orphans_to_check[orphan_index]:
+						child = "_".join(identical_orphan_tuple[0].split("_")[:-1])
+						if children_cons[child][identical_orphan_tuple[0]].count(">") > 1:    # identical orphan is tuple (child_node, parent_node)
+							unique = False
+							del combined_orphans_list
+							break
+						else:
+							combined_orphans_list.append(identical_orphan_tuple[1])
+				else:
+					skip = True
+
 			child = "_".join(ok[1][0].split("_")[:-1])
 # 			seq = children_cons[child][ok[0][0]]
 			seqs = {}
@@ -622,12 +673,22 @@ def main():
 						else:
 							seqs[identifier] = s
 						i += 1
-# 			else:
+			# else:
 				# need to get list of sequences to write them all
 			for k, s in seqs.iteritems():
 				cons_pkl[clusterID] = [">" + clusterID + ";" + str(len(s)) + "\n" + s + "\n"]
-				singletons_pep[clusterID] = [">" + clusterID + ";" + str(len(s)) + "\n" + s + "\n"]
-				singles.write(">" + clusterID + ";" + str(len(s)) + "\n" + s + "\n")
+				# singletons_pep[clusterID] = [">" + clusterID + ";" + str(len(s)) + "\n" + s + "\n"]
+				if not skip:
+					if orphan_index and unique:
+						combined_clusterID = "combined_" + str(orphan_index)
+						size_str = ";" + str(len(s)) + "\n"
+						singles.write(">" + combined_clusterID + size_str + s + "\n")
+						combined_orphans_headers.write((size_str).join(combined_orphans_list) + size_str)
+						combined_orphans_translation[combined_clusterID + ";" + str(len(s))] = [f + ";" + str(len(s)) for f in combined_orphans_list]
+						identical_orphans_processed_indexes.add(orphan_index)
+						# break # unique sequence so only one loop
+					else:
+						singles.write(">" + clusterID + ";" + str(len(s)) + "\n" + s + "\n")
 		else:
 			pickleToCons[clusterID] = []
 			# newNewickMap[clusterID].append([])
@@ -657,14 +718,21 @@ def main():
 		# cluster_counter += 1
 	singles.close()
 	sstats.close()
+	combined_orphans_headers.close()
 
-	pklPep = my_dir + "pep_data.pkl"
-	sdat = open(pklPep, 'wb')
-	pickle.dump(pickleToCons, sdat)
-	sdat.close()
+	with open(my_dir + "combined_orphans_translation_table.pkl", 'w') as f:
+		pickle.dump(combined_orphans_translation, f)
 
-	with open(my_dir + "singletons_pep_data.pkl", "w") as f:
-		pickle.dump(singletons_pep, f)
+	with open(my_dir + "pep_data.pkl", 'w') as f:
+		pickle.dump(pickleToCons, f)
+
+	# pklPep = my_dir + "pep_data.pkl"
+	# sdat = open(pklPep, 'wb')
+	# pickle.dump(pickleToCons, sdat)
+	# sdat.close()
+
+	# with open(my_dir + "singletons_pep_data.pkl", "w") as f:
+	# 	pickle.dump(singletons_pep, f)
 
 	# update synteny data
 	if args.synteny:
@@ -690,7 +758,7 @@ def main():
 	with open(my_dir + "clusters_newick.pkl", "w") as f:
 		pickle.dump(newNewickMap, f)
 
-	with open(my_dir + "consensus_data.pkl", "w") as f:
+	with open(my_dir + "pre_consensus_data.pkl", "w") as f:
 		pickle.dump(cons_pkl, f)
 
 	with open(my_dir + "potential_inparalogs.pkl", "w") as f:

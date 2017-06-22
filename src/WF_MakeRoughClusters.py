@@ -3,7 +3,7 @@
 import sys
 import os
 import BlastHandling_bis
-# import pickle
+import pickle
 import logging
 import shutil
 import argparse
@@ -68,10 +68,16 @@ def main():
 	# 	pklFile.close()
 	# logger.debug("Loaded synteny_data")
 
+	translation_table = {}
+	for c in args.children:
+		if c[0] == "N":  # node and not leaf
+			with open(args.node_dir + c + "/combined_orphans_translation_table.pkl") as f:
+				translation_table.update(pickle.load(f))
+
 	# Create rough clusters with trees
 	bp = BlastHandling_bis.BlastParse(args.max_size_diff, args.node_dir + args.node + "/")
 	logger.debug("Parsed Blast")
-	hits = BlastHandling_bis.BlastParse.readBlastM8FromFile(blast_out)
+	hits = BlastHandling_bis.BlastParse.readBlastM8FromFile(blast_out, translation_table)
 	logger.debug("Read Blast")
 	# hits = bp.readBlat()
 
