@@ -77,12 +77,12 @@ def main():
 				translation_table.update(pickle.load(f))
 
 	# Create rough clusters with trees
-	bp = BlastHandling_bis.BlastParse(args.max_size_diff, args.node_dir + args.node + "/")
+	bp = BlastHandling_bis.BlastParse(args.max_size_diff, args.node_dir + args.node + "/", translation_table)
 	logger.debug("Parsing Blast")
 
 	bestReciprocalHits = bp.prepareDiGraph(n_head)
 	for blast_out in blast_outs:
-		hits = BlastHandling_bis.BlastParse.readBlastM8FromFile(blast_out, translation_table)
+		hits = BlastHandling_bis.BlastParse.readBlastM8FromFile(blast_out)
 		logger.debug("Read Blast")
 		# hits = bp.readBlat()
 		bestReciprocalHits = bp.scoreHits(hits, bestReciprocalHits, args.min_best_hit, args.minSynFrac)
