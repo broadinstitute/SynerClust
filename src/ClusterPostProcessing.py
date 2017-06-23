@@ -84,7 +84,7 @@ def main():
 					# data = open(dataFile, 'r').readlines()
 					# for d in data:
 					d = d.rstrip()
-					line = d.split()
+					line = d.split("\t")
 					l_t[line[1]] = line[0]
 					l_s[line[1]] = line[10]
 					t_n[line[0]] = [line[7], line[8], line[9]]

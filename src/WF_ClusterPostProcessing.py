@@ -62,11 +62,11 @@ def main(argv):
 			continue
 		dataFile = genome_path + g + "/annotation.txt"
 		data = open(dataFile, 'r').readlines()
-		prefix = "_".join((data[1].split()[1]).split("_")[:-1])
-		logger.debug("%s splitted to %s" % (data[1].split()[1], prefix))
+		prefix = "_".join((data[1].split("\t")[1]).split("_")[:-1])
+		logger.debug("%s splitted to %s" % (data[1].split("\t")[1], prefix))
 		lp_t[prefix] = []
 		for d in data[1:]:
-			line = d.split()
+			line = d.split("\t")
 			lp_t[prefix].append(line[0])
 			l_t[line[1]] = line[0]
 

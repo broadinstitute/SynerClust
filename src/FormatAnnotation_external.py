@@ -23,7 +23,7 @@ def makePicklesForSingleGenome(working_dir, genome, node, SYNTENIC_WINDOW):
 	# everything should be pulled out and stored in pickles after the repo files are parsed.  Whatever.
 	ndat = open(working_dir + "nodes/" + node + "/" + node + ".pep", 'w')
 	# print node
-	x = gdat[1].split()[1]
+	x = gdat[1].split("\t")[1]
 	y = "_".join(x.split("_")[:-1])
 	if not y == node:
 		print node, y
@@ -36,7 +36,7 @@ def makePicklesForSingleGenome(working_dir, genome, node, SYNTENIC_WINDOW):
 	neighbors = {}
 	for g in gdat[1:]:
 		g = g.rstrip()
-		l = g.split()
+		l = g.split("\t")
 		if len(l) < 8:
 			print g
 			continue
@@ -147,7 +147,7 @@ def extractAnnotation(gff3_file, seq_file, genome_name, locus, out_file, stat_fi
 			p = p.rstrip()
 			if p.find(">") == 0:
 				pid = p[1:]
-				npid = pid.split()[0].split(":")[1]
+				npid = pid.split("\t")[0].split(":")[1]
 				# for tmp in pid.split():
 				# 	if tmp[:5] == "Gene:":
 				# 		npid = tmp[5:]

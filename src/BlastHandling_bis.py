@@ -310,7 +310,7 @@ class BlastParse:
 		hits = {}
 		for m in data:
 			m = m.rstrip()
-			line = m.split()
+			line = m.split("\t")
 			if len(line) < 5:
 				continue
 			q = line[0]
