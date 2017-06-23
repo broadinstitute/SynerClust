@@ -12,6 +12,7 @@ import platform
 
 DEVNULL = open(os.devnull, 'w')
 QUEUE_ERROR = False
+LOGGER = None
 
 
 def usage():
@@ -27,8 +28,10 @@ def run_blast(blast_queue):
 	while True:
 		try:
 			blast_cmd = blast_queue.get(block=False)
-			process = subprocess.Popen(blast_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
-			process.communicate()
+			process = subprocess.Popen(blast_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			(out, err) = process.communicate()
+			LOGGER.debug(out)
+			LOGGER.warning(err)
 		except Empty:
 			break
 		except:
@@ -44,13 +47,13 @@ def main(argv):
 	my_dir = node_dir + node + "/"
 
 	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
-	logger = logging.getLogger()
+	LOGGER = logging.getLogger()
 	logging.basicConfig(filename=my_dir + 'RunBlast.log', format=FORMAT, filemode='w', level=logging.DEBUG)
 	# add a new Handler to print all INFO and above messages to stdout
 	ch = logging.StreamHandler(sys.stdout)
 	ch.setLevel(logging.INFO)
-	logger.addHandler(ch)
-	logger.info('Started')
+	LOGGER.addHandler(ch)
+	LOGGER.info('Started')
 
 	# run BLAST if BLAST_FINISHED doesn't exist in the node dir
 	if "BLAST_FINISHED" not in os.listdir(my_dir):
@@ -111,7 +114,7 @@ def main(argv):
 			for lm in locusMap:
 				for lmm in locusMap[lm]:
 					strains.add("_".join(lmm.split("_")[:-1]))
-			logger.info(strains)
+			LOGGER.info(strains)
 
 			if len(strains) == 1:
 				self_blast_out = my_dir + c + "_self.blast.m8"
@@ -120,7 +123,7 @@ def main(argv):
 				combine_queue.append("cat " + self_blast_out + ".* >" + self_blast_out)
 
 		cat_head_cmd = "cat " + heads[0] + " " + heads[1] + " > " + my_head
-		logger.info(cat_head_cmd)
+		LOGGER.info(cat_head_cmd)
 		os.system(cat_head_cmd)
 
 		for i in xrange(cores):
