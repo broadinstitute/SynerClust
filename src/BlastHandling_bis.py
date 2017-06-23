@@ -43,6 +43,7 @@ class BlastParse:
 	logger = logging.getLogger("BlastParse")
 	node_path = None
 	EVALUE_THRESHOLD = 1e-4
+	to_add = {}
 	# CORE_HITS_COUNT_THRESHOLD = 5
 	# OVERLAP_PROPORTION_THRESHOLD = 0.5
 
@@ -80,14 +81,9 @@ class BlastParse:
 					lastAdjPID = ts.getAdjPID()
 		return q_best
 
-	# hits are scored by cumulative percent identity
-	# synData is unused
 	@staticmethod
-	def scoreHits(hits, headers, min_best_hit, minSynFrac):
-		# bestHits = nx.Graph()
-		# bestReciprocalHits = nx.Graph()
+	def prepareDiGraph(headers):
 		bestReciprocalHits = nx.DiGraph()
-		to_add = {}
 		myHead = set([])
 		# head = open(headers, 'r').readlines()
 		# for h in head:
@@ -99,6 +95,14 @@ class BlastParse:
 		# head = None
 		# bestHits.add_nodes_from(myHead)
 		bestReciprocalHits.add_nodes_from(myHead)  # need to add nodes this way and not only through edges to have orphans
+		return bestReciprocalHits
+
+	# hits are scored by cumulative percent identity
+	# synData is unused
+	@staticmethod
+	def scoreHits(hits, bestReciprocalHits, min_best_hit, minSynFrac):
+		# bestHits = nx.Graph()
+		# bestReciprocalHits = nx.Graph()
 
 		for q in hits:
 			q_hits = [hits[q][t] for t in hits[q]]
@@ -156,11 +160,11 @@ class BlastParse:
 				# 	bestHits.add_edge(hit[0], hit[1], weight=hit[2], query="_".join(q.split("_")[:-1]))
 				# elif bestHits[hit[0]][hit[1]]["query"] != "_".join(q.split("_")[:-1]):  # not to add an edge in the reciprocal graph if there are simply multiple matches between same query and target
 					# bestReciprocalHits.add_edge(hit[0], hit[1], weight=hit[2])
-				if (hit[0], q) not in to_add:
-					to_add[(q, hit[0])] = (hit[1], hit[2], hit[4])
+				if (hit[0], q) not in BlastParse.to_add:
+					BlastParse.to_add[(q, hit[0])] = (hit[1], hit[2], hit[4])
 				else:
 					bestReciprocalHits.add_edge(q, hit[0], rank=hit[1], m=hit[2], identity=hit[4])
-					reciprocal_edge = to_add.pop((hit[0], q))
+					reciprocal_edge = BlastParse.to_add.pop((hit[0], q))
 					bestReciprocalHits.add_edge(hit[0], q, rank=reciprocal_edge[0], m=reciprocal_edge[1], identity=reciprocal_edge[2])
 
 				# if not bestHits.has_edge(q, hit[0]):

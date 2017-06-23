@@ -41,7 +41,9 @@ def main():
 	args = parser.parse_args()
 
 	my_dir = args.node_dir + args.node + "/"
-	blast_out = my_dir + "blast.m8"
+	# blast_out = my_dir + "blast.m8"
+
+	blast_outs = [my_dir + f for f in os.listdir(my_dir) if ".blast.m8" == f[-9:]]
 	n_head = my_dir + "blast_headers.txt"
 
 	if "BLAST_FINISHED" not in os.listdir(my_dir):
@@ -76,12 +78,15 @@ def main():
 
 	# Create rough clusters with trees
 	bp = BlastHandling_bis.BlastParse(args.max_size_diff, args.node_dir + args.node + "/")
-	logger.debug("Parsed Blast")
-	hits = BlastHandling_bis.BlastParse.readBlastM8FromFile(blast_out, translation_table)
-	logger.debug("Read Blast")
-	# hits = bp.readBlat()
+	logger.debug("Parsing Blast")
 
-	bestReciprocalHits = bp.scoreHits(hits, n_head, args.min_best_hit, args.minSynFrac)
+	bestReciprocalHits = bp.prepareDiGraph(n_head)
+	for blast_out in blast_outs:
+		hits = BlastHandling_bis.BlastParse.readBlastM8FromFile(blast_out, translation_table)
+		logger.debug("Read Blast")
+		# hits = bp.readBlat()
+		bestReciprocalHits = bp.scoreHits(hits, bestReciprocalHits, args.min_best_hit, args.minSynFrac)
+
 	logger.debug("Scored Hits")
 	tree_dir = my_dir + "trees"
 	if os.path.exists(tree_dir):
