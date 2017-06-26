@@ -2,7 +2,7 @@
 
 import sys
 import os
-import pickle
+import cPickle as pickle
 import logging
 from multiprocessing import Process, Queue, RLock
 from Queue import Empty

@@ -56,7 +56,7 @@ class BlastParse:
 			if ts.pID < 0.5 or ts.length < 0.5 * ts.qLength:
 				continue
 			t = ts.target.split(";")[0]
-			if ts.length == ts.qLength and ts.length == ts.target.split(";")[1] and ts.pID == 1.0:  # identical
+			if ts.length == ts.qLength and ts.length == int(ts.target.split(";")[1]) and ts.pID == 1.0:  # identical
 				# q_best.append((t, 1, 1.0, ts, 1))
 				q_best.append((t, 1, 1.0, 1))
 			elif ts.evalue < float(BlastParse.EVALUE_THRESHOLD):
