@@ -411,11 +411,8 @@ def main():
 	os.system("mkdir " + cluster_dir)
 	cluster_dir = cluster_dir + "/"
 
-	manager = multiprocessing.Manager()
 	# synteny_data = manager.dict(lock=False)
 	# cluster_counter = safeCounter(1, manager)
-	cluster_counter = manager.Value('H', 1)
-	cluster_counter_lock = manager.Lock()
 	# ok_trees = manager.list()
 	# genes_to_cluster = manager.dict()
 	# potentials = manager.dict()  # potential inparalogs
@@ -492,6 +489,10 @@ def main():
 				else:
 					clusterID = line.rstrip()
 
+	manager = multiprocessing.Manager()
+	cluster_counter = manager.Value('H', 1)
+	cluster_counter_lock = manager.Lock()
+
 	ok_trees = []
 	genes_to_cluster = {}  # not to mistake with gene_to_rough_cluster that contains rough clustering for synteny calculation
 	with open(repo_path + "nodes/" + args.node + "/trees/orphan_genes.txt", "r") as f:
@@ -528,6 +529,8 @@ def main():
 		identical_orphans_to_check_list.append(identical_orphans_to_check)
 		identical_orphans_to_check_dict_list.append(identical_orphans_to_check_dict)
 		potentials.update(potentials_2)
+
+	manager.shutdown()
 
 	in_paralogs = {}
 	for old in old_potentials:
