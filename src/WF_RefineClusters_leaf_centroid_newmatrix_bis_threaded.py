@@ -49,12 +49,15 @@ def usage():
 # 		with self.lock:
 # 			return self.val.value
 
-def safeIncrement(counter, lock):
-	res = None
-	with lock:
-		res = counter.value
-		counter.value += 1
-	return res
+class Counter(object):
+	def __init__(self, val=0):
+		self.val = multiprocessing.Value('i', val)
+		self.lock = multiprocessing.Lock()
+
+	def safeIncrement(self):
+		with self.lock:
+			self.val.value += 1
+		return self.val.value - 1
 
 
 class Refinery(multiprocessing.Process):
@@ -85,7 +88,7 @@ class Refinery(multiprocessing.Process):
 
 
 class Refine(object):
-	def __init__(self, cluster, graph, cluster_counter, cluster_counter_lock):
+	def __init__(self, cluster, graph, cluster_counter):
 		self.cluster = cluster
 		self.graph = graph
 		# self.mrca = mrca
@@ -94,7 +97,7 @@ class Refine(object):
 		# self.identical_index = 0
 		# self.identical_index_lock = identical_index_lock
 		self.cluster_counter = cluster_counter
-		self.cluster_counter_lock = cluster_counter_lock
+		# self.cluster_counter_lock = cluster_counter_lock
 		# self.ok_trees = ok_trees
 		# self.genes_to_cluster = genes_to_cluster
 		# self.gene_to_rough_cluster = gene_to_rough_cluster
@@ -185,7 +188,7 @@ class Refine(object):
 					# if yes, cluster
 					# merge leaves[i] and leaves[j]
 					syn_dist = ":" + str(pair[0] / 2.0)
-					new_node = "%s_%06d" % (mrca, safeIncrement(self.cluster_counter, self.cluster_counter_lock))
+					new_node = "%s_%06d" % (mrca, self.cluster_counter.safeIncrement())
 					# self.cluster_counter += 1
 					ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + str(self.graph[leaves[i]][leaves[j]]['rank']) + "," + leaves[j] + ":" + str(self.graph[leaves[j]][leaves[i]]['rank']) + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
 					nxe.merge(new_graph, self.graph, leaves[i], leaves[j], new_node)
@@ -233,7 +236,7 @@ class Refine(object):
 						j = pair[3]
 						# merge leaves[i] and leaves[j]
 						syn_dist = ":" + str(pair[0] / 2.0)
-						new_node = "%s_%06d" % (mrca, safeIncrement(self.cluster_counter, self.cluster_counter_lock))
+						new_node = "%s_%06d" % (mrca, self.cluster_counter.safeIncrement())
 						# self.cluster_counter += 1
 						ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + str(self.graph[leaves[i]][leaves[j]]['rank']) + "," + leaves[j] + ":" + str(self.graph[leaves[j]][leaves[i]]['rank']) + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
 						nxe.merge(new_graph, self.graph, leaves[i], leaves[j], new_node)
@@ -312,7 +315,7 @@ class Refine(object):
 				mi = min(ii, jj)
 				pos = (ma * (ma - 1) / 2) + mi
 				syn_dist = ":" + str(syn_matrix[pos] / 2.0)
-				new_node = "%s_%06d" % (mrca, safeIncrement(self.cluster_counter, self.cluster_counter_lock))
+				new_node = "%s_%06d" % (mrca, self.cluster_counter.safeIncrement())
 				# self.cluster_counter += 1
 				ok_trees.append((new_node, (n1, pair), ("(" + n1 + ":" + str(self.graph[n1][pair]['rank']) + "," + pair + ":" + str(self.graph[pair][n1]['rank']) + ")", "(" + n1 + syn_dist + "," + pair + syn_dist + ")")))
 				nxe.merge(new_graph, self.graph, n1, pair, new_node)
@@ -334,7 +337,7 @@ class Refine(object):
 		for node in new_graph.nodes():
 			if mrca not in node:
 				if node not in genes_to_cluster:
-					new_orphan = "%s_%06d" % (mrca, safeIncrement(self.cluster_counter, self.cluster_counter_lock))
+					new_orphan = "%s_%06d" % (mrca, self.cluster_counter.safeIncrement())
 					# self.cluster_counter += 1
 					genes_to_cluster[node] = (new_orphan, False)
 
@@ -489,16 +492,17 @@ def main():
 				else:
 					clusterID = line.rstrip()
 
-	manager = multiprocessing.Manager()
-	cluster_counter = manager.Value('H', 1)
-	cluster_counter_lock = manager.Lock()
+	# manager = multiprocessing.Manager()
+	# cluster_counter = 1
+	cluster_counter = Counter(1)
+	# cluster_counter_lock = multiprocessing.Lock()
 
 	ok_trees = []
 	genes_to_cluster = {}  # not to mistake with gene_to_rough_cluster that contains rough clustering for synteny calculation
 	with open(repo_path + "nodes/" + args.node + "/trees/orphan_genes.txt", "r") as f:
 		for line in f:
 			node = line.rstrip()
-			new_orphan = "%s_%06d" % (mrca, safeIncrement(cluster_counter, cluster_counter_lock))
+			new_orphan = "%s_%06d" % (mrca, cluster_counter.safeIncrement())
 			# cluster_counter += 1
 			ok_trees.append((new_orphan, (node,), (node, node)))  # (node,) comma is required so its a tuple that can be looped on and not on the string itself
 			genes_to_cluster[node] = (new_orphan, False)
@@ -515,7 +519,7 @@ def main():
 		w.start()
 
 	for cluster in graphs:
-		cluster_queue.put(Refine(cluster, graphs[cluster], cluster_counter, cluster_counter_lock))
+		cluster_queue.put(Refine(cluster, graphs[cluster], cluster_counter))
 
 	for i in xrange(args.numThreads):
 		cluster_queue.put(None)
@@ -530,7 +534,7 @@ def main():
 		identical_orphans_to_check_dict_list.append(identical_orphans_to_check_dict)
 		potentials.update(potentials_2)
 
-	manager.shutdown()
+	# manager.shutdown()
 
 	in_paralogs = {}
 	for old in old_potentials:
