@@ -61,13 +61,14 @@ class Counter(object):
 
 
 class Refinery(multiprocessing.Process):
-	def __init__(self, cluster_queue, result_queue, mrca):
+	def __init__(self, cluster_queue, result_queue, mrca, cluster_counter):
 		multiprocessing.Process.__init__(self)
 		self.cluster_queue = cluster_queue
 		self.result_queue = result_queue
 		self.mrca = mrca
+		self.cluster_counter = cluster_counter
 
-	def run(self, cluster_counter):
+	def run(self):
 		genes_to_cluster = {}
 		ok_trees = []
 		potentials = {}
@@ -80,7 +81,7 @@ class Refinery(multiprocessing.Process):
 				self.cluster_queue.task_done()
 				break
 			# compute
-			identical_index = next_task(self.mrca, genes_to_cluster, cluster_counter, ok_trees, identical_orphans_to_check, identical_orphans_to_check_dict, identical_index, potentials)
+			identical_index = next_task(self.mrca, genes_to_cluster, self.cluster_counter, ok_trees, identical_orphans_to_check, identical_orphans_to_check_dict, identical_index, potentials)
 			# compute finished
 			self.cluster_queue.task_done()
 		# print "thread finished with " + str(len(identical_orphans_to_check))
@@ -514,9 +515,9 @@ def main():
 	cluster_queue = multiprocessing.JoinableQueue()
 	result_queue = multiprocessing.Queue()
 
-	refiners = [Refinery(cluster_queue, result_queue, mrca) for i in xrange(args.numThreads)]
+	refiners = [Refinery(cluster_queue, result_queue, mrca, cluster_counter) for i in xrange(args.numThreads)]
 	for w in refiners:
-		w.start(cluster_counter)
+		w.start()
 
 	for cluster in graphs:
 		cluster_queue.put(Refine(cluster, graphs[cluster]))
