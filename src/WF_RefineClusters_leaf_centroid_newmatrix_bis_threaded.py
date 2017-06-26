@@ -516,10 +516,10 @@ def main():
 
 	refiners = [Refinery(cluster_queue, result_queue, mrca) for i in xrange(args.numThreads)]
 	for w in refiners:
-		w.start()
+		w.start(cluster_counter)
 
 	for cluster in graphs:
-		cluster_queue.put(Refine(cluster, graphs[cluster]), args=(cluster_counter,))
+		cluster_queue.put(Refine(cluster, graphs[cluster]))
 
 	for i in xrange(args.numThreads):
 		cluster_queue.put(None)
