@@ -80,7 +80,7 @@ class Refinery(multiprocessing.Process):
 			identical_index = next_task(self.mrca, genes_to_cluster, ok_trees, identical_orphans_to_check, identical_orphans_to_check_dict, identical_index, potentials)
 			# compute finished
 			self.cluster_queue.task_done()
-		print "thread finished with " + str(len(identical_orphans_to_check))
+		# print "thread finished with " + str(len(identical_orphans_to_check))
 		self.result_queue.put((genes_to_cluster, ok_trees, identical_orphans_to_check, identical_orphans_to_check_dict, potentials))  # put result here
 
 
@@ -561,8 +561,8 @@ def main():
 	new_orphan_index = 1
 
 	for nt in xrange(args.numThreads + 1):  # +1 for orphans
-		print "thread " + str(nt)
-		print "number of trees " + str(len(ok_trees_list[nt]))
+		# print "thread " + str(nt)
+		# print "number of trees " + str(len(ok_trees_list[nt]))
 		identical_orphans_processed_indexes = set()
 		for ok in ok_trees_list[nt]:
 			clusterID = ok[0]
@@ -640,23 +640,23 @@ def main():
 				if clusterID in identical_orphans_to_check_dict:
 					if identical_orphans_to_check_dict[clusterID] not in identical_orphans_processed_indexes:
 						orphan_index = identical_orphans_to_check_dict[clusterID]
-						print "reading orphan index " + str(orphan_index) + " out of max index " + str(len(identical_orphans_to_check) - 1) + " at process " + str(nt)
+						# print "reading orphan index " + str(orphan_index) + " out of max index " + str(len(identical_orphans_to_check) - 1) + " at process " + str(nt)
 						unique = True
 						combined_orphans_list = []
 						for identical_orphan_tuple in identical_orphans_to_check[orphan_index]:
 							child = "_".join(identical_orphan_tuple[0].split("_")[:-1])
 							if children_cons[child][identical_orphan_tuple[0]].count(">") > 1:	 # identical orphan is tuple (child_node, parent_node)
 								unique = False
-								print "not unique"
+								# print "not unique"
 								del combined_orphans_list
 								break
 							else:
-								print "appending " + str(identical_orphan_tuple)
+								# print "appending " + str(identical_orphan_tuple)
 								combined_orphans_list.append(identical_orphan_tuple[1])
 					else:
-						print "duplicate"
+						# print "duplicate"
 						skip = True
-					print "unique " + str(unique) + "; skip " + str(skip)
+					# print "unique " + str(unique) + "; skip " + str(skip)
 
 				child = "_".join(ok[1][0].split("_")[:-1])
 	# 			seq = children_cons[child][ok[0][0]]
@@ -680,7 +680,7 @@ def main():
 					# singletons_pep[clusterID] = [">" + clusterID + ";" + str(len(s)) + "\n" + s + "\n"]
 					if not skip:
 						if orphan_index is not None and unique:
-							print 'combining orphan index ' + str(orphan_index) + " out of max index " + str(len(identical_orphans_to_check) - 1) + " at process " + str(nt)
+							# print 'combining orphan index ' + str(orphan_index) + " out of max index " + str(len(identical_orphans_to_check) - 1) + " at process " + str(nt)
 							combined_clusterID = "combined_" + str(new_orphan_index)  # use of a new index that is common between all multiprocesses as not to overlap
 							new_orphan_index += 1
 							size_str = ";" + str(len(s)) + "\n"

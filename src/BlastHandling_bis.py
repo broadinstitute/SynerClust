@@ -55,10 +55,10 @@ class BlastParse:
 			# ts_score = ts.getScore()
 			if ts.pID < 0.5 or ts.length < 0.5 * ts.qLength:
 				continue
-			t = ts.target.split(";")[0]
+			# t = ts.target.split(";")[0]
 			if ts.length == ts.qLength and ts.length == int(ts.target.split(";")[1]) and ts.pID == 1.0:  # identical
 				# q_best.append((t, 1, 1.0, ts, 1))
-				q_best.append((t, 1, 1.0, 1))
+				q_best.append((ts, 1, 1.0, 1))
 			elif ts.evalue < float(BlastParse.EVALUE_THRESHOLD):
 				if best_evalue == 1.0:  # and ts.evalue < float(1e-3):  # TODO change hardcoded evalue threshold
 					bestAdjPID = ts.getAdjPID()
@@ -66,13 +66,13 @@ class BlastParse:
 					best_evalue = ts.evalue
 					# q_best.append((q, t, ts_score))
 					# q_best.append((t, current_rank, 1.0, ts, 0))
-					q_best.append((t, current_rank, 1.0, 0))
+					q_best.append((ts, current_rank, 1.0, 0))
 					# current_rank += 1
 				elif (ts.getAdjPID() > bestAdjPID * min_best_hit):  # and best_evalue < 1.0:
 					if ts.getAdjPID() != lastAdjPID:  # if not a tie
 						current_rank += 1
 					# q_best.append((t, current_rank, ts.getAdjPID() / bestAdjPID, ts, 0))
-					q_best.append((t, current_rank, ts.getAdjPID() / bestAdjPID, 0))
+					q_best.append((ts, current_rank, ts.getAdjPID() / bestAdjPID, 0))
 					lastAdjPID = ts.getAdjPID()
 		return q_best
 
@@ -99,21 +99,23 @@ class BlastParse:
 
 			q_best = sorted(q_best, key=lambda tup: tup[1])
 			for hit in q_best:
-				if (hit[0], q) not in BlastParse.to_add:
-					BlastParse.to_add[(q, hit[0])] = (hit[1], hit[2], hit[3])
+				if (hit[0].target, hit[0].query) not in BlastParse.to_add:
+					BlastParse.to_add[(hit[0].query, hit[0].target)] = (hit[1], hit[2], hit[3])
 				else:
 					# check if combined node to uncombine now before inserting all in the graph
-					if q[:9] == "combined_":
-						qss = BlastParse.translation_table[q]
+					if hit[0].query[:9] == "combined_":
+						qss = BlastParse.translation_table[hit[0].query]
 					else:
-						qss = [q]
-					if hit[0][:9] == "combined_":
-						tss = BlastParse.translation_table[hit[0]]
+						qss = [hit[0].query]
+					if hit[0].target[:9] == "combined_":
+						tss = BlastParse.translation_table[hit[0].target]
 					else:
-						tss = [hit[0]]
-					reciprocal_edge = BlastParse.to_add.pop((hit[0], q))
+						tss = [hit[0].target]
+					reciprocal_edge = BlastParse.to_add.pop((hit[0].target, hit[0].query))
 					for qs in qss:
+						qs = qs.split(";")[0]
 						for ts in tss:
+							ts = ts.split(";")[0]
 							bestReciprocalHits.add_edge(qs, ts, rank=hit[1], m=hit[2], identity=hit[3])
 							bestReciprocalHits.add_edge(ts, qs, rank=reciprocal_edge[0], m=reciprocal_edge[1], identity=reciprocal_edge[2])
 		return bestReciprocalHits
