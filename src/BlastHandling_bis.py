@@ -59,6 +59,9 @@ class BlastParse:
 			if ts.length == ts.qLength and ts.length == int(ts.target.split(";")[1]) and ts.pID == 1.0:  # identical
 				# q_best.append((t, 1, 1.0, ts, 1))
 				q_best.append((ts, 1, 1.0, 1))
+				bestAdjPID = 1.0
+				lastAdjPID = 1.0
+				best_evalue = ts.evalue
 			elif ts.evalue < float(BlastParse.EVALUE_THRESHOLD):
 				if best_evalue == 1.0:  # and ts.evalue < float(1e-3):  # TODO change hardcoded evalue threshold
 					bestAdjPID = ts.getAdjPID()
@@ -179,7 +182,7 @@ class BlastParse:
 				continue
 			Q = q.split(";")[0]
 			T = t.split(";")[0]
-			if line[2] < 50.0 or line[3] < 0.5 * int(q.split(";")[1]):  # filter less than 50% identity and less than 50% of sequence length matches
+			if float(line[2]) < 50.0 or float(line[3]) < 0.5 * int(q.split(";")[1]):  # filter less than 50% identity and less than 50% of sequence length matches
 				continue
 			elif int(q.split(";")[1]) > BlastParse.max_size_diff * int(t.split(";")[1]) or int(t.split(";")[1]) > BlastParse.max_size_diff * int(q.split(";")[1]):  # size difference too big
 				continue
