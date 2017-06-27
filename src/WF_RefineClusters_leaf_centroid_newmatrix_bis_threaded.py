@@ -20,7 +20,6 @@ SYNTENY_THRESHOLD = 0.3
 SYNTENY_DIFFERENCE_THRESHOLD = 0.2
 synteny_data = {}
 gene_to_rough_cluster = {}
-lock = multiprocessing.Lock()
 
 
 def usage():
@@ -50,24 +49,27 @@ def usage():
 # 		with self.lock:
 # 			return self.val.value
 
-class Counter(object):
-	def __init__(self, val=0):
-		self.val = multiprocessing.Value('i', val)
+# class Counter(object):
+# 	def __init__(self, val=0):
+# 		self.val = multiprocessing.Value('i', val)
 
-	def safeIncrement(self):
-		lock.acquire()
-		self.val.value += 1
-		lock.release()
-		return self.val.value - 1
+# 	def safeIncrement(self):
+# 		print "acquiring lock"
+# 		lock.acquire()
+# 		self.val.value += 1
+# 		lock.release()
+# 		print "releasing lock"
+# 		return self.val.value - 1
 
 
 class Refinery(multiprocessing.Process):
-	def __init__(self, cluster_queue, result_queue, mrca, cluster_counter):
+	def __init__(self, cluster_queue, result_queue, mrca, cluster_counter, lock):
 		multiprocessing.Process.__init__(self)
 		self.cluster_queue = cluster_queue
 		self.result_queue = result_queue
 		self.mrca = mrca
 		self.cluster_counter = cluster_counter
+		self.lock = lock
 
 	def run(self):
 		genes_to_cluster = {}
@@ -82,7 +84,7 @@ class Refinery(multiprocessing.Process):
 				self.cluster_queue.task_done()
 				break
 			# compute
-			identical_index = next_task(self.mrca, genes_to_cluster, self.cluster_counter, ok_trees, identical_orphans_to_check, identical_orphans_to_check_dict, identical_index, potentials)
+			identical_index = next_task(self.mrca, genes_to_cluster, self.cluster_counter, self.lock, ok_trees, identical_orphans_to_check, identical_orphans_to_check_dict, identical_index, potentials)
 			# compute finished
 			self.cluster_queue.task_done()
 		# print "thread finished with " + str(len(identical_orphans_to_check))
@@ -105,7 +107,7 @@ class Refine(object):
 		# self.gene_to_rough_cluster = gene_to_rough_cluster
 		# self.potentials = potentials
 
-	def __call__(self, mrca, genes_to_cluster, cluster_counter, ok_trees, identical_orphans_to_check, identical_orphans_to_check_dict, identical_index, potentials):
+	def __call__(self, mrca, genes_to_cluster, cluster_counter, lock, ok_trees, identical_orphans_to_check, identical_orphans_to_check_dict, identical_index, potentials):
 		leaves = self.graph.nodes()
 		leaves.sort()
 		syn = {}
@@ -190,7 +192,11 @@ class Refine(object):
 					# if yes, cluster
 					# merge leaves[i] and leaves[j]
 					syn_dist = ":" + str(pair[0] / 2.0)
-					new_node = "%s_%06d" % (mrca, cluster_counter.safeIncrement())
+					# new_node = "%s_%06d" % (mrca, cluster_counter.safeIncrement())
+					lock.acquire()
+					new_node = "%s_%06d" % (mrca, cluster_counter.value)
+					cluster_counter.value += 1
+					lock.release()
 					# self.cluster_counter += 1
 					ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + str(self.graph[leaves[i]][leaves[j]]['rank']) + "," + leaves[j] + ":" + str(self.graph[leaves[j]][leaves[i]]['rank']) + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
 					nxe.merge(new_graph, self.graph, leaves[i], leaves[j], new_node)
@@ -238,7 +244,11 @@ class Refine(object):
 						j = pair[3]
 						# merge leaves[i] and leaves[j]
 						syn_dist = ":" + str(pair[0] / 2.0)
-						new_node = "%s_%06d" % (mrca, cluster_counter.safeIncrement())
+						# new_node = "%s_%06d" % (mrca, cluster_counter.safeIncrement())
+						lock.acquire()
+						new_node = "%s_%06d" % (mrca, cluster_counter.value)
+						cluster_counter.value += 1
+						lock.release()
 						# self.cluster_counter += 1
 						ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + str(self.graph[leaves[i]][leaves[j]]['rank']) + "," + leaves[j] + ":" + str(self.graph[leaves[j]][leaves[i]]['rank']) + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
 						nxe.merge(new_graph, self.graph, leaves[i], leaves[j], new_node)
@@ -317,7 +327,11 @@ class Refine(object):
 				mi = min(ii, jj)
 				pos = (ma * (ma - 1) / 2) + mi
 				syn_dist = ":" + str(syn_matrix[pos] / 2.0)
-				new_node = "%s_%06d" % (mrca, cluster_counter.safeIncrement())
+				# new_node = "%s_%06d" % (mrca, cluster_counter.safeIncrement())
+				lock.acquire()
+				new_node = "%s_%06d" % (mrca, cluster_counter.value)
+				cluster_counter.value += 1
+				lock.release()
 				# self.cluster_counter += 1
 				ok_trees.append((new_node, (n1, pair), ("(" + n1 + ":" + str(self.graph[n1][pair]['rank']) + "," + pair + ":" + str(self.graph[pair][n1]['rank']) + ")", "(" + n1 + syn_dist + "," + pair + syn_dist + ")")))
 				nxe.merge(new_graph, self.graph, n1, pair, new_node)
@@ -339,7 +353,11 @@ class Refine(object):
 		for node in new_graph.nodes():
 			if mrca not in node:
 				if node not in genes_to_cluster:
-					new_orphan = "%s_%06d" % (mrca, cluster_counter.safeIncrement())
+					# new_orphan = "%s_%06d" % (mrca, cluster_counter.safeIncrement())
+					lock.acquire()
+					new_orphan = "%s_%06d" % (mrca, cluster_counter.value)
+					cluster_counter.value += 1
+					lock.release()
 					# self.cluster_counter += 1
 					genes_to_cluster[node] = (new_orphan, False)
 
@@ -496,7 +514,9 @@ def main():
 
 	# manager = multiprocessing.Manager()
 	# cluster_counter = 1
-	cluster_counter = Counter(1)
+	# cluster_counter = Counter(1)
+	cluster_counter = multiprocessing.Value('i', 1)
+	lock = multiprocessing.Lock()
 	# cluster_counter_lock = multiprocessing.Lock()
 
 	ok_trees = []
@@ -504,7 +524,11 @@ def main():
 	with open(repo_path + "nodes/" + args.node + "/trees/orphan_genes.txt", "r") as f:
 		for line in f:
 			node = line.rstrip()
-			new_orphan = "%s_%06d" % (mrca, cluster_counter.safeIncrement())
+			lock.acquire()
+			# new_orphan = "%s_%06d" % (mrca, cluster_counter.safeIncrement())
+			new_orphan = "%s_%06d" % (mrca, cluster_counter.value)
+			cluster_counter.value += 1
+			lock.release()
 			# cluster_counter += 1
 			ok_trees.append((new_orphan, (node,), (node, node)))  # (node,) comma is required so its a tuple that can be looped on and not on the string itself
 			genes_to_cluster[node] = (new_orphan, False)
@@ -516,7 +540,7 @@ def main():
 	cluster_queue = multiprocessing.JoinableQueue()
 	result_queue = multiprocessing.Queue()
 
-	refiners = [Refinery(cluster_queue, result_queue, mrca, cluster_counter) for i in xrange(args.numThreads)]
+	refiners = [Refinery(cluster_queue, result_queue, mrca, cluster_counter, lock) for i in xrange(args.numThreads)]
 	for w in refiners:
 		w.start()
 
