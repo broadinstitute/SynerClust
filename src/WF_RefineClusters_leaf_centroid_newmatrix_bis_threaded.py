@@ -55,8 +55,9 @@ class Counter(object):
 		self.val = multiprocessing.Value('i', val)
 
 	def safeIncrement(self):
-		with lock:
-			self.val.value += 1
+		lock.acquire()
+		self.val.value += 1
+		lock.release()
 		return self.val.value - 1
 
 
