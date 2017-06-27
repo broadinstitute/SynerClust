@@ -29,7 +29,7 @@ class RepoParse:
 			curGenome["transl_table"] = '1'
 			# for l in lines:
 			for l in f:
-				if l.find("#") > -1:
+				if l[0] == "#":
 					continue
 				if l.find("//") > -1:
 					# new genome

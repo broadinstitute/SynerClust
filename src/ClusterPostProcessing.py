@@ -5,7 +5,7 @@ import pickle
 import logging
 import re
 from collections import Counter
-from WF_FinalizeNode_threaded import get_alignement
+from WF_FinalizeNode import get_alignement
 import argparse
 
 

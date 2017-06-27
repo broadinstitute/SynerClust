@@ -98,8 +98,8 @@ class Tree:
 				genomes = region.split(",")
 				child_nodes = []
 				for g in genomes:
-					nome = g.split(":")[0]
-					dist = float(g.split(":")[1])
+					nome = ":".join(g.split(":")[:-1])
+					dist = float(g.split(":")[-1])
 					locus = ""
 					if nome in self.locusToGenome:
 						locus = nome
