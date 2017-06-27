@@ -20,6 +20,7 @@ SYNTENY_THRESHOLD = 0.3
 SYNTENY_DIFFERENCE_THRESHOLD = 0.2
 synteny_data = {}
 gene_to_rough_cluster = {}
+lock = multiprocessing.Lock()
 
 
 def usage():
@@ -52,10 +53,9 @@ def usage():
 class Counter(object):
 	def __init__(self, val=0):
 		self.val = multiprocessing.Value('i', val)
-		self.lock = multiprocessing.Lock()
 
 	def safeIncrement(self):
-		with self.lock:
+		with lock:
 			self.val.value += 1
 		return self.val.value - 1
 
