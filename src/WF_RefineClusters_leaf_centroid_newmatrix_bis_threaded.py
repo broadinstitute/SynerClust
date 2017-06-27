@@ -2,13 +2,11 @@
 
 import sys
 import os
-# import NJ
 import cPickle as pickle
 import networkx as nx
 import NetworkX_Extension as nxe
 import numpy
 import logging
-# import subprocess
 import argparse
 import math
 from operator import itemgetter
@@ -31,35 +29,6 @@ def usage():
 	WF_RefineClusters.py [node_dir] [node] [children...]
 	"""
 	sys.exit(1)
-
-
-# class safeCounter(object):
-# 	def __init__(self, initval=1):
-# 		self.val = manager.Value("i", initval)
-# 		self.lock = manager.Lock()
-
-# 	def increment_after(self):
-# 		with self.lock:
-# 			res = self.val.value
-# 			self.val.value += 1
-# 		return self.val.value
-
-# 	@property
-# 	def value(self):
-# 		with self.lock:
-# 			return self.val.value
-
-# class Counter(object):
-# 	def __init__(self, val=0):
-# 		self.val = multiprocessing.Value('i', val)
-
-# 	def safeIncrement(self):
-# 		print "acquiring lock"
-# 		lock.acquire()
-# 		self.val.value += 1
-# 		lock.release()
-# 		print "releasing lock"
-# 		return self.val.value - 1
 
 
 class Refinery(multiprocessing.Process):
@@ -95,17 +64,6 @@ class Refine(object):
 	def __init__(self, cluster, graph):
 		self.cluster = cluster
 		self.graph = graph
-		# self.mrca = mrca
-		# self.identical_orphans_to_check = identical_orphans_to_check
-		# self.identical_orphans_to_check_dict = identical_orphans_to_check_dict
-		# self.identical_index = 0
-		# self.identical_index_lock = identical_index_lock
-		# self.cluster_counter = cluster_counter
-		# self.cluster_counter_lock = cluster_counter_lock
-		# self.ok_trees = ok_trees
-		# self.genes_to_cluster = genes_to_cluster
-		# self.gene_to_rough_cluster = gene_to_rough_cluster
-		# self.potentials = potentials
 
 	def __call__(self, mrca, genes_to_cluster, cluster_counter, lock, ok_trees, identical_orphans_to_check, identical_orphans_to_check_dict, identical_index, potentials):
 		leaves = self.graph.nodes()
@@ -134,7 +92,6 @@ class Refine(object):
 					syn_matrix[pos] = 1.0  # no neighbors in common if someone has no neighbors  # -= 0 ? does it change anything?
 					pos += 1
 					continue
-				# all_neighbors = syn_m & set(syn[n])  # no need to .discard(cluster) since already did in syn_m, so won't be present in union
 				all_neighbors = syn_m | syn_n
 				for a in all_neighbors:
 					t_m = max(syn[m][0].count(a), 0) / count_m  # divide by count so that merging a level N nodes with a leaf doesn't give a max synteny of 1/N only
@@ -147,7 +104,6 @@ class Refine(object):
 				pos += 1
 			i += 1
 
-		# logger.debug("Built matrices for " + cluster + " in " + str(time.time() - TIMESTAMP))
 		# formatting matrix for output
 		i = 0
 		j = 1
@@ -182,7 +138,7 @@ class Refine(object):
 			pair = syntenic[k]
 			i = pair[2]
 			j = pair[3]
-			if not self.graph.has_edge(leaves[i], leaves[j]):  # if (i, j) is in the graph, (j, i) is also per construction/filtering of rough clusters; reverse is true too
+			if not self.graph.has_edge(leaves[i], leaves[j]) or leaves[i][:32] == leaves[j][:32]:  # if (i, j) is in the graph, (j, i) is also per construction/filtering of rough clusters; reverse is true too || OR same leaf
 				k += 1
 				continue
 			# check if this cell is the only low synteny for each member of the pair
@@ -242,21 +198,20 @@ class Refine(object):
 						pair = syntenic[ties_results[0][0]]
 						i = pair[2]
 						j = pair[3]
-						# merge leaves[i] and leaves[j]
-						syn_dist = ":" + str(pair[0] / 2.0)
-						# new_node = "%s_%06d" % (mrca, cluster_counter.safeIncrement())
-						lock.acquire()
-						new_node = "%s_%06d" % (mrca, cluster_counter.value)
-						cluster_counter.value += 1
-						lock.release()
-						# self.cluster_counter += 1
-						ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + str(self.graph[leaves[i]][leaves[j]]['rank']) + "," + leaves[j] + ":" + str(self.graph[leaves[j]][leaves[i]]['rank']) + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
-						nxe.merge(new_graph, self.graph, leaves[i], leaves[j], new_node)
-						genes_to_cluster[leaves[i]] = (new_node, True)
-						genes_to_cluster[leaves[j]] = (new_node, True)
-						# remove other edges pointing to those nodes
-						self.graph.remove_node(leaves[i])
-						self.graph.remove_node(leaves[j])
+						if leaves[i][:32] != leaves[j][:32]:
+							# merge leaves[i] and leaves[j]
+							syn_dist = ":" + str(pair[0] / 2.0)
+							lock.acquire()
+							new_node = "%s_%06d" % (mrca, cluster_counter.value)
+							cluster_counter.value += 1
+							lock.release()
+							ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + str(self.graph[leaves[i]][leaves[j]]['rank']) + "," + leaves[j] + ":" + str(self.graph[leaves[j]][leaves[i]]['rank']) + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
+							nxe.merge(new_graph, self.graph, leaves[i], leaves[j], new_node)
+							genes_to_cluster[leaves[i]] = (new_node, True)
+							genes_to_cluster[leaves[j]] = (new_node, True)
+							# remove other edges pointing to those nodes
+							self.graph.remove_node(leaves[i])
+							self.graph.remove_node(leaves[j])
 				ties_results.reverse()
 				for tr in ties_results:
 					del syntenic[tr[0]]
@@ -323,16 +278,17 @@ class Refine(object):
 				changed = True
 				ii = leaves.index(n1)
 				jj = leaves.index(pair)
+				# if leaves[ii][:32] == leaves[jj][:32]:  # should never happen because targets are already filtered for this
+				# 	i += 1
+				# 	continue
 				ma = max(ii, jj)
 				mi = min(ii, jj)
 				pos = (ma * (ma - 1) / 2) + mi
 				syn_dist = ":" + str(syn_matrix[pos] / 2.0)
-				# new_node = "%s_%06d" % (mrca, cluster_counter.safeIncrement())
 				lock.acquire()
 				new_node = "%s_%06d" % (mrca, cluster_counter.value)
 				cluster_counter.value += 1
 				lock.release()
-				# self.cluster_counter += 1
 				ok_trees.append((new_node, (n1, pair), ("(" + n1 + ":" + str(self.graph[n1][pair]['rank']) + "," + pair + ":" + str(self.graph[pair][n1]['rank']) + ")", "(" + n1 + syn_dist + "," + pair + syn_dist + ")")))
 				nxe.merge(new_graph, self.graph, n1, pair, new_node)
 				genes_to_cluster[n1] = (new_node, True)
@@ -349,19 +305,15 @@ class Refine(object):
 		# remaining = all nodes in graph, check what are their edges in new_graph = potential inparalogs
 			# if none, keep as potential inparalogs but don't cluster
 
-		# current_cluster_identical_orphans = {}
 		for node in new_graph.nodes():
 			if mrca not in node:
 				if node not in genes_to_cluster:
-					# new_orphan = "%s_%06d" % (mrca, cluster_counter.safeIncrement())
 					lock.acquire()
 					new_orphan = "%s_%06d" % (mrca, cluster_counter.value)
 					cluster_counter.value += 1
 					lock.release()
-					# self.cluster_counter += 1
 					genes_to_cluster[node] = (new_orphan, False)
 
-		# identical_index = 0
 		for node in new_graph.nodes():
 			if mrca not in node:
 				new_orphan = genes_to_cluster[node][0]
@@ -386,7 +338,6 @@ class Refine(object):
 					identicals.append((node, new_orphan))
 					if identicals[0][1] not in identical_orphans_to_check_dict:  # else this set has already been found by another member of the set
 						identical_orphans_to_check.append(identicals)
-						# with self.identical_index_lock:
 						for identical in identicals:  # identical = tuple(child_id, parent_id)
 							identical_orphans_to_check_dict[identical[1]] = identical_index
 						identical_index += 1
@@ -433,17 +384,6 @@ def main():
 		os.system("mv -f " + cluster_dir + "/ " + my_dir + "old/")
 	os.system("mkdir " + cluster_dir)
 	cluster_dir = cluster_dir + "/"
-
-	# synteny_data = manager.dict(lock=False)
-	# cluster_counter = safeCounter(1, manager)
-	# ok_trees = manager.list()
-	# genes_to_cluster = manager.dict()
-	# potentials = manager.dict()  # potential inparalogs
-
-	# identical_orphans_to_check = manager.list()
-	# identical_orphans_to_check_dict = manager.dict()
-	# identical_index = manager.Value('H', 0)
-	# identical_index_lock = manager.Lock()
 
 	global gene_to_rough_cluster
 	with open(repo_path + "nodes/" + args.node + "/trees/gene_to_cluster.pkl", "r") as f:
@@ -512,12 +452,8 @@ def main():
 				else:
 					clusterID = line.rstrip()
 
-	# manager = multiprocessing.Manager()
-	# cluster_counter = 1
-	# cluster_counter = Counter(1)
 	cluster_counter = multiprocessing.Value('i', 1)
 	lock = multiprocessing.Lock()
-	# cluster_counter_lock = multiprocessing.Lock()
 
 	ok_trees = []
 	genes_to_cluster = {}  # not to mistake with gene_to_rough_cluster that contains rough clustering for synteny calculation
@@ -525,11 +461,9 @@ def main():
 		for line in f:
 			node = line.rstrip()
 			lock.acquire()
-			# new_orphan = "%s_%06d" % (mrca, cluster_counter.safeIncrement())
 			new_orphan = "%s_%06d" % (mrca, cluster_counter.value)
 			cluster_counter.value += 1
 			lock.release()
-			# cluster_counter += 1
 			ok_trees.append((new_orphan, (node,), (node, node)))  # (node,) comma is required so its a tuple that can be looped on and not on the string itself
 			genes_to_cluster[node] = (new_orphan, False)
 
@@ -559,8 +493,6 @@ def main():
 		identical_orphans_to_check_list.append(identical_orphans_to_check)
 		identical_orphans_to_check_dict_list.append(identical_orphans_to_check_dict)
 		potentials.update(potentials_2)
-
-	# manager.shutdown()
 
 	in_paralogs = {}
 	for old in old_potentials:
@@ -594,8 +526,6 @@ def main():
 	new_orphan_index = 1
 
 	for nt in xrange(args.numThreads + 1):  # +1 for orphans
-		# print "thread " + str(nt)
-		# print "number of trees " + str(len(ok_trees_list[nt]))
 		identical_orphans_processed_indexes = set()
 		for ok in ok_trees_list[nt]:
 			clusterID = ok[0]
@@ -609,7 +539,6 @@ def main():
 			# get list of leaf sequences to pull and organize in treeSeqs
 			treeSeqs = {}
 			tree_seq_count = 0
-			# leafSeqs = {}
 			child_leaves = {}
 			taxa = set([])
 			taxa_map = {}
@@ -661,7 +590,6 @@ def main():
 			std_avg = std / avg
 			out_dat = [clusterID, str(len(my_lengths)), str(len(taxa)), str(min_taxa), str(max_taxa), str(min(my_lengths)), str(max(my_lengths)), str(avg), str(std), str(std_avg)]
 
-	# 		sys.exit()
 			sstats.write("\t".join(out_dat) + "\n")
 
 			if len(ok[1]) == 1:
@@ -680,19 +608,14 @@ def main():
 							child = "_".join(identical_orphan_tuple[0].split("_")[:-1])
 							if children_cons[child][identical_orphan_tuple[0]].count(">") > 1:	 # identical orphan is tuple (child_node, parent_node)
 								unique = False
-								# print "not unique"
 								del combined_orphans_list
 								break
 							else:
-								# print "appending " + str(identical_orphan_tuple)
 								combined_orphans_list.append(identical_orphan_tuple[1])
 					else:
-						# print "duplicate"
 						skip = True
-					# print "unique " + str(unique) + "; skip " + str(skip)
 
 				child = "_".join(ok[1][0].split("_")[:-1])
-	# 			seq = children_cons[child][ok[0][0]]
 				seqs = {}
 				if child[0] == "L":
 					seqs[g] = children_cons[child][g]
@@ -706,14 +629,10 @@ def main():
 							else:
 								seqs[identifier] = s
 							i += 1
-				# else:
-					# need to get list of sequences to write them all
 				for k, s in seqs.iteritems():
 					cons_pkl[clusterID] = [">" + clusterID + ";" + str(len(s)) + "\n" + s + "\n"]
-					# singletons_pep[clusterID] = [">" + clusterID + ";" + str(len(s)) + "\n" + s + "\n"]
 					if not skip:
 						if orphan_index is not None and unique:
-							# print 'combining orphan index ' + str(orphan_index) + " out of max index " + str(len(identical_orphans_to_check) - 1) + " at process " + str(nt)
 							combined_clusterID = "combined_" + str(new_orphan_index)  # use of a new index that is common between all multiprocesses as not to overlap
 							new_orphan_index += 1
 							size_str = ";" + str(len(s)) + "\n"
@@ -726,7 +645,6 @@ def main():
 							singles.write(">" + clusterID + ";" + str(len(s)) + "\n" + s + "\n")
 			else:
 				pickleToCons[clusterID] = []
-				# newNewickMap[clusterID].append([])
 				for g in ok[1]:
 					child = "_".join(g.split("_")[:-1])
 					seqs = {}
@@ -734,7 +652,6 @@ def main():
 						seqs[g] = children_cons[child][g]
 					else:
 						for seq in children_cons[child][g]:
-							# if seq[0] == ">":  # else its a leaf so only sequence is present
 							i = 0
 							identifier = None
 							for s in seq.rstrip().split("\n"):
@@ -743,14 +660,10 @@ def main():
 								else:
 									seqs[identifier] = s
 								i += 1
-	# 						else:
-	# 							seqs = [seq]
 					i = 0
 					for k, s in seqs.iteritems():
 						pickleToCons[clusterID].append(">" + k + ";" + str(i) + ";" + str(len(s)) + "\n" + s + "\n")  # str(i) is a unique part in name so that all different names for muscle/fasttree
-						# newNewickMap[clusterID][2].append(">" + k + ";" + str(len(s)) + "\n" + s + "\n")
 						i += 1
-			# cluster_counter += 1
 	singles.close()
 	sstats.close()
 	combined_orphans_headers.close()
@@ -766,21 +679,15 @@ def main():
 		for clust in newSyntenyMap:
 			for child in newSyntenyMap[clust]['children']:
 				lc = "_".join(child.split("_")[:-1])
-				# logger.debug("%s splitted to %s" % (child, lc))
 				for neigh in synteny_data[lc][child]['neighbors']:
-					# logger.debug("newSyntenyMap[%s]['neighbors'].append(childToCluster[%s]" % (clust, neigh))
 					newSyntenyMap[clust]['neighbors'].append(childToCluster[neigh])
 		# pickle synteny data
-		pklSyn = my_dir + "synteny_data.pkl"
-		sdat = open(pklSyn, 'wb')
-		pickle.dump(newSyntenyMap, sdat)
-		sdat.close()
+		with open(my_dir + "synteny_data.pkl", "w") as sdat:
+			pickle.dump(newSyntenyMap, sdat)
 
 	# pickle the locus mappings
-	pklMap = my_dir + "locus_mappings.pkl"
-	sdat = open(pklMap, 'wb')
-	pickle.dump(newPickleMap, sdat)
-	sdat.close()
+	with open(my_dir + "locus_mappings.pkl", "w") as sdat:
+		pickle.dump(newPickleMap, sdat)
 
 	with open(my_dir + "clusters_newick.pkl", "w") as f:
 		pickle.dump(newNewickMap, f)
@@ -795,10 +702,8 @@ def main():
 		pickle.dump(in_paralogs, f)
 
 	# script complete call
-	clusters_done_file = my_dir + "CLUSTERS_REFINED"
-	cr = open(clusters_done_file, 'w')
-	cr.write("Way to go!\n")
-	cr.close()
+	with open(my_dir + "CLUSTERS_REFINED", "w") as cr:
+		cr.write("Way to go!\n")
 
 
 if __name__ == "__main__":

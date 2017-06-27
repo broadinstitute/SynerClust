@@ -121,6 +121,7 @@ class BlastParse:
 							ts = ts.split(";")[0]
 							bestReciprocalHits.add_edge(qs, ts, rank=hit[1], m=hit[2], identity=hit[3])
 							bestReciprocalHits.add_edge(ts, qs, rank=reciprocal_edge[0], m=reciprocal_edge[1], identity=reciprocal_edge[2])
+					# could also re-add edges in-between all qss and all tss elements but they will most likely be linked anyway
 		return bestReciprocalHits
 
 	@staticmethod
