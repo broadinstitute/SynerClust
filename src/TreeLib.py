@@ -64,6 +64,7 @@ class Tree:
 				degree = max(int(children[0].split("_")[1]), int(children[1].split("_")[1])) + 1
 				n = self.nodeChildrenCount[children[0]] + self.nodeChildrenCount[children[1]]
 			else:  # should never happen since otherwise its a leaf
+				exit("Error: Genome " + genome + " found in the tree but not in the repo_spec.")
 				degree = 0
 			tag = "N_%07d_%s" % (degree, base64.urlsafe_b64encode(hashlib.md5(genome).digest())[:-2])
 			Tree.logger.debug("Created new tag %s for %s" % (tag, genome))
@@ -98,7 +99,12 @@ class Tree:
 				genomes = region.split(",")
 				child_nodes = []
 				for g in genomes:
-					nome = ":".join(g.split(":")[:-1])
+					if g[0] == "'":
+						nome = g[:g.rfind("'")]
+					elif g[0] == '"':
+						nome = g[:g.rfind('"')]
+					else:
+						nome = ":".join(g.split(":")[:-1])
 					dist = float(g.split(":")[-1])
 					locus = ""
 					if nome in self.locusToGenome:
