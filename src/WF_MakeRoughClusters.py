@@ -2,31 +2,11 @@
 
 import sys
 import os
-import BlastHandling_bis
+import BlastHandling
 import pickle
 import logging
 import shutil
 import argparse
-# import networkx as nx
-
-# def usage():
-# 	print """Creates rough clusters based on the BLAST output.
-#
-# 	WF_MakeRoughClusters.py [node dir] [node name] [min best hit] [child1] [child2]
-#
-# 	where [node dir] contains data pertinent to [node name], which has children [child1] and [child2].
-# 	Tightness of intra-rough-cluster relationships can be regulated by [min best hit].
-#
-# 	[node dir], dir path
-# 	full path to directory
-# 	[node name], string
-# 	name of node that [node dir] refers to
-# 	[child1|2] string
-# 	immediate children of [node name]
-# 	[min best hit] float
-# 	range is (0.0,1.0], 0.0+ is least stringent, 1.0 is most stringent
-# 	"""
-# 	sys.exit(1)
 
 
 def main():
@@ -41,7 +21,6 @@ def main():
 	args = parser.parse_args()
 
 	my_dir = args.node_dir + args.node + "/"
-	# blast_out = my_dir + "blast.m8"
 
 	blast_outs = [my_dir + f for f in os.listdir(my_dir) if ".blast.m8" == f[-9:]]
 	n_head = my_dir + "blast_headers.txt"
@@ -61,15 +40,6 @@ def main():
 	logger.addHandler(ch)
 	logger.info('Started')
 
-	# # get synteny data
-	# pickleSyn = {}
-	# for c in args.children:
-	# 	synFile = args.node_dir + c + "/synteny_data.pkl"
-	# 	pklFile = open(synFile, 'rb')
-	# 	pickleSyn[c] = pickle.load(pklFile)
-	# 	pklFile.close()
-	# logger.debug("Loaded synteny_data")
-
 	translation_table = {}
 	for c in args.children:
 		if c[0] == "N":  # node and not leaf
@@ -77,14 +47,13 @@ def main():
 				translation_table.update(pickle.load(f))
 
 	# Create rough clusters with trees
-	bp = BlastHandling_bis.BlastParse(args.max_size_diff, args.node_dir + args.node + "/", translation_table)
+	bp = BlastHandling.BlastParse(args.max_size_diff, args.node_dir + args.node + "/", translation_table)
 	logger.debug("Parsing Blast")
 
 	bestReciprocalHits = bp.prepareDiGraph(n_head)
 	for blast_out in blast_outs:
-		hits = BlastHandling_bis.BlastParse.readBlastM8FromFile(blast_out)
+		hits = BlastHandling.BlastParse.readBlastM8FromFile(blast_out)
 		logger.debug("Read Blast")
-		# hits = bp.readBlat()
 		bestReciprocalHits = bp.scoreHits(hits, bestReciprocalHits, args.min_best_hit, args.minSynFrac)
 
 	logger.debug("Scored Hits")
@@ -111,7 +80,3 @@ def main():
 
 if __name__ == "__main__":
 	main()
-# 	if len(sys.argv) == 1:
-# 		usage()
-# 	else:
-# 		main(sys.argv[1:])

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import sys
 import os
 import pickle
@@ -82,7 +83,6 @@ def main(argv):
 			os.system("grep '>' " + c_fasta + "| cut -f2 -d '>' | grep -v '^combined' > " + c_head)
 			if c[0] == 'N':  # if children is a node, so has the combined orphans header
 				os.system("cat " + combined_orphans_header + " >> " + c_head)
-			# os.system("#BLAST_PATHformatdb -i " + c_fasta + " -l " + formatDB_log)
 			os.system("#BLAST_PATHmakeblastdb -in " + c_fasta + " -dbtype prot -logfile " + formatDB_log)
 
 			wc_cmd = ["wc", "-l", c_fasta]
@@ -153,7 +153,6 @@ def main(argv):
 		bf = open(blast_finished_file, 'w')
 		bf.write("Way to go!\n")
 		bf.close()
-	# sys.exit(0)
 
 
 if __name__ == "__main__":

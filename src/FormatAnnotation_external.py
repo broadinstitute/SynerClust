@@ -329,18 +329,6 @@ def main(argv):
 	parser.add_argument("--transl_table", type=int, dest="transl_table", default=1, help="Translation table to use. (NCBI IDs)")
 	args = parser.parse_args()
 
-	# gff3, seq, and genome name
-	# gff3_file = argv[0]
-	# seq_file = argv[1]
-	# genome_name = argv[2]
-	# peptide_file = argv[3]
-	# locus = argv[4]
-	# out_file = argv[5]
-	# SYNTENIC_WINDOW = int(argv[6])
-	# annot = argv[7]
-	# pickle_juice = argv[8]
-	# print argv
-
 	if args.annot == "1":
 		stat_file = args.out_file.replace("annotation.txt", "stats.txt")
 		extractAnnotation(args.gff3_file, args.seq_file, args.genome_name, args.locus, args.out_file, stat_file, args.peptide_file)

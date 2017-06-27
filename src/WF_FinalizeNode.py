@@ -50,7 +50,6 @@ class Selector(multiprocessing.Process):
 			next_task(self.lock, cons_res, self.dist_threshold, self.cons_out, self.logger)
 			# compute finished
 			self.cluster_queue.task_done()
-		# print "thread finished with " + str(len(identical_orphans_to_check))
 		self.result_queue.put(cons_res)  # put result here
 
 
@@ -73,7 +72,6 @@ class Select(object):
 		graph = nx.Graph()
 		counter = 1
 		representative_sequences = []
-		# logger.debug(output)
 		while(True):
 			r = output.find(")")
 			l = output[:r].rfind("(")
@@ -97,7 +95,6 @@ class Select(object):
 				logger.critical("0.0 distance in fasttree:\n" + output + "\n" + children[0].split(":")[0] + "\n" + seqs[children[0].split(":")[0]] + "\n" + children[1].split(":")[0] + "\n" + seqs[children[1].split(":")[0]])
 			output = output[:l] + group + output[r + 1:]
 
-		# logger.debug("Built graph for cluster " + clusterID)
 		matrix_size = len(leaves) * (len(leaves) - 1) / 2
 		leaves_length = len(leaves)
 		# nodes are headers/gene references
@@ -122,8 +119,6 @@ class Select(object):
 					max_key = min(max_key, key)
 			representative_sequences.append(max_key)
 			index = leaves.index(max_key)
-			# representative_sequences.append(leaves[index])
-			# logger.debug("Added representative to cluster " + clusterID)
 			to_remove = numpy.full(leaves_length, -1, int)
 			i = 0
 			for j in xrange(leaves_length):
@@ -144,7 +139,6 @@ class Select(object):
 						del lengths[leaves[j - i]]
 						leaves.remove(leaves[j - i])
 						i += 1
-			# logger.debug("Distance check with " + str(i) + " represented sequences done for " + clusterID)
 
 			leaves_length -= i
 			k = 0
@@ -161,7 +155,6 @@ class Select(object):
 					l += 1
 
 			matrix_size = leaves_length * (leaves_length - 1) / 2
-			# logger.debug("Matrix updated for " + clusterID)
 		# remove from matrix data that is not needed anymore
 		# redo on remaining sequences using the matrix with only their sequences (prune the big matrix)
 
@@ -179,12 +172,9 @@ class Select(object):
 			else:
 				mus_str_seqs[seqID] += l
 
-		# logger.debug("Trying to acquire lock for " + clusterID)
 		lock.acquire()
-		# logger.debug("Acquired lock for " + clusterID)
 		cons_res[self.clusterID] = []
 		for s in representative_sequences:
-			# cons_seq = "".join(mus_seqs[s])
 			out_buffer = ""
 			cons_seq = mus_str_seqs[s]
 			cons_seq = cons_seq.replace("-", "")
@@ -192,11 +182,8 @@ class Select(object):
 			out_buffer += cons_seq + "*\n"
 			cons_res[self.clusterID].append(out_buffer)
 			cons_out.write(out_buffer)
-			# logger.debug("Wrote sequence for " + clusterID)
 		cons_out.flush()
-		# logger.debug("Trying to release lock for " + clusterID)
 		lock.release()
-		# logger.debug("Released lock for " + clusterID)
 
 
 if __name__ == "__main__":
