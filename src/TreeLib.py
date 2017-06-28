@@ -100,9 +100,9 @@ class Tree:
 				child_nodes = []
 				for g in genomes:
 					if g[0] == "'":
-						nome = g[:g.rfind("'")]
+						nome = g[1:g.rfind("'")]
 					elif g[0] == '"':
-						nome = g[:g.rfind('"')]
+						nome = g[1:g.rfind('"')]
 					else:
 						nome = ":".join(g.split(":")[:-1])
 					dist = float(g.split(":")[-1])
