@@ -46,6 +46,8 @@ def main():
 	node_dir = args.working_dir + "nodes/"
 	if "nodes" not in os.listdir(args.working_dir):
 		os.system("mkdir " + node_dir)
+	if "logs" not in os.listdir(args.working_dir):
+		os.system("mkdir " + args.working_dir + "logs/")
 
 	# cobra_repo_path = "/".join(args.cobra_repo.split("/")[0:-1]) + "/"
 	cobra_repo_path = args.cobra_repo[0:args.cobra_repo.rfind("/") + 1]

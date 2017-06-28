@@ -4,3 +4,4 @@
 #SYNERCLUST_PATHWF_MakeRoughClusters.py -dir #WORKING_DIRnodes/ -node #NODE -m #MIN_BEST_HIT -F #MIN_SYNTENIC_FRACTION #CHILD1 #CHILD2
 #SYNERCLUST_PATHWF_RefineClusters.py -dir #WORKING_DIRnodes/ -t #NUM_CORES -node #NODE #CHILD1 #CHILD2 #NOSYNTENY
 #SYNERCLUST_PATHWF_FinalizeNode.py -dir #WORKING_DIRnodes/#NODE/ -node #NODE -t #NUM_CORES -dist #MUTRATE
+if [ -f #WORKING_DIRnodes/#NODE/NODE_COMPLETE ]; then echo "#NODE completed" >> #WORKING_DIRcompletion.txt ; else echo "#NODE did not complete" >> not_completed ; fi
