@@ -245,6 +245,12 @@ class Tree:
 		s_file = s_file.replace('#NODE', curNode)
 		s_file = s_file.replace('#BLAST_EVAL', str(self.blast_eval))
 		s_file = s_file.replace('#NUM_CORES', str(self.num_cores))
+		memory = "4"  # 2 or 3 cores
+		if self.num_cores >= 4:
+			memory = "2"
+		elif self.num_cores == 1:
+			memory = "8"
+		s_file = s_file.replace('#MEMORY', memory)
 		s_file = s_file.replace('#MUTRATE', str(self.mutrate))
 		s_file = s_file.replace('#MIN_BEST_HIT', str(self.min_best_hit))
 		s_file = s_file.replace('#MIN_SYNTENIC_FRACTION', str(self.min_syn_frac))

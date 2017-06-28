@@ -5,7 +5,7 @@
 #$ -P gscid
 #$ -R yes
 
-#$ -l h_vmem=4g
+#$ -l h_vmem=#MEMORY
 #$ -binding linear:#NUM_CORES
 #$ -pe smp #NUM_CORES
 #$ -e #WORKING_DIRerror.err
