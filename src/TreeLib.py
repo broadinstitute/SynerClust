@@ -26,16 +26,13 @@ class Tree:
 		self.genomes = []
 
 	def readTree(self):
-		# tree = open(self.tree_file,'r').read()
 		with open(self.tree_file) as t:
 			tree = t.read()
-			# print tree
 			trees = re.split('\)\d+[\.\d+]*:', tree)
 			jstring = "):"
 			tree = jstring.join(trees)
 			tree = tree.rstrip()
 			print tree
-			# sys.exit()
 			self.tree_string = tree
 
 	def readGenomeToLocusFile(self):
@@ -50,8 +47,6 @@ class Tree:
 			self.nodeChildrenCount[l[1]] = int(l[2])
 
 	def codeGenomeID(self, genome):
-		# Tree.logger.debug("".join(traceback.format_stack()))
-		# Tree.logger.debug("\t"*len(traceback.format_stack()) + "codeGenomeID")
 		tag = ''
 		if genome in self.genomeToLocus:
 			tag = self.genomeToLocus[genome]
@@ -68,13 +63,9 @@ class Tree:
 				degree = 0
 			tag = "N_%07d_%s" % (degree, base64.urlsafe_b64encode(hashlib.md5(genome).digest())[:-2])
 			Tree.logger.debug("Created new tag %s for %s" % (tag, genome))
-			# tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
-			# while tag in self.locusToGenome:
-			# 	tag = ''.join(random.choice(string.ascii_uppercase) for x in range(3))
 			self.genomeToLocus[genome] = tag
 			self.locusToGenome[tag] = genome
 			self.nodeChildrenCount[tag] = n
-			# print genome, tag
 		return tag
 
 	def parseTree(self):
@@ -83,16 +74,6 @@ class Tree:
 		while len(myExcisableRegions) > 0:
 			myExcisableRegions = sorted(myExcisableRegions, key=lambda reg: reg[4], reverse=True)
 			newSpeciesLocus = ""
-			# if len(myExcisableRegions) == 1 and len(myExcisableRegions[0][2]) == len(myTreeString):  # "root" of the tree had 3 or more children
-			# if len(myExcisableRegions) == 1 and myTreeString.count(",") == 1:  # "root" of the tree had 3 or more children
-			# 	root_edge = myExcisableRegions[0][2][1:-1]
-			# 	children = root_edge.split(",")
-			# 	for i in xrange(2):
-			# 		name = children[i].split(":")[0]
-			# 		if name not in self.locusToGenome:
-			# 			locus = self.codeGenomeID(name)
-			# 			children[i].replace(name, locus)
-			# 	return ",".join(children)
 			for mer in myExcisableRegions:
 				region = mer[2][1:-1]
 
@@ -109,7 +90,7 @@ class Tree:
 					locus = ""
 					if nome in self.locusToGenome:
 						locus = nome
-					else:
+					else:  # will error as no ";" because leaf
 						locus = self.codeGenomeID(nome)
 
 					child_nodes.append((locus, dist))
@@ -207,36 +188,6 @@ class Tree:
 					minRootLen = root_len
 		return self.locusToGenome[minRoot]
 
-	# def trimTaxa(self, taxaToKeep):
-	# 	ancestral = set([])
-	# 	for n in self.tree.nodes():
-	# 		n_nome = self.locusToGenome[n]
-	# 		if n_nome.find(";") > -1:
-	# 			ancestral.add(n)
-	# 			continue
-	# 		if n_nome not in taxaToKeep:
-	# 			# print "removed", n_nome
-	# 			self.tree.remove_node(n)
-	# 	for n in self.tree.nodes():
-	# 		n_nome = self.locusToGenome[n]
-	# 		if n_nome.find(";") > -1 and len(self.tree[n]) < 2:
-	# 			self.tree.remove_node(n)
-	# 	badAncestral = 1
-	# 	while (badAncestral):
-	# 		badAncestral = 0
-	# 		for n in self.tree.nodes():
-	# 			if n in ancestral and len(self.tree[n]) == 2:
-	# 				badAncestral += 1
-	# 				myedges = []
-	# 				myweights = []
-	# 				for e in self.tree[n]:
-	# 					myedges.append(e)
-	# 					myweights.append(self.tree[n][e]['weight'])
-	# 				newweight = myweights[0] + myweights[1]
-	# 				# print myedges,myedges[0],myedges[1], newweight
-	# 				self.tree.add_edge(myedges[0], myedges[1], weight=newweight)
-	# 				self.tree.remove_node(n)
-
 	# make a directed graph
 	def rootTree(self, root_edge):
 		re_weight = (self.tree.edge[root_edge[0]][root_edge[1]]['weight']) / 2.0
@@ -275,44 +226,6 @@ class Tree:
 				self.rooted_tree.remove_edge(e[1], e[0])
 			else:
 				self.rooted_tree.remove_edge(e[0], e[1])
-		ttree = self.rooted_tree.copy()
-		up_tree = nx.DiGraph()
-		while len(ttree.nodes()) > 1:
-			remove_these = set([])
-			new_map = {}
-			for n in ttree.nodes():
-				if n in remove_these:
-					pass
-				elif len(ttree.out_edges(n)) == 0:
-					# print "0 out edges",n,self.locusToGenome[n]
-					# print "ttree.edges(n)",ttree.in_edges(n)
-					# up_tree.add_node(n)
-					parent = self.rooted_tree.in_edges(n)[0][0]
-					kids = []
-					for oe in ttree.out_edges(parent):
-						if len(ttree.out_edges(oe[1])) == 0:
-							kids.append(oe[1])
-					if len(kids) == 2:
-						kids.sort()
-						# print kids
-						up_parent = self.codeGenomeID(";".join(kids))
-						if parent == self.root:
-							up_parent = self.root
-						new_map[up_parent] = kids
-
-			for nm in new_map:
-				if nm not in up_tree.nodes():
-					up_tree.add_node(nm)
-				for ki in new_map[nm]:
-					if ki not in up_tree.nodes():
-						up_tree.add_node(ki)
-					up_tree.add_edge(nm, ki)
-					remove_these.add(ki)
-			# print "removal length", len(remove_these), remove_these
-			for rt in remove_these:
-				if rt in ttree.nodes():
-					ttree.remove_node(rt)
-			# print "ttree nodes",len(ttree.nodes()), ttree.nodes()
 
 		for n in self.rooted_tree.nodes():
 			# print n
@@ -403,12 +316,6 @@ def main(argv):
 			out_file = arg
 		elif opt in ("-l", "--locus"):
 			locus_tag = arg
-		# elif opt in ("-r", "--root"):
-		# 	root = 1
-		# elif opt in ("-n", "--node"):
-		# 	labels = 1
-		# elif opt in ("-k", "--keep"):
-		# 	taxa_to_keep = arg
 		elif opt in ("-h", "--help"):
 			sys.exit(usage())
 
