@@ -62,6 +62,6 @@ You can then start the actual computation (parallelizable on the grid):
 <pre><code>./uger_jobs.sh</pre></code>
 
 If they are more jobs than your queue allows, run:
-<pre><code>path/to/SynerClust/uger_auto_submit.py -f ./uger_jobs.sh -l queue_size_limit</pre></code>
+<pre><code>path/to/SynerClust/uger_auto_submit.py -f ./uger_jobs.sh -l queue_size_limit [-n number_of_cores_per_job]</pre></code>
 
 Once all jobs are finished, to have an easy to read output of the clusters, simply run the "post_process_root.sh" script. This will, among others, generate a final_clusters.txt and clusters_to_locus.txt file with the results in the root node.
