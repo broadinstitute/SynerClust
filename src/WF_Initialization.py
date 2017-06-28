@@ -236,7 +236,8 @@ class Tree:
 		my_sh_uge_file = my_dir + curNode + "_uge.sh"
 		my_sh_file = my_dir + curNode + ".sh"
 
-		s_file = open(sh_uge_file, 'r').read()
+		with open(sh_uge_file, 'r') as f:
+			s_file = f.read()
 		s_file = s_file.replace('#SYNERCLUST_PATH', syn2_path)
 		s_file = s_file.replace('#WORKING_DIR', working_dir)
 		s_file = s_file.replace('#CHILD1', child1)
@@ -252,12 +253,12 @@ class Tree:
 			s_file = s_file.replace('#NOSYNTENY', "")
 		else:
 			s_file = s_file.replace('#NOSYNTENY', "--no-synteny")
+		with open(my_sh_uge_file, 'w') as my_sh:
+			my_sh.write(s_file)
+		os.chmod(my_sh_uge_file, 0775)
 
-		my_sh = open(my_sh_uge_file, 'w')
-		my_sh.write(s_file)
-		my_sh.close()
-
-		s_file = open(sh_file, 'r').read()
+		with open(sh_file, 'r') as f:
+			s_file = f.read()
 		s_file = s_file.replace('#SYNERCLUST_PATH', syn2_path)
 		s_file = s_file.replace('#WORKING_DIR', working_dir)
 		s_file = s_file.replace('#CHILD1', child1)
@@ -273,10 +274,9 @@ class Tree:
 			s_file = s_file.replace('#NOSYNTENY', "")
 		else:
 			s_file = s_file.replace('#NOSYNTENY', "--no-synteny")
-
-		my_sh = open(my_sh_file, 'w')
-		my_sh.write(s_file)
-		my_sh.close()
+		with open(my_sh_file, 'w') as my_sh:
+			my_sh.write(s_file)
+		os.chmod(my_sh_file, 0775)
 
 	def getGenomeToLocus(self):
 		return self.genomeToLocus
