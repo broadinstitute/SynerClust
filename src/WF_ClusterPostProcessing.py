@@ -45,11 +45,9 @@ def main(argv):
 		if len(locus_pkl) > 0:
 			if "PICKLES_COMPLETE" not in os.listdir(locus_dir):
 				exit("Error: Leaf data extraction in " + locus_dir + " not completed.")
-			# os.system("#SYNERGY2_PATHWF_WaitForFile.py " + locus_dir + " PICKLES_COMPLETE")
 		else:
 			if "NODE_COMPLETE" not in os.listdir(locus_dir):
 				exit("Error: Node " + locus_dir + " computation not completed.")
-			# os.system("#SYNERGY2_PATHWF_WaitForFile.py " + locus_dir + " NODE_COMPLETE")
 
 	pklFile = open(locus_mapping, 'rb')
 	locusMap = pickle.load(pklFile)

@@ -224,16 +224,7 @@ class Genome:
 			return False
 		# if distribute == 1:
 		if self.annotation is not "" and self.sequence is not "":
-			cmd = "#SYNERGY2_PATHFormatAnnotation_external.py -gff " + self.annotation + " -seq " + self.sequence + " -name " + self.genome + " --pep " + self.peptide + " -locus " + self.locus + " -out " + myDir + "annotation.txt -synteny " + str(synteny_window) + " --annot " + annot + " --pickle " + pickles + " --transl_table " + self.transl_table + "\n"
+			cmd = "#SYNERCLUST_PATHFormatAnnotation_external.py -gff " + self.annotation + " -seq " + self.sequence + " -name " + self.genome + " --pep " + self.peptide + " -locus " + self.locus + " -out " + myDir + "annotation.txt -synteny " + str(synteny_window) + " --annot " + annot + " --pickle " + pickles + " --transl_table " + self.transl_table + "\n"
 		elif self.peptide is not "":
-			cmd = "#SYNERGY2_PATHFormatAnnotation_external.py -name " + self.genome + " --pep " + self.peptide + " -locus " + self.locus + " -out " + myDir + "annotation.txt --annot " + annot + " --pickle " + pickles + "\n"
+			cmd = "#SYNERCLUST_PATHFormatAnnotation_external.py -name " + self.genome + " --pep " + self.peptide + " -locus " + self.locus + " -out " + myDir + "annotation.txt --annot " + annot + " --pickle " + pickles + "\n"
 		return cmd
-		# else:
-		# 	cmd = "#SYNERGY2_PATHFormatAnnotation_external.py -gff " + self.annotation + " -seq " + self.sequence + " -name " + self.genome + " --pep " + self.peptide + " -locus " + self.locus + " -out " + myDir + "annotation.txt -synteny " + str(synteny_window) + " --annot " + annot + " --pickle " + pickles + " --transl_table " + self.transl_table + "\n"
-		# 	os.system(cmd)
-		# 	# cmd2 = "cp "+self.sequence+" "+myDir+"."
-		# 	# cmd3 ="mv "+myDir+self.sequence+" "+myDir+self.genome+".genome"
-
-		# 	Genome.logger.info("Wrote annotation information for " + self.genome)
-
-		# return False

@@ -26,7 +26,7 @@ class Tree:
 		self.min_syn_frac = minSynFrac
 		self.mutrate = mutrate
 		self.synteny = synteny
-		self.syn2_path = "#SYNERGY2_PATH"
+		self.syn2_path = "#SYNERCLUST_PATH"
 		Tree.logger.debug("Tree initialized")
 
 	def codeGenomeID(self, genome):
@@ -237,7 +237,7 @@ class Tree:
 		my_sh_file = my_dir + curNode + ".sh"
 
 		s_file = open(sh_uge_file, 'r').read()
-		s_file = s_file.replace('#SYNERGY2_PATH', syn2_path)
+		s_file = s_file.replace('#SYNERCLUST_PATH', syn2_path)
 		s_file = s_file.replace('#WORKING_DIR', working_dir)
 		s_file = s_file.replace('#CHILD1', child1)
 		s_file = s_file.replace('#CHILD2', child2)
@@ -258,7 +258,7 @@ class Tree:
 		my_sh.close()
 
 		s_file = open(sh_file, 'r').read()
-		s_file = s_file.replace('#SYNERGY2_PATH', syn2_path)
+		s_file = s_file.replace('#SYNERCLUST_PATH', syn2_path)
 		s_file = s_file.replace('#WORKING_DIR', working_dir)
 		s_file = s_file.replace('#CHILD1', child1)
 		s_file = s_file.replace('#CHILD2', child2)
