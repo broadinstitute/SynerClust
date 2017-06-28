@@ -203,11 +203,14 @@ class Tree:
 				while len(stack) > 0:
 					current = stack.pop()
 					if current[0][0] != "L":  # not a leaf
+						header = "if [ ! -f " + working_dir + "nodes/" + str(current[0]) + "/NODE_COMPLETE ]; then "
+						uge_out.write(header)
+						out.write(header)
 						uge_out.write("qsub -N j${TIME}" + str(current[1]))
 						if len(current[2]) != 0:
 							uge_out.write(" -hold_jid j${TIME}" + str(current[2][0]) + ",j${TIME}" + str(current[2][1]))
-						uge_out.write(" " + working_dir + "nodes/" + str(current[0]) + "/" + str(current[0]) + "_uge.sh\n")
-						out.write(working_dir + "nodes/" + str(current[0]) + "/" + str(current[0]) + ".sh\n")
+						uge_out.write(" " + working_dir + "nodes/" + str(current[0]) + "/" + str(current[0]) + "_uge.sh ; fi\n")
+						out.write(working_dir + "nodes/" + str(current[0]) + "/" + str(current[0]) + ".sh ; fi\n")
 		os.chmod(working_dir + "uger_jobs.sh", 0775)
 		os.chmod(working_dir + "jobs.sh", 0775)
 		all_proc_nodes = []
