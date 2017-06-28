@@ -2,6 +2,7 @@
 
 import os
 import argparse
+import platform
 
 
 def usage():
@@ -33,7 +34,10 @@ def main():
 		sf = open(sc_src + "/" + sfile, 'r').read()
 		sf = sf.replace('#SYNERCLUST_PATH', sc_bin)
 		sf = sf.replace('#FASTTREE_PATH', sc_lib + "FastTree")
-		sf = sf.replace('#MUSCLE_PATH', sc_lib + "muscle3.8.31_i86darwin64")
+		if platform.system() == "Linux":
+			sf = sf.replace('#MUSCLE_PATH', sc_lib + "muscle3.8.31_i86linux64")
+		elif platform.system() == "Darwin":
+			sf = sf.replace('#MUSCLE_PATH', sc_lib + "muscle3.8.31_i86darwin64")
 		if len(args.blast) > 0 and args.blast[-1] != "/":
 			sf = sf.replace('#BLAST_PATH', args.blast + "/")
 		else:
