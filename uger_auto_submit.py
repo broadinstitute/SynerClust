@@ -31,7 +31,7 @@ while current < len(commands):
 	njobs = 0
 	for line in output.split("\n")[2:-1]:
 		tabs = line.split()
-		if tabs[4] == "r":
+		if tabs[4] == "r" or tabs[4] == "dr":
 			njobs += int(tabs[8])
 		else:
 			njobs += int(tabs[7])
