@@ -1,7 +1,7 @@
 SynerClust README
 
 
-#Dependencies#
+#Dependencies
 - Python-2.7.x
 - NetworkX (Python package) http://networkx.github.io/
 - Blast+ ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/
@@ -11,14 +11,14 @@ Already included:
 - FastTree http://meta.microbesonline.org/fasttree/#Install  
 
 
-#Installation#
+#Installation
 You can install SynerClust by running the following command from the main folder:
 <code><pre>python INSTALL.py</code></pre>
 
 The default considers that Blast+ is in your path. If that is not the case, please use the "-e" option to specify the path to the Blast+ bin folder.
 
 
-#Input Data#
+#Input Data
 data_catalog.txt should be formatted as the following example (paths can be relative of absolute paths):
 <code><pre>
 //
@@ -33,8 +33,8 @@ Annotation	Esch_coli_H378_V1/Esch_coli_H378_V1_PRODIGAL_2.annotation.gff3
 </code></pre>
 
 	
-#Running#
-####Without UGE:####
+#Running
+####Without UGE:
 The minimal command to run SynerClust is the following:
 <pre><code>path/to/SynerClust/bin/synerclust.py -r path/to/data_catalog.txt -w working/directory/ -t path/to/newick/tree.nwk [-n number_of_cores]</pre></code>
 
@@ -44,13 +44,10 @@ You then need to run the script indicated (all tasks can be run in parallel on t
 You can then start the actual computation (in part parallelizable on the grid):
 <pre><code>./jobs.sh</pre></code>
 
-Once all jobs are finished, to have an easy to read output of the clusters, run:
-<pre><code>path/to/SynerClust/bin/ClusterPostProcessing.py genomes/ nodes/N_**********_***************/locus_mappings.pkl n</pre></code>
-Where the * are the id of the node (for the root, the first number is the depth of the tree, which is also the highest number generated on this run) and n the number of genomes included at that node.
-This will generate a final_clusters.txt and clusters_to_locus.txt file with the results.
+Once all jobs are finished, to have an easy to read output of the clusters, simply run the "post_process_root.sh" script. This will, among others, generate a final_clusters.txt and clusters_to_locus.txt file with the results in the root node.
 
 
-####With UGE:####
+####With UGE:
 Initialize your environnement (if on UGE):
 <pre><code>use Python-2.7
 use UGER</pre></code>
@@ -67,7 +64,4 @@ You can then start the actual computation (parallelizable on the grid):
 If they are more jobs than your queue allows, run:
 <pre><code>path/to/SynerClust/uger_auto_submit.py -f ./uger_jobs.sh -l queue_size_limit</pre></code>
 
-Once all jobs are finished, to have an easy to read output of the clusters, run:
-<pre><code>path/to/SynerClust/bin/ClusterPostProcessing.py genomes/ nodes/N_**********_***************/locus_mappings.pkl n</pre></code>
-Where the * are the id of the node (for the root, the first number is the depth of the tree, which is also the highest number generated on this run) and n the number of genomes included at that node.
-This will generate a final_clusters.txt and clusters_to_locus.txt file with the results.
+Once all jobs are finished, to have an easy to read output of the clusters, simply run the "post_process_root.sh" script. This will, among others, generate a final_clusters.txt and clusters_to_locus.txt file with the results in the root node.
