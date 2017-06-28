@@ -4,6 +4,7 @@ import sys
 import os
 import argparse
 import logging
+import subprocess
 import COBRA_Repo_Handling
 import WF_Initialization
 import TreeLib
@@ -98,6 +99,11 @@ def main():
 	myInitTree.calculateNodeDependencies(args.working_dir)
 	myInitTree.writeLocusTagFile()
 	myInitTree.writeCodedNewick(genome_dir + args.coded_nwk_file)
+
+	os.chdir(args.working_dir)
+	cmd = ["#SYNERCLUST_PATHPostProcessingScript.sh"]
+	process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	process.communicate()
 
 	logger.info('Finished')
 	if retVal:
