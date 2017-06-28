@@ -39,7 +39,7 @@ while current < len(commands):
 	if njobs < args.limit:
 		for i in xrange(njobs, args.limit, args.cores):
 			# submit new job
-			if commands[current][:4] == "qsub":
+			if "qsub" in commands[current]:
 				os.system(commands[current].replace("${TIME}", timestamp).rstrip())
 				current += 1
 				if current == len(commands):

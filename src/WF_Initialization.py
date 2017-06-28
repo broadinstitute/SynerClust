@@ -199,7 +199,8 @@ class Tree:
 				count += 1
 		with open(working_dir + "uger_jobs.sh", "w") as uge_out:
 			with open(working_dir + "jobs.sh", "w") as out:
-				uge_out.write("#! /bin/bash\n\nTIME=$(date +%s)\n")
+				uge_out.write("#! /bin/bash\n\nif [ -f " + working_dir + "not_completed ]; then rm " + working_dir + "not_completed ; fi\nTIME=$(date +%s)\n")
+				out.write("#! /bin/bash\n\nif [ -f " + working_dir + "not_completed ]; then rm " + working_dir + "not_completed ; fi\n")
 				while len(stack) > 0:
 					current = stack.pop()
 					if current[0][0] != "L":  # not a leaf
