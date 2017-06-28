@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 import os
-import pickle
+import cPickle as pickle
 import logging
 import re
 from collections import Counter
@@ -34,9 +34,8 @@ def main():
 	genome_path = args.folders[0]
 	num_genomes = int(args.folders[2])
 
-	pklFile = open(locus_mapping, 'rb')
-	locusMap = pickle.load(pklFile)
-	pklFile.close()
+	with open(locus_mapping, 'rb') as pklFile:
+		locusMap = pickle.load(pklFile)
 
 	l_t = {}  # locus to transcript
 	l_s = {}  # locus to sequence
@@ -57,10 +56,6 @@ def main():
 			line = t.split()
 			tagToGenome[line[1]] = line[0]
 
-	inparalogs = None
-	with open(nodes_path + current_root + "/current_inparalogs.pkl") as f:
-		inparalogs = pickle.load(f)
-
 	genomes = []
 	nodes = [current_root]
 	inter_nodes = [current_root]
@@ -80,9 +75,6 @@ def main():
 				d = f.readline().rstrip().split("\t")
 				genomeToAnnot[d[0]] = d[1]
 				for d in f:
-					# dataFile = genome_path + g + "/annotation.txt"
-					# data = open(dataFile, 'r').readlines()
-					# for d in data:
 					d = d.rstrip()
 					line = d.split("\t")
 					l_t[line[1]] = line[0]
@@ -133,13 +125,10 @@ def main():
 	ct_out = open(cTt_out, 'w')
 	nwk_out = open(nodes_path + current_root + "/newicks_full.txt", "w")
 	totalGenes = 0
-	# pairs = set([])
-	# pairs2 = set([])
 	scc_count = 0
 	mcc_count = 0
 	cluster_noOrphan = 0
 	for l in locusMap:
-		# counter = "_".join(l.split("_")[:-1])
 		counter = l[33:]
 		cid = "Cluster" + counter
 		cout_buffer = ""
@@ -161,15 +150,6 @@ def main():
 		clusters_out.write("\n")
 		if args.alignement:
 			alignement_out.write(cid + "\n" + get_alignement(stdin_data) + "\n")
-
-		# for i in xrange(len(leafKids)):
-		# 	for j in xrange(i + 1, len(leafKids)):
-		# 		if l_t[leafKids[i]] < l_t[leafKids[j]]:
-		# 			pairs.add((l_t[leafKids[i]], l_t[leafKids[j]]))
-		# 			pairs2.add((t_n[l_t[leafKids[i]]][2], t_n[l_t[leafKids[j]]][2]))
-		# 		else:
-		# 			pairs.add((l_t[leafKids[j]], l_t[leafKids[i]]))
-		# 			pairs2.add((t_n[l_t[leafKids[j]]][2], t_n[l_t[leafKids[i]]][2]))
 
 		prefix_count = Counter(genomes)
 		distrib_buffer = ""
@@ -195,9 +175,8 @@ def main():
 			cluster_noOrphan += 1
 
 	orphan_count = len(locusMap) - cluster_noOrphan
-	aux_count = cluster_noOrphan - mcc_count
+	aux_count = cluster_noOrphan - mcc_count - scc_count
 	print "total genes: ", totalGenes
-	# print "pairs:", len(pairs)
 	print "scc:", scc_count
 	print "mcc:", mcc_count
 	print "aux:", aux_count
@@ -211,22 +190,77 @@ def main():
 	if args.alignement:
 		alignement_out.close()
 
-	# ds = locus_mapping.split("/")
-	# ds.pop()
-	# mydir = "/".join(ds) + "/"
-	# pair_pkl = mydir + "tuple_pairs.pkl"
+	# unreferencing
+	l_t = None
+	l_s = None
+	t_n = None
+	tagToGenome = None
+	genomeToAnnot = None
+	nwksMap = None
+	locusMap = None
 
-	# pdat = open(pair_pkl, 'wb')
-	# pickle.dump(pairs, pdat)
-	# pdat.close()
+	print "Now adding inparalogs"
+	with open(nodes_path + current_root + "/current_inparalogs.pkl") as f:
+		inparalogs = pickle.load(f)
 
-	# with open(mydir + "tuple_pairs_locus.pkl", "w") as f:
-	# 	pickle.dump(pairs2, f)
+	inpar = {}
+	for k in inparalogs:
+		inpar[k.split("_")[-1]] = inparalogs[k][0].split("_")[-1]
+	inparalogs = None
+
+	changed = True
+	while changed:
+		changed = False
+		for t in inpar:
+			if inpar[t] in inpar and inpar[t] != inpar[inpar[t]]:
+				inpar[t] = inpar[inpar[t]]
+				changed = True
+
+	cluster_to_genes = {}
+	cluster_to_genomes = {}
+	cluster_to_inparalog_output = {}
+	with open(nodes_path + current_root + "/clusters.txt", "r") as f:
+		for line in f:
+			if line != "\n":
+				fields = line.rstrip().split()
+				if fields[0] in inpar:
+					fields[0] = inpar[fields[0]]
+				if fields[0] not in cluster_to_inparalog_output:
+					cluster_to_inparalog_output[fields[0]] = []
+				cluster_to_inparalog_output[fields[0]].append("\t".join(fields) + "\n")
+				if fields[0] not in cluster_to_genes:
+					cluster_to_genes[fields[0]] = [fields[4]]
+					cluster_to_genomes[fields[0]] = set([fields[1]])
+				else:
+					cluster_to_genes[fields[0]].append(fields[4])
+					cluster_to_genomes[fields[0]].add(fields[1])
+
+	with open(nodes_path + current_root + "/clusters_with_inparalogs.txt", "w") as o:
+		for cluster in cluster_to_inparalog_output:
+				for line in cluster_to_inparalog_output[cluster]:
+					o.write(line)
+				o.write("\n")
+
+	scc = 0
+	mcc = 0
+	orphans = 0
+	auxilary = 0
+	for cluster in cluster_to_genomes:
+		if len(cluster_to_genomes[cluster]) == num_genomes:
+			if len(cluster_to_genes[cluster]) == num_genomes:
+				scc += 1
+			else:
+				mcc += 1
+		elif len(cluster_to_genes[cluster]) == 1:
+			orphans += 1
+		else:
+			auxilary += 1
+	print "with inparalogs scc = " + str(scc)
+	print "with inparalogs mcc = " + str(mcc)
+	print "with inparalogs orphans = " + str(orphans)
+	print "with inparalogs auxilary = " + str(auxilary)
+	print "with inparalogs non-orphans = " + str(scc + mcc + auxilary)
 
 
 if __name__ == "__main__":
 	main()
-	# if len(sys.argv) == 1:
-	# 	sys.exit(usage())
-	# else:
-	# 	main(sys.argv[1:])
