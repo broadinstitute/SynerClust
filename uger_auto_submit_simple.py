@@ -47,9 +47,10 @@ def main():
 
 	new_commands = []
 	for i in xrange(len(commands)):
-		with open(args.tmp + timestamp + str(i), "w") as f:
-			f.write(script_base + commands[i])
-		new_commands.append("qsub -N j" + timestamp + str(i) + " " + args.tmp + timestamp + str(i))
+		if commands[i][0] != "#" and commands[i]:
+			with open(args.tmp + timestamp + str(i), "w") as f:
+				f.write(script_base + commands[i])
+			new_commands.append("qsub -N j" + timestamp + str(i) + " " + args.tmp + timestamp + str(i))
 
 	current = 0
 	njobs = args.limit

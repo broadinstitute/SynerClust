@@ -169,9 +169,11 @@ class RepoParse:
 				command_lists.append(ret)
 		if len(command_lists) > 0:
 			cat_cmds = open(genome_dir + "needed_extractions.cmd.txt", 'w')
+			cat_cmds.write("#!/usr/bin/env bash\n\n")
 			for cl in command_lists:
 				cat_cmds.write(cl)
 			cat_cmds.close()
+			os.chmod(genome_dir + "needed_extractions.cmd.txt", 0775)
 			return genome_dir + "needed_extractions.cmd.txt"
 		elif "needed_extractions.cmd.txt" in os.listdir(genome_dir):
 			cmd = "rm " + genome_dir + "needed_extractions.cmd.txt"

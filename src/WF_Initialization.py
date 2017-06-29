@@ -199,8 +199,8 @@ class Tree:
 				count += 1
 		with open(working_dir + "uger_jobs.sh", "w") as uge_out:
 			with open(working_dir + "jobs.sh", "w") as out:
-				uge_out.write("#! /bin/bash\n\nif [ -f " + working_dir + "not_completed ]; then rm " + working_dir + "not_completed ; fi\nTIME=$(date +%s)\n")
-				out.write("#! /bin/bash\n\nif [ -f " + working_dir + "not_completed ]; then rm " + working_dir + "not_completed ; fi\n")
+				uge_out.write("#!/usr/bin/env bash\n\nif [ -f " + working_dir + "not_completed ]; then rm " + working_dir + "not_completed ; fi\nTIME=$(date +%s)\n")
+				out.write("#!/usr/bin/env bash\n\nif [ -f " + working_dir + "not_completed ]; then rm " + working_dir + "not_completed ; fi\n")
 				while len(stack) > 0:
 					current = stack.pop()
 					if current[0][0] != "L":  # not a leaf
@@ -212,6 +212,7 @@ class Tree:
 							uge_out.write(" -hold_jid j${TIME}" + str(current[2][0]) + ",j${TIME}" + str(current[2][1]))
 						uge_out.write(" " + working_dir + "nodes/" + str(current[0]) + "/" + str(current[0]) + "_uge.sh ; fi\n")
 						out.write(working_dir + "nodes/" + str(current[0]) + "/" + str(current[0]) + ".sh ; fi\n")
+						out.write("echo \"Node " + str(current[0]) + " computed.\"\n")
 		os.chmod(working_dir + "uger_jobs.sh", 0775)
 		os.chmod(working_dir + "jobs.sh", 0775)
 		all_proc_nodes = []

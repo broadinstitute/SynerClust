@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/usr/bin/env bash
 
 #$ -cwd
 #$ -q short
