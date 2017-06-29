@@ -153,7 +153,7 @@ def main():
 		# run genome extraction
 		if "needed_extractions.cmd.txt" in os.listdir(args.working_dir + "genomes/"):
 			logger.info("Starting annotation extraction.\n")
-			cmd = shlex.split(args.working_dir + "uger_auto_submit_simple.py -f " + args.working_dir + "genomes/needed_extractions.cmd.txt -t 30 -tmp " + args.working_dir + "tmp/")
+			cmd = shlex.split("#SYNERCLUST_PATHuger_auto_submit_simple.py -f " + args.working_dir + "genomes/needed_extractions.cmd.txt -t 30 -tmp " + args.working_dir + "tmp/")
 			process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			(output, error) = process.communicate()
 			if process.returncode != 0:
@@ -161,7 +161,7 @@ def main():
 			logger.info("Finished annotation extraction.\n\n")
 		# run jobs
 		logger.info("Starting computing jobs.\n")
-		cmd = shlex.split(args.working_dir + "uger_auto_submit.py -f " + args.working_dir + "uger_jobs.sh -t 30 -l 900 -n " + args.num_cores)
+		cmd = shlex.split("#SYNERCLUST_PATHuger_auto_submit.py -f " + args.working_dir + "uger_jobs.sh -t 30 -l 900 -n " + args.num_cores)
 		process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		(output, error) = process.communicate()
 		if process.returncode != 0:
@@ -169,7 +169,7 @@ def main():
 		logger.info("Finished computing jobs.\n\n")
 		# run root postprocessing
 		logger.info("Starting postprocessing root.\n")
-		cmd = shlex.split(args.working_dir + "uger_auto_submit_simple.py -f " + args.working_dir + "post_process_root.sh -t 30 -q long -tmp " + args.working_dir + "tmp/")
+		cmd = shlex.split("#SYNERCLUST_PATHuger_auto_submit_simple.py -f " + args.working_dir + "post_process_root.sh -t 30 -q long -tmp " + args.working_dir + "tmp/")
 		process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		(output, error) = process.communicate()
 		if process.returncode != 0:
