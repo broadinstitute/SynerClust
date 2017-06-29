@@ -5,6 +5,7 @@ import os
 import argparse
 import logging
 import subprocess
+import shlex
 import COBRA_Repo_Handling
 import WF_Initialization
 import TreeLib
@@ -34,6 +35,8 @@ def main():
 	parser.add_argument('-D', '--dist', type=float, dest="dist", default=1.2, help="Maximum FastTree distance between a representative sequence and sequences being represented for representative selection. (default = 1.2)")
 	parser.add_argument('-s', '--synteny_window', type=int, dest="synteny_window", default=6000, help="Distance in base pairs that will contribute to upstream and downstream to syntenic fraction. The total window size is [int]*2. (default = 6000")
 	parser.add_argument('--no-synteny', dest="synteny", default=True, action='store_false', required=False, help="Disable use of synteny (required if information not available).")
+	parser.add_argument('--run', type=str, dest="run", choices=["none", "single", "uger"], defaut="none")
+	parser.add_argument('--alignement', type=str, dest="alignement", choices=["none", "scc", "all"], defaut="none")
 	args = parser.parse_args()
 
 	args.working_dir = os.path.abspath(args.working_dir) + "/"
@@ -103,7 +106,7 @@ def main():
 	myInitTree.writeCodedNewick(genome_dir + args.coded_nwk_file)
 
 	os.chdir(args.working_dir)
-	cmd = ["#SYNERCLUST_PATHPostProcessingScript.sh"]
+	cmd = ["#SYNERCLUST_PATHPostProcessingScript.sh", args.alignement]
 	process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	process.communicate()
 
@@ -111,6 +114,48 @@ def main():
 	if retVal:
 		# currently this will never happen, but if you are doing a whole bunch of genomes it may become necessary
 		logger.info("Please run annotation extraction before starting the actual computation: " + retVal)
+
+	if args.run == "single":
+		# run genome extraction
+		cmd = [args.working_dir + "genodes/needed_extraction.cmd.txt"]
+		process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		(output, error) = process.communicate()
+		if process.returncode != 0:
+			exit("Error while extracting genome annotations:\n" + error)
+		# run jobs
+		cmd = [args.working_dir + "jobs.sh"]
+		process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		(output, error) = process.communicate()
+		if process.returncode != 0:
+			exit("Error while computing jobs. Please check logs.\n")
+		# run root postprocessing
+		cmd = [args.working_dir + "post_process_root.sh"]
+		process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		(output, error) = process.communicate()
+		if process.returncode != 0:
+			exit("Error while post processing root. Please check logs.\n")
+
+	elif args.run == "uger":
+		if "tmp" not in os.listdir(args.working_dir):
+			os.system("mkdir " + args.working_dir + "tmp/")
+		# run genome extraction
+		cmd = shlex.split(args.working_dir + "uger_auto_submit_simple.py -f " + args.working_dir + "genodes/needed_extraction.cmd.txt -t 30 -tmp " + args.working_dir + "tmp/")
+		process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		(output, error) = process.communicate()
+		if process.returncode != 0:
+			exit("Error while extracting genome annotations on the grid:\n" + error)
+		# run jobs
+		cmd = shlex.split(args.working_dir + "uger_auto_submit.py -f " + args.working_dir + "uger_jobs.sh -t 30 -l 900 -n " + args.num_cores)
+		process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		(output, error) = process.communicate()
+		if process.returncode != 0:
+			exit("Error while computing jobs on the grid. Please check logs.\n")
+		# run root postprocessing
+		cmd = shlex.split(args.working_dir + "uger_auto_submit_simple.py -f " + args.working_dir + "post_process_root.sh -t 30 -q long -tmp " + args.working_dir + "tmp/")
+		process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		(output, error) = process.communicate()
+		if process.returncode != 0:
+			exit("Error while post processing root on the grid. Please check logs.\n")
 
 
 if __name__ == "__main__":

@@ -242,6 +242,8 @@ class Tree:
 
 		with open(sh_uge_file, 'r') as f:
 			s_file = f.read()
+		if int(curNode[2:9]) > 30:
+			s_file = s_file.replace('short', 'long')
 		s_file = s_file.replace('#SYNERCLUST_PATH', syn2_path)
 		s_file = s_file.replace('#WORKING_DIR', working_dir)
 		s_file = s_file.replace('#CHILD1', child1)
