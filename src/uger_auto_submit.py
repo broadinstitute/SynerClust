@@ -42,9 +42,10 @@ def main():
 				# submit new job
 				if "qsub" in commands[current]:
 					cmd = shlex.split(commands[current].replace("${TIME}", timestamp).rstrip())
-					submitted = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
+					submitted = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL, shell=True)
 					output = submitted.communicate()[0]
-					jobids.append(output.split(" ")[2])
+					if output:
+						jobids.append(output.split(" ")[2])
 					# os.system(commands[current].replace("${TIME}", timestamp).rstrip())
 					current += 1
 					if current == len(commands):
