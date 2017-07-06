@@ -5,7 +5,7 @@ import cPickle as pickle
 import logging
 import re
 from collections import Counter
-from WF_FinalizeNode import get_alignement
+from WF_FinalizeNode import get_alignment
 import argparse
 
 
@@ -16,7 +16,7 @@ def usage():
 def main():
 	usage = "usage: ClusterPostProcessing [options] genomes_directory specific_node_directory number_of_genomes"
 	parser = argparse.ArgumentParser(usage)
-	parser.add_argument('-a', dest="alignement", type=str, choices=["none", "scc", "all"], default="none", help="Whether to output whole cluster alignements (slow) (Default=False)")
+	parser.add_argument('-a', dest="alignment", type=str, choices=["none", "scc", "all"], default="none", help="Whether to output whole cluster alignments (slow) (Default=False)")
 	parser.add_argument('folders', nargs=3, help="genome_directory specific_node_directory/locus_mappings.pkl number_of_genomes (Required)")
 	args = parser.parse_args()
 
@@ -84,11 +84,11 @@ def main():
 
 	distrib_out = open(nodes_path + current_root + "/cluster_dist_per_genome.txt", "w")
 	clusters_out = open(nodes_path + current_root + "/clusters.txt", "w")
-	if args.alignement == "all":
-		alignement_all_out = open(nodes_path + current_root + "/alignments_all.txt", "w")
-		alignement_scc_out = open(nodes_path + current_root + "/alignments_scc.txt", "w")
-	elif args.alignement == "scc":
-		alignement_scc_out = open(nodes_path + current_root + "/alignments_scc.txt", "w")
+	if args.alignment == "all":
+		alignment_all_out = open(nodes_path + current_root + "/alignments_all.txt", "w")
+		alignment_scc_out = open(nodes_path + current_root + "/alignments_scc.txt", "w")
+	elif args.alignment == "scc":
+		alignment_scc_out = open(nodes_path + current_root + "/alignments_scc.txt", "w")
 	distrib_out.write("#cluster_id\tname")
 	leaves = []
 	for n in nodes:
@@ -144,20 +144,20 @@ def main():
 			prefix = "_".join(k.split("_")[:-1])
 			cout_buffer += l_t[k] + " "
 			clusters_out.write("\t".join([counter, tagToGenome[prefix], genomeToAnnot[tagToGenome[prefix]], t_n[l_t[k]][0], l_t[k], t_n[l_t[k]][1], t_n[l_t[k]][2] + "\n"]))  # STORE DATA CATALOG INFO: genome name and translation to encoded (locus_tag_file?), annotation file name
-			if args.alignement == "all" or (args.alignement == "scc" and len(leafKids) == num_genomes):
+			if args.alignment == "all" or (args.alignment == "scc" and len(leafKids) == num_genomes):
 				stdin_data += ">" + tagToGenome[prefix] + "_" + l_t[k] + "\n" + l_s[k] + "\n"
 			if t_n[l_t[k]][2] is not "None":
 				names.append(t_n[l_t[k]][2])
 			ct_out_buffer += cid + "\t" + l_t[k] + "\n"
 			genomes.append(prefix)
 		clusters_out.write("\n")
-		if args.alignement == "scc" and len(leafKids) == num_genomes:
-			ali = get_alignement(stdin_data)
-			alignement_scc_out.write(cid + "\n" + ali + "\n")
-			if args.alignement == "all":
-				alignement_all_out.write(cid + "\n" + ali + "\n")
-		elif args.alignement == "all":
-			alignement_all_out.write(cid + "\n" + get_alignement(stdin_data) + "\n")
+		if args.alignment == "scc" and len(leafKids) == num_genomes:
+			ali = get_alignment(stdin_data)
+			alignment_scc_out.write(cid + "\n" + ali + "\n")
+			if args.alignment == "all":
+				alignment_all_out.write(cid + "\n" + ali + "\n")
+		elif args.alignment == "all":
+			alignment_all_out.write(cid + "\n" + get_alignment(stdin_data) + "\n")
 
 		prefix_count = Counter(genomes)
 		distrib_buffer = ""
@@ -196,11 +196,11 @@ def main():
 	nwk_out.close()
 	distrib_out.close()
 	clusters_out.close()
-	if args.alignement == "all":
-		alignement_all_out.close()
-		alignement_scc_out.close()
-	elif args.alignement == "scc":
-		alignement_scc_out.close()
+	if args.alignment == "all":
+		alignment_all_out.close()
+		alignment_scc_out.close()
+	elif args.alignment == "scc":
+		alignment_scc_out.close()
 
 	# unreferencing
 	l_t = None

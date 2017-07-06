@@ -16,14 +16,14 @@ FASTTREE_CMD = ["#FASTTREE_PATH", "-quiet", "-nosupport"]
 QUEUE_ERROR = False
 
 
-def get_alignement(stdin_data):
+def get_alignment(stdin_data):
 	process = subprocess.Popen(MUSCLE_CMD, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
 	output1 = process.communicate(stdin_data)[0]
 	return output1
 
 
 def get_fasttree(stdin_data):
-	output1 = get_alignement(stdin_data)
+	output1 = get_alignment(stdin_data)
 	process = subprocess.Popen(FASTTREE_CMD, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=DEVNULL)
 	output2 = process.communicate(output1)[0]
 	return (output1, output2)

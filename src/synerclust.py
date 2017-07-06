@@ -36,7 +36,7 @@ def main():
 	parser.add_argument('-s', '--synteny_window', type=int, dest="synteny_window", default=6000, help="Distance in base pairs that will contribute to upstream and downstream to syntenic fraction. The total window size is [int]*2. (default = 6000")
 	parser.add_argument('--no-synteny', dest="synteny", default=True, action='store_false', required=False, help="Disable use of synteny (required if information not available).")
 	parser.add_argument('--run', default="none", type=str, dest="run", choices=["none", "single", "uger"], help="Specify if you want all computation to be run directly. Use \"single\" to run the local machine or \"uger\" to submit to the UGE grid.")
-	parser.add_argument('--alignement', default="none", type=str, dest="alignement", choices=["none", "scc", "all"], help="Specify if you want cluster alignements using MUSCLE to be computed and written for the root node. Use \"all\" if you want all clusters to be aligned or \"scc\" if you only want Single Copy Core clusters to be aligned.")
+	parser.add_argument('--alignment', default="none", type=str, dest="alignment", choices=["none", "scc", "all"], help="Specify if you want cluster alignments using MUSCLE to be computed and written for the root node. Use \"all\" if you want all clusters to be aligned or \"scc\" if you only want Single Copy Core clusters to be aligned.")
 	args = parser.parse_args()
 
 	args.working_dir = os.path.abspath(args.working_dir) + "/"
@@ -106,7 +106,7 @@ def main():
 	myInitTree.writeCodedNewick(genome_dir + args.coded_nwk_file)
 
 	os.chdir(args.working_dir)
-	cmd = ["#SYNERCLUST_PATHPostProcessingScript.sh", args.alignement]
+	cmd = ["#SYNERCLUST_PATHPostProcessingScript.sh", args.alignment]
 	process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	process.communicate()
 
