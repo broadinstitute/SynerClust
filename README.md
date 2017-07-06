@@ -35,7 +35,7 @@ Annotation	Esch_coli_H378_V1/Esch_coli_H378_V1_PRODIGAL_2.annotation.gff3
 
 	
 # Running
-#### Without UGE:
+### Without UGE:
 The minimal command to run SynerClust is the following:
 <pre><code>/path/to/SynerClust/bin/synerclust.py -r /path/to/data_catalog.txt -w /working/directory/ -t /path/to/newick/tree.nwk [-n number_of_cores] [--run single]</pre></code>
 
@@ -55,7 +55,7 @@ Once all jobs are finished, to have an easy to read output of the clusters, simp
 This will, among others, generate a final_clusters.txt and clusters_to_locus.txt file with the results in the root node.
 
 
-#### With UGE:
+### With UGE:
 Initialize your environnement (if on UGE):
 <pre><code>use Python-2.7
 use UGER</pre></code>
@@ -80,3 +80,51 @@ If they are more jobs than your queue allows, run:
 Once all jobs are finished, to have an easy to read output of the clusters, simply run the 
 <pre><code>/working/directory/post_process_root.sh</pre></code>
 This will, among others, generate a final_clusters.txt and clusters_to_locus.txt file with the results in the root node.
+
+
+# Help/Questions
+
+#### List of Parameters and their meaning
+-t SPECIES_TREE, --tree SPECIES_TREE  
+&nbsp;&nbsp;&nbsp;&nbsp;Species tree relating all of the genomes to be analyzed. (Required)
+
+-r COBRA_REPO, --repo COBRA_REPO  
+&nbsp;&nbsp;&nbsp;&nbsp;Complete path to data_catalog in the repository containing your genomic data. (Required)
+
+-w WORKING_DIR, --working WORKING_DIR  
+&nbsp;&nbsp;&nbsp;&nbsp;Complete path to the working directory for this analysis. (Required)
+
+-m MIN_BEST_HIT, --min_best_hit MIN_BEST_HIT  
+&nbsp;&nbsp;&nbsp;&nbsp;Minimal % of match length for Blastp hits compared to best one. (default = 0.8)
+
+-B BLAST_EVAL, --blast_eval BLAST_EVAL  
+&nbsp;&nbsp;&nbsp;&nbsp;Minimal e-value for Blastp hits. (default = 0.00001)
+
+-l LOCUS_FILE, --locus LOCUS_FILE  
+&nbsp;&nbsp;&nbsp;&nbsp;A locus_tag_file.txt that corresponds to the data in this repository
+
+-N CODED_NWK_FILE, --newick_tag CODED_NWK_FILE  
+&nbsp;&nbsp;&nbsp;&nbsp;Output file for the newick tree using tag names and number of genomes as distances.
+
+-n NUM_CORES, --num_cores NUM_CORES  
+&nbsp;&nbsp;&nbsp;&nbsp;The number of cores used for blast analysis (-a flag), (default = 4)
+
+-F MINSYNFRAC, --min_syntenic_fraction MINSYNFRAC  
+&nbsp;&nbsp;&nbsp;&nbsp;Minimum common syntenic fraction required for two genes from the same species to be considered paralogs, range [0.0,1.0], default=0.7
+
+-D DIST, --dist DIST  
+&nbsp;&nbsp;&nbsp;&nbsp;Maximum FastTree distance between a representative sequence and sequences being represented for representative selection. (default = 1.2)
+
+-s SYNTENY_WINDOW, --synteny_window SYNTENY_WINDOW  
+&nbsp;&nbsp;&nbsp;&nbsp;Distance in base pairs that will contribute to upstream and downstream to syntenic fraction. The total window size is [int]*2. (default = 6000)
+
+--no-synteny  
+&nbsp;&nbsp;&nbsp;&nbsp;Disable use of synteny (required if information not available).
+
+  --run {none,single,uger}  
+&nbsp;&nbsp;&nbsp;&nbsp;Specify if you want all computation to be run directly. Use "single" to run the local machine or "uger" to submit to the UGE grid.
+
+  --alignment {none,scc,all}  
+&nbsp;&nbsp;&nbsp;&nbsp;Specify if you want cluster alignments using MUSCLE to be computed and written for the root node. Use "all" if you want all clusters to be aligned or "scc" if you only want Single Copy Core clusters to be aligned.
+
+
