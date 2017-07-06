@@ -2,18 +2,17 @@
 
 import sys
 import os
-import pickle
+import cPickle as pickle
 import logging
 import subprocess
 import math
-from multiprocessing import Process, Queue
-from Queue import Empty
+import multiprocessing
 import platform
 
 
 DEVNULL = open(os.devnull, 'w')
 QUEUE_ERROR = False
-LOGGER = None
+# LOGGER = None
 
 
 def usage():
@@ -24,19 +23,39 @@ def usage():
 	sys.exit(1)
 
 
-def run_blast(blast_queue):
-	print "running blast"
-	while True:
+class Blaster(multiprocessing.Process):
+	def __init__(self, blast_queue, results_queue, LOGGER):
+		multiprocessing.Process.__init__(self)
+		self.blast_queue = blast_queue
+		self.results_queue = results_queue
+		self.LOGGER = LOGGER
+
+	def run(self):
+		self.LOGGER.info("Running blast")
+		while True:
+			next_task = self.blast_queue.get()
+			if next_task is None:
+				self.blast_queue.task_done()
+				break
+			err = next_task(self.LOGGER)
+			if err:
+				self.results_queue.put(True)
+			else:
+				self.results_queue.put(False)
+			self.blast_queue.task_done()
+
+
+class Blast(object):
+	def __init__(self, cmd):
+		self.cmd = cmd
+
+	def __call__(self, LOGGER):
 		try:
-			blast_cmd = blast_queue.get(block=False)
-			process = subprocess.Popen(blast_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			process = subprocess.Popen(self.cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			(out, err) = process.communicate()
-			LOGGER.debug(out)
-			LOGGER.warning(err)
-		except Empty:
-			break
-		except:
-			QUEUE_ERROR = True
+		except OSError:
+			return True
+		return False
 
 
 def main(argv):
@@ -58,14 +77,19 @@ def main(argv):
 
 	# run BLAST if BLAST_FINISHED doesn't exist in the node dir
 	if "BLAST_FINISHED" not in os.listdir(my_dir):
-		blast_queue = Queue(0)
+		blast_queue = multiprocessing.JoinableQueue()
+		results_queue = multiprocessing.Queue()
+
+		blasters = [Blaster(blast_queue, results_queue, LOGGER) for i in xrange(cores)]
+		for b in blasters:
+			b.start()
+
 		combine_queue = []
 		fastas = []
 		heads = []
 		my_head = my_dir + "blast_headers.txt"
-		m8 = my_dir + "blast.m8"
+		# m8 = my_dir + "blast.m8"
 		m8s = []
-		processes = []
 		for c in children:
 			cpath = node_dir + c + "/"
 			if "NODE_COMPLETE" not in os.listdir(cpath) and "PICKLES_COMPLETE" not in os.listdir(cpath):
@@ -119,7 +143,7 @@ def main(argv):
 			if len(strains) == 1:
 				self_blast_out = my_dir + c + "_self.blast.m8"
 				for i in xrange(cores):
-					blast_queue.put(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", evalue, "-qcov_hsp_perc", "50", "-num_threads", "1", "-db", c_fasta, "-query", c_fasta + "." + "%04d" % (i), "-out", self_blast_out + "." + "%04d" % (i)])
+					blast_queue.put(Blast(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", evalue, "-qcov_hsp_perc", "50", "-num_threads", "1", "-db", c_fasta, "-query", c_fasta + "." + "%04d" % (i), "-out", self_blast_out + "." + "%04d" % (i)]))
 				combine_queue.append("cat " + self_blast_out + ".* >" + self_blast_out)
 
 		cat_head_cmd = "cat " + heads[0] + " " + heads[1] + " > " + my_head
@@ -127,21 +151,19 @@ def main(argv):
 		os.system(cat_head_cmd)
 
 		for i in xrange(cores):
-			blast_queue.put(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", evalue, "-qcov_hsp_perc", "50", "-num_threads", "1", "-db", fastas[0], "-query", fastas[1] + "." + "%04d" % (i), "-out", m8s[1] + "." + "%04d" % (i)])
-			blast_queue.put(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", evalue, "-qcov_hsp_perc", "50", "-num_threads", "1", "-db", fastas[1], "-query", fastas[0] + "." + "%04d" % (i), "-out", m8s[0] + "." + "%04d" % (i)])
+			blast_queue.put(Blast(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", evalue, "-qcov_hsp_perc", "50", "-num_threads", "1", "-db", fastas[0], "-query", fastas[1] + "." + "%04d" % (i), "-out", m8s[1] + "." + "%04d" % (i)]))
+			blast_queue.put(Blast(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", evalue, "-qcov_hsp_perc", "50", "-num_threads", "1", "-db", fastas[1], "-query", fastas[0] + "." + "%04d" % (i), "-out", m8s[0] + "." + "%04d" % (i)]))
 		combine_queue.append("cat " + m8s[1] + ".* > " + m8s[1])
 		combine_queue.append("cat " + m8s[0] + ".* > " + m8s[0])
 
-		processes = [Process(target=run_blast, args=(blast_queue,)) for i in xrange(cores)]
+		for i in xrange(cores):
+			blast_queue.put(None)
 
-		for p in processes:
-			p.start()  # wait for execution to finish
+		blast_queue.join()
 
-		for p in processes:
-			p.join()
-
-		if QUEUE_ERROR:
-			sys.exit("Error in queue")
+		for i in xrange(cores):
+			if results_queue.get():
+				exit("\n\nError while running BLAST+. Please make sure that the path is correct.\n\n")
 
 		for combine in combine_queue:
 			os.system(combine)

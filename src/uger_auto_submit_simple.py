@@ -23,18 +23,18 @@ def main():
 	timestamp = str(int(time.time()))
 
 	script_base = """
-	#! /bin/bash
+#! /bin/bash
 
-	#$ -cwd
-	#$ -q """ + args.queue + """
-	#$ -P """ + args.project + """
+#$ -cwd
+#$ -q """ + args.queue + """
+#$ -P """ + args.project + """
 
-	#$ -l m_mem_free=2g
-	#$ -e """ + args.error + """
-	#$ -o """ + args.log + """
+#$ -l m_mem_free=2g
+#$ -e """ + args.error + """
+#$ -o """ + args.log + """
 
-	source /broad/software/scripts/useuse
-	reuse -q Python-2.7
+source /broad/software/scripts/useuse
+reuse -q Python-2.7
 
 
 	"""

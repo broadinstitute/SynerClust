@@ -108,7 +108,9 @@ def main():
 	os.chdir(args.working_dir)
 	cmd = ["#SYNERCLUST_PATHPostProcessingScript.sh", args.alignment]
 	process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	process.communicate()
+	(output, error) = process.communicate()
+	if error:
+		exit(error)
 
 	logger.info('Finished Initialization')
 	if retVal:
