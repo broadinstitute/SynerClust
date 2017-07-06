@@ -196,10 +196,10 @@ def main():
 	nwk_out.close()
 	distrib_out.close()
 	clusters_out.close()
-	if args.alignement != "all":
+	if args.alignement == "all":
 		alignement_all_out.close()
 		alignement_scc_out.close()
-	elif args.alignement != "scc":
+	elif args.alignement == "scc":
 		alignement_scc_out.close()
 
 	# unreferencing
