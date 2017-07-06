@@ -36,7 +36,7 @@ Annotation	Esch_coli_H378_V1/Esch_coli_H378_V1_PRODIGAL_2.annotation.gff3
 # Running
 #### Without UGE:
 The minimal command to run SynerClust is the following:
-<pre><code>path/to/SynerClust/bin/synerclust.py -r path/to/data_catalog.txt -w working/directory/ -t path/to/newick/tree.nwk [-n number_of_cores] [--run single]</pre></code>
+<pre><code>/path/to/SynerClust/bin/synerclust.py -r /path/to/data_catalog.txt -w /working/directory/ -t /path/to/newick/tree.nwk [-n number_of_cores] [--run single]</pre></code>
 
 If you use the option "--run single" that is all you need to do!
 
@@ -44,12 +44,14 @@ If you use the option "--run single" that is all you need to do!
 If you prefer to run step by step, the next steps are:
 
 Run the script indicated (all tasks can be run in parallel on a grid):
-<pre><code>./genomes/needed_extractions.cmd.txt</pre></code>
+<pre><code>/working/directory/genomes/needed_extractions.cmd.txt</pre></code>
 
 You can then start the actual computation (in part parallelizable on a grid):
-<pre><code>./jobs.sh</pre></code>
+<pre><code>/working/directory/jobs.sh</pre></code>
 
-Once all jobs are finished, to have an easy to read output of the clusters, simply run the "post_process_root.sh" script. This will, among others, generate a final_clusters.txt and clusters_to_locus.txt file with the results in the root node.
+Once all jobs are finished, to have an easy to read output of the clusters, simply run:
+<pre><code>/working/directory/post_process_root.sh</pre></code>
+This will, among others, generate a final_clusters.txt and clusters_to_locus.txt file with the results in the root node.
 
 
 #### With UGE:
@@ -58,7 +60,7 @@ Initialize your environnement (if on UGE):
 use UGER</pre></code>
 
 The minimal command to run SynerClust is the following:
-<pre><code>path/to/SynerClust/bin/synergy.py -r path/to/data_catalog.txt -w working/directory/ -t path/to/newick/tree.nwk [-n number_of_cores] [--run uger]</pre></code>
+<pre><code>/path/to/SynerClust/bin/synergy.py -r /path/to/data_catalog.txt -w /working/directory/ -t /path/to/newick/tree.nwk [-n number_of_cores] [--run uger]</pre></code>
 
 If you use the option "--run uger" that is all you need to do!
 
@@ -66,12 +68,14 @@ If you use the option "--run uger" that is all you need to do!
 If you prefer to run step by step, the next steps are:
 
 Run the script indicated:
-<pre><code>python path/to/SynerClust/uger_auto_submit_simple.py -f genomes/needed_extractions.cmd.txt -tmp TMP_FOLDER</pre></code>
+<pre><code>python /path/to/SynerClust/uger_auto_submit_simple.py -f /working/directory/genomes/needed_extractions.cmd.txt -tmp TMP_FOLDER</pre></code>
 
 You can then start the actual computation (parallelizable on the grid):
-<pre><code>./uger_jobs.sh</pre></code>
+<pre><code>/working/directory/uger_jobs.sh</pre></code>
 
 If they are more jobs than your queue allows, run:
-<pre><code>path/to/SynerClust/uger_auto_submit.py -f ./uger_jobs.sh -l queue_size_limit [-n number_of_cores_per_job]</pre></code>
+<pre><code>/path/to/SynerClust/uger_auto_submit.py -f /working/directory/uger_jobs.sh -l queue_size_limit [-n number_of_cores_per_job]</pre></code>
 
-Once all jobs are finished, to have an easy to read output of the clusters, simply run the "post_process_root.sh" script. This will, among others, generate a final_clusters.txt and clusters_to_locus.txt file with the results in the root node.
+Once all jobs are finished, to have an easy to read output of the clusters, simply run the 
+<pre><code>/working/directory/post_process_root.sh</pre></code>
+This will, among others, generate a final_clusters.txt and clusters_to_locus.txt file with the results in the root node.
