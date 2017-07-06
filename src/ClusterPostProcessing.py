@@ -84,10 +84,10 @@ def main():
 
 	distrib_out = open(nodes_path + current_root + "/cluster_dist_per_genome.txt", "w")
 	clusters_out = open(nodes_path + current_root + "/clusters.txt", "w")
-	if args.alignement != "all":
+	if args.alignement == "all":
 		alignement_all_out = open(nodes_path + current_root + "/alignments_all.txt", "w")
 		alignement_scc_out = open(nodes_path + current_root + "/alignments_scc.txt", "w")
-	elif args.alignement != "scc":
+	elif args.alignement == "scc":
 		alignement_scc_out = open(nodes_path + current_root + "/alignments_scc.txt", "w")
 	distrib_out.write("#cluster_id\tname")
 	leaves = []
@@ -154,7 +154,8 @@ def main():
 		if args.alignement == "scc" and len(leafKids) == num_genomes:
 			ali = get_alignement(stdin_data)
 			alignement_scc_out.write(cid + "\n" + ali + "\n")
-			alignement_all_out.write(cid + "\n" + ali + "\n")
+			if args.alignement == "all":
+				alignement_all_out.write(cid + "\n" + ali + "\n")
 		elif args.alignement == "all":
 			alignement_all_out.write(cid + "\n" + get_alignement(stdin_data) + "\n")
 
