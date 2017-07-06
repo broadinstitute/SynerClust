@@ -14,7 +14,7 @@ import multiprocessing
 
 DEVNULL = open(os.devnull, 'w')
 BEST_HIT_PROPORTION_THRESHOLD = 0.95
-SYNTENY_THRESHOLD = 0.3
+# SYNTENY_THRESHOLD = 0.3
 SYNTENY_DIFFERENCE_THRESHOLD = 0.2
 synteny_data = {}
 gene_to_rough_cluster = {}
@@ -32,13 +32,14 @@ def usage():
 
 
 class Refinery(multiprocessing.Process):
-	def __init__(self, cluster_queue, result_queue, mrca, cluster_counter, lock):
+	def __init__(self, cluster_queue, result_queue, mrca, cluster_counter, lock, minSynFrac):
 		multiprocessing.Process.__init__(self)
 		self.cluster_queue = cluster_queue
 		self.result_queue = result_queue
 		self.mrca = mrca
 		self.cluster_counter = cluster_counter
 		self.lock = lock
+		self.minSynFrac = minSynFrac
 
 	def run(self):
 		genes_to_cluster = {}
@@ -53,7 +54,7 @@ class Refinery(multiprocessing.Process):
 				self.cluster_queue.task_done()
 				break
 			# compute
-			identical_index = next_task(self.mrca, genes_to_cluster, self.cluster_counter, self.lock, ok_trees, identical_orphans_to_check, identical_orphans_to_check_dict, identical_index, potentials)
+			identical_index = next_task(self.mrca, genes_to_cluster, self.cluster_counter, self.lock, ok_trees, identical_orphans_to_check, identical_orphans_to_check_dict, identical_index, potentials, self.minSynFrac)
 			# compute finished
 			self.cluster_queue.task_done()
 		# print "thread finished with " + str(len(identical_orphans_to_check))
@@ -65,7 +66,7 @@ class Refine(object):
 		self.cluster = cluster
 		self.graph = graph
 
-	def __call__(self, mrca, genes_to_cluster, cluster_counter, lock, ok_trees, identical_orphans_to_check, identical_orphans_to_check_dict, identical_index, potentials):
+	def __call__(self, mrca, genes_to_cluster, cluster_counter, lock, ok_trees, identical_orphans_to_check, identical_orphans_to_check_dict, identical_index, potentials, minSynFrac):
 		leaves = self.graph.nodes()
 		leaves.sort()
 		syn = {}
@@ -124,7 +125,7 @@ class Refine(object):
 		syntenic = []
 		it = numpy.nditer(syn_matrix, flags=['f_index'])
 		while not it.finished:
-			if it[0] <= SYNTENY_THRESHOLD:
+			if it[0] <= minSynFrac:
 				position = it.index + 1  # formula works for indexes starting at 1, so need to offset
 				j = int(round(math.ceil(math.sqrt(2 * position + 0.25) - 0.5)))  # formula is for lower triangular matrix, so need to offset distance matrix columns because we start at 0
 				i = int(position - ((j - 1) * j / 2))  # no need for row offset because row 0 is empty in distance matrix
@@ -350,6 +351,7 @@ def main():
 	parser.add_argument('-dir', dest="node_dir", required=True, help="Path to the \"nodes\" folder. (Required)")
 	parser.add_argument('-node', dest="node", required=True, help="Current node name. (Required)")
 	parser.add_argument('-t', type=int, dest="numThreads", default=4, help="Number of threads to use. (default = 4)")
+	parser.add_argument('-F', '--min_syntenic_fraction', type=float, dest="minSynFrac", default=0.7, help="Minimum common syntenic fraction required for two genes from the same species to be considered paralogs, range [0.0,1.0], default=0.7")
 	parser.add_argument('--no-synteny', dest="synteny", default=True, action='store_false', required=False, help="Disable use of synteny (required is information not available).")
 	parser.add_argument('children', nargs=2, help="Children nodes. (Required)")
 	args = parser.parse_args()
@@ -474,7 +476,9 @@ def main():
 	cluster_queue = multiprocessing.JoinableQueue()
 	result_queue = multiprocessing.Queue()
 
-	refiners = [Refinery(cluster_queue, result_queue, mrca, cluster_counter, lock) for i in xrange(args.numThreads)]
+	syn_similarity = 1.0 - args.minSynFrac
+
+	refiners = [Refinery(cluster_queue, result_queue, mrca, cluster_counter, lock, syn_similarity) for i in xrange(args.numThreads)]
 	for w in refiners:
 		w.start()
 

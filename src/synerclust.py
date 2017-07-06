@@ -31,12 +31,12 @@ def main():
 	parser.add_argument('-l', '--locus', dest="locus_file", default="", help="A locus_tag_file.txt that corresponds to the data in this repository")
 	parser.add_argument('-N', '--newick_tag', dest="coded_nwk_file", default="coded_tree.nwk", help="Output file for the newick tree using tag names and number of genomes as distances.")
 	parser.add_argument('-n', '--num_cores', type=int, dest="num_cores", default=#NUM_CORES_DEFAULT, help="The number of cores used for blast analysis (-a flag), (default = #NUM_CORES_DEFAULT)")
-	parser.add_argument('-F', '--min_syntenic_fraction', type=float, dest="minSynFrac", default=0.5, help="Minimum syntenic fraction required for two genes from the same species to be considered paralogs, range [0.0,1.0], default=0.5")
+	parser.add_argument('-F', '--min_syntenic_fraction', type=float, dest="minSynFrac", default=0.7, help="Minimum common syntenic fraction required for two genes from the same species to be considered paralogs, range [0.0,1.0], default=0.7")
 	parser.add_argument('-D', '--dist', type=float, dest="dist", default=1.2, help="Maximum FastTree distance between a representative sequence and sequences being represented for representative selection. (default = 1.2)")
 	parser.add_argument('-s', '--synteny_window', type=int, dest="synteny_window", default=6000, help="Distance in base pairs that will contribute to upstream and downstream to syntenic fraction. The total window size is [int]*2. (default = 6000")
 	parser.add_argument('--no-synteny', dest="synteny", default=True, action='store_false', required=False, help="Disable use of synteny (required if information not available).")
-	parser.add_argument('--run', default="none", type=str, dest="run", choices=["none", "single", "uger"])
-	parser.add_argument('--alignement', default="none", type=str, dest="alignement", choices=["none", "scc", "all"])
+	parser.add_argument('--run', default="none", type=str, dest="run", choices=["none", "single", "uger"], help="Specify if you want all computation to be run directly. Use \"single\" to run the local machine or \"uger\" to submit to the UGE grid.")
+	parser.add_argument('--alignement', default="none", type=str, dest="alignement", choices=["none", "scc", "all"], help="Specify if you want cluster alignements using MUSCLE to be computed and written for the root node. Use \"all\" if you want all clusters to be aligned or \"scc\" if you only want Single Copy Core clusters to be aligned.")
 	args = parser.parse_args()
 
 	args.working_dir = os.path.abspath(args.working_dir) + "/"

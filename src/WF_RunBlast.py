@@ -146,8 +146,8 @@ def main(argv):
 		for combine in combine_queue:
 			os.system(combine)
 
-		my_m8s = my_dir + "*m8"
-		os.system("cat " + my_m8s + " > " + m8)
+		# my_m8s = my_dir + "*m8"
+		# os.system("cat " + my_m8s + " > " + m8)
 
 		blast_finished_file = my_dir + "BLAST_FINISHED"
 		bf = open(blast_finished_file, 'w')

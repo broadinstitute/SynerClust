@@ -151,34 +151,29 @@ class BlastParse:
 		return 0
 
 	@staticmethod
-	def readBlastM8FromFile(f,):
-		data = open(f, "r").readlines()
-		return BlastParse.readBlastM8(data)
-
-	# reads in the m8 file and returns hits, which is a dict of BlastSegments
-	@staticmethod
-	def readBlastM8(data):
+	def readBlastM8FromFile(f):
 		hits = {}
-		for m in data:
-			m = m.rstrip()
-			line = m.split("\t")
-			if len(line) < 5:
-				continue
-			q = line[0]
-			t = line[1]
-			if q == t:  # self hit
-				continue
-			Q = q.split(";")[0]
-			T = t.split(";")[0]
-			if float(line[2]) < 50.0 or float(line[3]) < 0.5 * int(q.split(";")[1]):  # filter less than 50% identity and less than 50% of sequence length matches
-				continue
-			elif int(q.split(";")[1]) > BlastParse.max_size_diff * int(t.split(";")[1]) or int(t.split(";")[1]) > BlastParse.max_size_diff * int(q.split(";")[1]):  # size difference too big
-				continue
-			mySeg = BlastSegment(q, t, line[2], line[3], line[11], line[10])  # query,target,pID,length,bitScore,evalue
-			if Q not in hits:
-				hits[Q] = {}
-			if T not in hits[Q]:
-				hits[Q][T] = mySeg
-			elif mySeg.bitScore > hits[Q][T].bitScore:  # Is this possible to find?
-				hits[Q][T] = mySeg
+		with open(f, "r") as data:
+			for m in data:
+				m = m.rstrip()
+				line = m.split("\t")
+				if len(line) < 5:
+					continue
+				q = line[0]
+				t = line[1]
+				if q == t:  # self hit
+					continue
+				Q = q.split(";")[0]
+				T = t.split(";")[0]
+				if float(line[2]) < 50.0 or float(line[3]) < 0.5 * int(q.split(";")[1]):  # filter less than 50% identity and less than 50% of sequence length matches
+					continue
+				elif int(q.split(";")[1]) > BlastParse.max_size_diff * int(t.split(";")[1]) or int(t.split(";")[1]) > BlastParse.max_size_diff * int(q.split(";")[1]):  # size difference too big
+					continue
+				mySeg = BlastSegment(q, t, line[2], line[3], line[11], line[10])  # query,target,pID,length,bitScore,evalue
+				if Q not in hits:
+					hits[Q] = {}
+				if T not in hits[Q]:
+					hits[Q][T] = mySeg
+				elif mySeg.bitScore > hits[Q][T].bitScore:  # Is this possible to find?
+					hits[Q][T] = mySeg
 		return hits

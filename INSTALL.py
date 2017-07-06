@@ -14,7 +14,7 @@ def main():
 	usage = "usage: INSTALL.py [options]"
 	parser = argparse.ArgumentParser(usage)
 	parser.add_argument('-b', dest="blast", default="", help="Path to BLAST+ bin directory (only needed if not in the PATH")
-	parser.add_argument('-e', dest="evalue", default="0.01", help="Current node name. (Required)")
+	parser.add_argument('-e', dest="evalue", default="0.00001", help="Current node name. (Required)")
 	parser.add_argument('-n', dest="threads", default="4", help="Current node name. (Required)")
 	args = parser.parse_args()
 

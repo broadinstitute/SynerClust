@@ -55,6 +55,7 @@ def main():
 		hits = BlastHandling.BlastParse.readBlastM8FromFile(blast_out)
 		logger.debug("Read Blast")
 		bestReciprocalHits = bp.scoreHits(hits, bestReciprocalHits, args.min_best_hit, args.minSynFrac)
+		hits = None
 
 	logger.debug("Scored Hits")
 	tree_dir = my_dir + "trees"
