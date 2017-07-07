@@ -16,9 +16,19 @@ def main():
 	parser.add_argument('-b', dest="blast", default="", help="Path to BLAST+ bin directory (only needed if not in the PATH")
 	parser.add_argument('-e', dest="evalue", default="0.00001", help="Current node name. (Required)")
 	parser.add_argument('-n', dest="threads", default="4", help="Current node name. (Required)")
+	parser.add_argument('-p', '--prefix', dest="prefix", default=None, help="Path where you want SynerClust to be installed (in a bin folder). (default = /path/to/INSTALL.py/folder/)")
 	args = parser.parse_args()
 
-	scpath = os.getcwd() + "/"
+	if args.prefix is None:
+		repo_path = os.path.realpath(__file__)
+		scpath = repo_path[:repo_path.rfind("/") + 1]
+	else:
+		if os.path.isdir(scpath):
+			scpath = args.prefix
+			if scpath[-1] != "/":
+				scpath += "/"
+		else:
+			exit("Invalid prefix path provided " + args.prefix)
 	os.system("mkdir " + scpath + "bin")
 	sc_bin = scpath + "bin/"
 	sc_src = scpath + "src"
@@ -51,7 +61,7 @@ def main():
 
 		os.system("chmod ugo+x " + mod_sf)
 
-	print "SynerClust has been installed. It can be run from ~/bin/synerclust.py.  See the README for additional information."
+	print "SynerClust has been installed. It can be run from " + scpath + "bin/synerclust.py.  See the README for additional information."
 
 
 if __name__ == "__main__":
