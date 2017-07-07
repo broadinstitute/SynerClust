@@ -83,25 +83,252 @@ def main():
 		# else: other files in the genome directory (nwk tree with tags and any other user generated file)
 
 	distrib_out = open(nodes_path + current_root + "/cluster_dist_per_genome.txt", "w")
-	clusters_out = open(nodes_path + current_root + "/clusters.txt", "w")
+	distrib_inparalogs_out = open(nodes_path + current_root + "/cluster_dist_per_genome_with_inparalogs.txt", "w")
+
 	if args.alignment == "all":
 		alignment_all_out = open(nodes_path + current_root + "/alignments_all.txt", "w")
 		alignment_scc_out = open(nodes_path + current_root + "/alignments_scc.txt", "w")
 	elif args.alignment == "scc":
 		alignment_scc_out = open(nodes_path + current_root + "/alignments_scc.txt", "w")
 	distrib_out.write("#cluster_id\tname")
+	distrib_inparalogs_out.write("#cluster_id\tname")
 	leaves = []
 	for n in nodes:
-		if n[0] == "N":
+		if n[0] == "N":  #### EDIT
 			with open(nodes_path + n + "/clusters_newick.pkl", "r") as f:
 				nwksMap[n] = pickle.load(f)
 		else:
+		# if n[0] == "L":  # leaf
 			distrib_out.write("\t" + tagToGenome[n])
+			distrib_inparalogs_out.write("\t" + tagToGenome[n])
 			leaves.append(n)
 	distrib_out.write("\n")
+	distrib_inparalogs_out.write("\n")
 
+	totalGenes = 0
+	totalGenes_inparalogs = 0
+	scc_count = 0
+	scc_inparalogs_count = 0
+	mcc_count = 0
+	mcc_inparalogs_count = 0
+	cluster_noOrphan = 0
+	cluster_inparalogs_noOrphan = 0
+
+	with open(nodes_path + current_root + "/current_inparalogs.pkl") as f:
+		inparalogs = pickle.load(f)
+
+	inpar = {}
+	for k in inparalogs:
+		# inpar[k.split("_")[-1]] = inparalogs[k][0].split("_")[-1]
+		# if inparalogs[k][0] not in inpar:  # to prevent reciprocal swaps
+		inpar[k] = inparalogs[k][0]
+	inparalogs = None
+
+	changed = True
+	while changed:
+		changed = False
+		for t in inpar:
+			if inpar[t] in inpar and inpar[t] != inpar[inpar[t]]:
+				inpar[t] = inpar[inpar[t]]
+				changed = True
+
+	cluster_to_genes_inparalogs = {}
+	for cluster in locusMap:
+		cluster_inparalog = cluster
+		# if cluster not in inpar:
+		# 	cluster_to_genes_inparalogs[cluster] = []
+		# else:
+		if cluster in inpar:
+			cluster_inparalog = inpar[cluster]
+		if cluster_inparalog not in cluster_to_genes_inparalogs:
+			cluster_to_genes_inparalogs[cluster_inparalog] = []
+		for locus in locusMap[cluster]:
+			cluster_to_genes_inparalogs[cluster_inparalog].append(locus)
+
+	clusters_out = open(nodes_path + current_root + "/clusters.txt", "w")
+	clusters_inparalogs_out = open(nodes_path + current_root + "/clusters_with_inparalogs.txt", "w")
+	final_clusters_out = open(nodes_path + current_root + "/final_clusters.txt", 'w')
+	final_clusters_inparalogs_out = open(nodes_path + current_root + "/final_clusters_with_inparalogs.txt", 'w')
+	clust_to_trans_out = open(nodes_path + current_root + "/clust_to_trans.txt", 'w')
+	clust_to_trans_inparalogs_out = open(nodes_path + current_root + "/clust_to_trans_with_inparalogs.txt", 'w')
+
+	for cluster in cluster_to_genes_inparalogs:
+		counter = cluster[33:]
+		cid = "Cluster" + counter
+		stdin_data = ""
+		clust_to_trans_buffer = ""
+		clust_to_trans_inparalogs_additional_buffer = ""
+		final_clusters_buffer = ""
+		final_clusters_inparalogs_additional_buffer = ""
+		names = []
+		names_inparalogs = []
+		genomes = []
+		genomes_inparalogs = []
+		for locus in cluster_to_genes_inparalogs[cluster]:
+			prefix = "_".join(locus.split("_")[:-1])
+			out_buffer = "\t".join([counter, tagToGenome[prefix], genomeToAnnot[tagToGenome[prefix]], t_n[l_t[locus]][0], l_t[locus], t_n[l_t[locus]][1], t_n[l_t[locus]][2] + "\n"])
+			clusters_inparalogs_out.write(out_buffer)
+			genomes_inparalogs.append(prefix)
+			if t_n[l_t[locus]][2] is not "None":
+				names_inparalogs.append(t_n[l_t[locus]][2])
+			if locus in locusMap[cluster]:  # not an added inparalog but an 'ortholog'
+				clusters_out.write(out_buffer)
+				genomes.append(prefix)
+				if t_n[l_t[locus]][2] is not "None":
+					names.append(t_n[l_t[locus]][2])
+				clust_to_trans_buffer += cid + "\t" + l_t[locus] + "\n"
+				final_clusters_buffer += l_t[locus] + " "
+			else:
+				clust_to_trans_inparalogs_additional_buffer += cid + "\t" + l_t[locus] + "\n"
+				final_clusters_inparalogs_additional_buffer += l_t[locus] + " "
+			if args.alignment == "all" or (args.alignment == "scc" and len(cluster_to_genes_inparalogs[cluster]) == num_genomes):
+				stdin_data += ">" + tagToGenome[prefix] + "_" + l_t[locus] + "\n" + l_s[locus] + "\n"
+		clusters_out.write("\n")
+		clusters_inparalogs_out.write("\n")
+
+		if args.alignment == "scc" and len(cluster_to_genes_inparalogs[cluster]) == num_genomes:
+			ali = get_alignment(stdin_data)
+			alignment_scc_out.write(cid + "\n" + ali + "\n")
+			if args.alignment == "all":
+				alignment_all_out.write(cid + "\n" + ali + "\n")
+		elif args.alignment == "all":
+			alignment_all_out.write(cid + "\n" + get_alignment(stdin_data) + "\n")
+
+		clust_to_trans_out.write(clust_to_trans_buffer)
+		clust_to_trans_inparalogs_out.write(clust_to_trans_buffer + clust_to_trans_inparalogs_additional_buffer)
+
+		prefix_count = Counter(genomes)
+		prefix_count_inparalogs = Counter(genomes_inparalogs)
+
+		final_clusters_out.write(cid + " (taxa: " + str(len(prefix_count)) + ", genes: " + str(len(locusMap[cluster])) + ")\t" + clust_to_trans_buffer[:-1] + "\n")
+		final_clusters_inparalogs_out.write(cid + " (taxa: " + str(len(prefix_count_inparalogs)) + ", genes: " + str(len(cluster_to_genes_inparalogs[cluster])) + ")\t" + clust_to_trans_buffer + clust_to_trans_inparalogs_additional_buffer[:-1] + "\n")
+
+		distrib_buffer = ""
+		if names == []:
+			distrib_buffer = counter + "\tNone"  # max count for choosing the name to print when there are no names
+		else:
+			distrib_buffer = counter + "\t" + Counter(names).most_common(1)[0][0]  # max count for choosing the name to print
+		for leaf in leaves:
+			distrib_buffer += "\t" + str(prefix_count[leaf])
+		distrib_out.write(distrib_buffer)
+
+		distrib_buffer = ""
+		if names_inparalogs == []:
+			distrib_buffer = counter + "\tNone"  # name to print when there are no names
+		else:
+			distrib_buffer = counter + "\t" + Counter(names_inparalogs).most_common(1)[0][0]  # max count for choosing the name to print
+		for leaf in leaves:
+			distrib_buffer += "\t" + str(prefix_count_inparalogs[leaf])
+		distrib_inparalogs_out.write(distrib_buffer)
+
+		if len(prefix_count) == num_genomes:
+			if prefix_count.most_common(1)[0][1] > 1:
+				mcc_count += 1
+			else:
+				scc_count += 1
+
+		if len(prefix_count_inparalogs) == num_genomes:
+			if prefix_count_inparalogs.most_common(1)[0][1] > 1:
+				mcc_inparalogs_count += 1
+			else:
+				scc_inparalogs_count += 1
+
+		if len(locusMap[cluster]) > 1:
+			cluster_noOrphan += 1
+		totalGenes += len(locusMap[cluster])
+
+		if len(cluster_to_genes_inparalogs[cluster]) > 1:
+			cluster_inparalogs_noOrphan += 1
+		totalGenes_inparalogs += len(cluster_to_genes_inparalogs[cluster])
+
+	for cluster in locusMap:
+		if cluster in cluster_to_genes_inparalogs:
+			continue  # already processed in inparalogs loop
+		else:
+			counter = cluster[33:]
+			cid = "Cluster" + counter
+			final_clusters_buffer = ""
+			clust_to_trans_buffer = ""
+			stdin_data = ""
+			names = []
+			genomes = []
+			for locus in locusMap[cluster]:
+				prefix = "_".join(locus.split("_")[:-1])
+				final_clusters_buffer += l_t[locus] + " "
+				clusters_out.write("\t".join([counter, tagToGenome[prefix], genomeToAnnot[tagToGenome[prefix]], t_n[l_t[locus]][0], l_t[locus], t_n[l_t[locus]][1], t_n[l_t[locus]][2] + "\n"]))
+				if t_n[l_t[locus]][2] is not "None":
+					names.append(t_n[l_t[locus]][2])
+				clust_to_trans_buffer += cid + "\t" + l_t[locus] + "\n"
+				genomes.append(prefix)
+			clusters_out.write("\n")
+
+			prefix_count = Counter(genomes)
+			distrib_buffer = ""
+			if names == []:
+				distrib_buffer = counter + "\tNone"  # max count for choosing the name to print when there are no names
+			else:
+				distrib_buffer = counter + "\t" + Counter(names).most_common(1)[0][0]  # max count for choosing the name to print
+			for leaf in leaves:
+				distrib_buffer += "\t" + str(prefix_count[leaf])
+			distrib_buffer += "\n"
+
+			if len(prefix_count) == num_genomes:
+				if prefix_count.most_common(1)[0][1] > 1:
+					mcc_count += 1
+				else:
+					scc_count += 1
+
+			final_clusters_out.write(cid + " (taxa: " + str(len(prefix_count)) + ", genes: " + str(len(locusMap[cluster])) + ")\t" + final_clusters_buffer[:-1] + "\n")  # removing trailing space from cout_buffer
+			clust_to_trans_out.write(clust_to_trans_buffer)
+			distrib_out.write(distrib_buffer)
+
+			if len(locusMap[cluster]) > 1:
+				cluster_noOrphan += 1
+			totalGenes += len(locusMap[cluster])
+
+	orphan_count = len(locusMap) - cluster_noOrphan
+	aux_count = cluster_noOrphan - mcc_count - scc_count
+	print "total genes: ", totalGenes
+	print "scc:", scc_count
+	print "mcc:", mcc_count
+	print "aux:", aux_count
+	print "orphans:", orphan_count
+	print "non-orphan clusters:", cluster_noOrphan  # count
+
+	orphan_inparalogs_count = len(cluster_to_genes_inparalogs) - cluster_inparalogs_noOrphan
+	aux_inparalogs_count = cluster_inparalogs_noOrphan - mcc_inparalogs_count - scc_inparalogs_count
+	print "total genes with inparalogs: ", totalGenes_inparalogs
+	print "scc with inparalogs:", scc_inparalogs_count
+	print "mcc with inparalogs:", mcc_inparalogs_count
+	print "aux with inparalogs:", aux_inparalogs_count
+	print "orphans with inparalogs:", orphan_inparalogs_count
+	print "non-orphan clusters with inparalogs:", cluster_inparalogs_noOrphan  # count
+
+	clusters_out.close()
+	clusters_inparalogs_out.close()
+	final_clusters_out.close()
+	final_clusters_inparalogs_out.close()
+	clust_to_trans_out.close()
+	clust_to_trans_inparalogs_out.close()
+	distrib_out.close()
+	distrib_inparalogs_out.close()
+
+	if args.alignment == "all":
+		alignment_all_out.close()
+		alignment_scc_out.close()
+	elif args.alignment == "scc":
+		alignment_scc_out.close()
+
+	# unreferencing
+	# l_t = None
+	l_s = None
+	t_n = None
+	# tagToGenome = None
+	genomeToAnnot = None
+	# locusMap = None
 	query = re.compile("[a-zA-Z0-9-_]+")
 	modified = True
+
 	while(modified):
 		modified = False
 		for k in nwksMap[current_root].keys():
@@ -122,156 +349,14 @@ def main():
 							continue
 						modified = True
 
-	cluster_out = nodes_path + current_root + "/final_clusters.txt"
-	cTt_out = nodes_path + current_root + "/clust_to_trans.txt"
-	cout = open(cluster_out, 'w')
-	ct_out = open(cTt_out, 'w')
 	nwk_out = open(nodes_path + current_root + "/newicks_full.txt", "w")
-	totalGenes = 0
-	scc_count = 0
-	mcc_count = 0
-	cluster_noOrphan = 0
 	for l in locusMap:
 		counter = l[33:]
 		cid = "Cluster" + counter
-		cout_buffer = ""
-		ct_out_buffer = ""
-		stdin_data = ""
-		names = []
-		genomes = []
-		leafKids = locusMap[l]
-		for k in leafKids:
-			prefix = "_".join(k.split("_")[:-1])
-			cout_buffer += l_t[k] + " "
-			clusters_out.write("\t".join([counter, tagToGenome[prefix], genomeToAnnot[tagToGenome[prefix]], t_n[l_t[k]][0], l_t[k], t_n[l_t[k]][1], t_n[l_t[k]][2] + "\n"]))  # STORE DATA CATALOG INFO: genome name and translation to encoded (locus_tag_file?), annotation file name
-			if args.alignment == "all" or (args.alignment == "scc" and len(leafKids) == num_genomes):
-				stdin_data += ">" + tagToGenome[prefix] + "_" + l_t[k] + "\n" + l_s[k] + "\n"
-			if t_n[l_t[k]][2] is not "None":
-				names.append(t_n[l_t[k]][2])
-			ct_out_buffer += cid + "\t" + l_t[k] + "\n"
-			genomes.append(prefix)
-		clusters_out.write("\n")
-		if args.alignment == "scc" and len(leafKids) == num_genomes:
-			ali = get_alignment(stdin_data)
-			alignment_scc_out.write(cid + "\n" + ali + "\n")
-			if args.alignment == "all":
-				alignment_all_out.write(cid + "\n" + ali + "\n")
-		elif args.alignment == "all":
-			alignment_all_out.write(cid + "\n" + get_alignment(stdin_data) + "\n")
-
-		prefix_count = Counter(genomes)
-		distrib_buffer = ""
-		if names == []:
-			distrib_buffer = counter + "\tNone"  # max count for choosing the name to print when there are no names
-		else:
-			distrib_buffer = counter + "\t" + Counter(names).most_common(1)[0][0]  # max count for choosing the name to print
-		for leaf in leaves:
-			distrib_buffer += "\t" + str(prefix_count[leaf])
-		distrib_buffer += "\n"
-		if len(prefix_count) == num_genomes:
-			if prefix_count.most_common(1)[0][1] > 1:
-				mcc_count += 1
-			else:
-				scc_count += 1
-		cout.write(cid + " (taxa: " + str(len(prefix_count)) + ", genes: " + str(len(leafKids)) + ")\t" + cout_buffer[:-1] + "\n")  # removing trailing space from cout_buffer
-		ct_out.write(ct_out_buffer)
-		distrib_out.write(distrib_buffer)
 		nwk_out.write(cid + ": (" + nwksMap[current_root][current_root + "_" + counter][0] + ");\n")
 		nwk_out.write(cid + ": (" + nwksMap[current_root][current_root + "_" + counter][1] + ");\n")
-		totalGenes += len(leafKids)
-		if len(leafKids) > 1:
-			cluster_noOrphan += 1
 
-	orphan_count = len(locusMap) - cluster_noOrphan
-	aux_count = cluster_noOrphan - mcc_count - scc_count
-	print "total genes: ", totalGenes
-	print "scc:", scc_count
-	print "mcc:", mcc_count
-	print "aux:", aux_count
-	print "orphans:", orphan_count
-	print "non-orphan clusters:", cluster_noOrphan  # count
-
-	cout.close()
-	ct_out.close()
 	nwk_out.close()
-	distrib_out.close()
-	clusters_out.close()
-	if args.alignment == "all":
-		alignment_all_out.close()
-		alignment_scc_out.close()
-	elif args.alignment == "scc":
-		alignment_scc_out.close()
-
-	# unreferencing
-	l_t = None
-	l_s = None
-	t_n = None
-	tagToGenome = None
-	genomeToAnnot = None
-	nwksMap = None
-	locusMap = None
-
-	print "Now adding inparalogs"
-	with open(nodes_path + current_root + "/current_inparalogs.pkl") as f:
-		inparalogs = pickle.load(f)
-
-	inpar = {}
-	for k in inparalogs:
-		inpar[k.split("_")[-1]] = inparalogs[k][0].split("_")[-1]
-	inparalogs = None
-
-	changed = True
-	while changed:
-		changed = False
-		for t in inpar:
-			if inpar[t] in inpar and inpar[t] != inpar[inpar[t]]:
-				inpar[t] = inpar[inpar[t]]
-				changed = True
-
-	cluster_to_genes = {}
-	cluster_to_genomes = {}
-	cluster_to_inparalog_output = {}
-	with open(nodes_path + current_root + "/clusters.txt", "r") as f:
-		for line in f:
-			if line != "\n":
-				fields = line.rstrip().split()
-				if fields[0] in inpar:
-					fields[0] = inpar[fields[0]]
-				if fields[0] not in cluster_to_inparalog_output:
-					cluster_to_inparalog_output[fields[0]] = []
-				cluster_to_inparalog_output[fields[0]].append("\t".join(fields) + "\n")
-				if fields[0] not in cluster_to_genes:
-					cluster_to_genes[fields[0]] = [fields[4]]
-					cluster_to_genomes[fields[0]] = set([fields[1]])
-				else:
-					cluster_to_genes[fields[0]].append(fields[4])
-					cluster_to_genomes[fields[0]].add(fields[1])
-
-	with open(nodes_path + current_root + "/clusters_with_inparalogs.txt", "w") as o:
-		for cluster in cluster_to_inparalog_output:
-				for line in cluster_to_inparalog_output[cluster]:
-					o.write(line)
-				o.write("\n")
-
-	scc = 0
-	mcc = 0
-	orphans = 0
-	auxilary = 0
-	for cluster in cluster_to_genomes:
-		if len(cluster_to_genomes[cluster]) == num_genomes:
-			if len(cluster_to_genes[cluster]) == num_genomes:
-				scc += 1
-			else:
-				mcc += 1
-		elif len(cluster_to_genes[cluster]) == 1:
-			orphans += 1
-		else:
-			auxilary += 1
-	print "with inparalogs scc = " + str(scc)
-	print "with inparalogs mcc = " + str(mcc)
-	print "with inparalogs orphans = " + str(orphans)
-	print "with inparalogs auxilary = " + str(auxilary)
-	print "with inparalogs non-orphans = " + str(scc + mcc + auxilary)
 
 
 if __name__ == "__main__":
