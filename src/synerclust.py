@@ -159,7 +159,9 @@ def main():
 			process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			(output, error) = process.communicate()
 			if process.returncode != 0:
-				exit("Error while extracting genome annotations on the grid:\n" + error)
+				logger.debug(output)
+				logger.error(error)
+				exit("Error while extracting genome annotations on the grid:\n")
 			logger.info("Finished annotation extraction.\n\n")
 		# run jobs
 		logger.info("Starting computing jobs.\n")
@@ -167,7 +169,9 @@ def main():
 		process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		(output, error) = process.communicate()
 		if process.returncode != 0:
-			exit("Error while computing jobs on the grid. Please check logs.\n")
+			logger.debug(output)
+			logger.error(error)
+			exit("Error while computing jobs on the grid. Please check logs.\n" + error)
 		logger.info("Finished computing jobs.\n\n")
 		# run root postprocessing
 		logger.info("Starting postprocessing root.\n")
@@ -175,6 +179,8 @@ def main():
 		process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		(output, error) = process.communicate()
 		if process.returncode != 0:
+			logger.debug(output)
+			logger.error(error)
 			exit("Error while post processing root on the grid. Please check logs.\n")
 		logger.info("Finished postprocessing root.\n\n")
 

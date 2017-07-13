@@ -43,12 +43,16 @@ def main():
 	tagToGenome = {}  # encoded genome name (tag) to genome name
 	genomeToAnnot = {}  # encoded genome name (tag) to annotation file
 	# genomes = os.listdir(genome_path)
-	nwksMap = {}
+	# nwksMap = {}
 	tmp = os.path.realpath(locus_mapping)
 	tmp2 = tmp.rfind('/')
 	current_root = tmp[tmp.rfind("/", 0, tmp2) + 1:tmp2]
 	nodes_path = tmp[:tmp.rfind("/", 0, tmp2) + 1]
+	main_path = tmp[:tmp.rfind("/", 0, len(nodes_path) - 1) + 1]
 	# nodes = os.listdir(nodes_path)
+
+	if 'without_inparalogs' not in os.listdir(nodes_path + current_root):
+		os.mkdir(nodes_path + current_root + "/without_inparalogs")
 
 	with open(genome_path + "locus_tag_file.txt", 'r') as f:
 		for t in f:
@@ -82,8 +86,8 @@ def main():
 					t_n[line[0]] = [line[7], line[8], line[9]]
 		# else: other files in the genome directory (nwk tree with tags and any other user generated file)
 
-	distrib_out = open(nodes_path + current_root + "/cluster_dist_per_genome.txt", "w")
-	distrib_inparalogs_out = open(nodes_path + current_root + "/cluster_dist_per_genome_with_inparalogs.txt", "w")
+	distrib_out = open(nodes_path + current_root + "/without_inparalogs/cluster_dist_per_genome_without_inparalogs.txt", "w")
+	distrib_inparalogs_out = open(nodes_path + current_root + "/cluster_dist_per_genome.txt", "w")
 
 	if args.alignment == "all":
 		alignment_all_out = open(nodes_path + current_root + "/alignments_all.txt", "w")
@@ -94,11 +98,11 @@ def main():
 	distrib_inparalogs_out.write("#cluster_id\tname")
 	leaves = []
 	for n in nodes:
-		if n[0] == "N":  #### EDIT
-			with open(nodes_path + n + "/clusters_newick.pkl", "r") as f:
-				nwksMap[n] = pickle.load(f)
-		else:
-		# if n[0] == "L":  # leaf
+		# if n[0] == "N":  #### EDIT
+		# 	with open(nodes_path + n + "/clusters_newick.pkl", "r") as f:
+		# 		nwksMap[n] = pickle.load(f)
+		# else:
+		if n[0] == "L":  # leaf
 			distrib_out.write("\t" + tagToGenome[n])
 			distrib_inparalogs_out.write("\t" + tagToGenome[n])
 			leaves.append(n)
@@ -145,12 +149,12 @@ def main():
 		for locus in locusMap[cluster]:
 			cluster_to_genes_inparalogs[cluster_inparalog].append(locus)
 
-	clusters_out = open(nodes_path + current_root + "/clusters.txt", "w")
-	clusters_inparalogs_out = open(nodes_path + current_root + "/clusters_with_inparalogs.txt", "w")
-	final_clusters_out = open(nodes_path + current_root + "/final_clusters.txt", 'w')
-	final_clusters_inparalogs_out = open(nodes_path + current_root + "/final_clusters_with_inparalogs.txt", 'w')
-	clust_to_trans_out = open(nodes_path + current_root + "/clust_to_trans.txt", 'w')
-	clust_to_trans_inparalogs_out = open(nodes_path + current_root + "/clust_to_trans_with_inparalogs.txt", 'w')
+	clusters_out = open(nodes_path + current_root + "/without_inparalogs/clusters_without_inparalogs.txt", "w")
+	clusters_inparalogs_out = open(nodes_path + current_root + "/clusters.txt", "w")
+	final_clusters_out = open(nodes_path + current_root + "/without_inparalogs/final_clusters_without_inparalogs.txt", 'w')
+	final_clusters_inparalogs_out = open(nodes_path + current_root + "/final_clusters.txt", 'w')
+	clust_to_trans_out = open(nodes_path + current_root + "/without_inparalogs/clust_to_trans.txt_without_inparalogs", 'w')
+	clust_to_trans_inparalogs_out = open(nodes_path + current_root + "/clust_to_trans.txt", 'w')
 
 	for cluster in cluster_to_genes_inparalogs:
 		counter = cluster[33:]
@@ -210,7 +214,7 @@ def main():
 			distrib_buffer = counter + "\t" + Counter(names).most_common(1)[0][0]  # max count for choosing the name to print
 		for leaf in leaves:
 			distrib_buffer += "\t" + str(prefix_count[leaf])
-		distrib_out.write(distrib_buffer)
+		distrib_out.write(distrib_buffer + "\n")
 
 		distrib_buffer = ""
 		if names_inparalogs == []:
@@ -219,7 +223,7 @@ def main():
 			distrib_buffer = counter + "\t" + Counter(names_inparalogs).most_common(1)[0][0]  # max count for choosing the name to print
 		for leaf in leaves:
 			distrib_buffer += "\t" + str(prefix_count_inparalogs[leaf])
-		distrib_inparalogs_out.write(distrib_buffer)
+		distrib_inparalogs_out.write(distrib_buffer + "\n")
 
 		if len(prefix_count) == num_genomes:
 			if prefix_count.most_common(1)[0][1] > 1:
@@ -319,6 +323,25 @@ def main():
 	elif args.alignment == "scc":
 		alignment_scc_out.close()
 
+	if "results" not in os.listdir(main_path):
+		os.mkdir(main_path + "results")
+	os.system("ln -sf " + nodes_path + current_root + "/clusters.txt " + main_path + "results/clusters.txt")
+	os.system("ln -sf " + nodes_path + current_root + "/final_clusters.txt " + main_path + "results/final_clusters.txt")
+	os.system("ln -sf " + nodes_path + current_root + "/clust_to_trans.txt " + main_path + "results/clust_to_trans.txt")
+	os.system("ln -sf " + nodes_path + current_root + "/cluster_dist_per_genome.txt " + main_path + "results/cluster_dist_per_genome.txt")
+	os.system("ln -sf " + nodes_path + current_root + "/cluster_dist_per_genome.txt " + main_path + "results/cluster_dist_per_genome.txt")
+	os.system("ln -sf " + nodes_path + current_root + "/cluster_dist_per_genome.txt " + main_path + "results/cluster_dist_per_genome.txt")
+	if args.alignment == "all":
+		os.system("ln -sf " + nodes_path + current_root + "/alignments_all.txt " + main_path + "results/alignments_all.txt")
+		os.system("ln -sf " + nodes_path + current_root + "/alignments_scc.txt " + main_path + "results/alignments_scc.txt")
+	elif args.alignment == "scc":
+		os.system("ln -sf " + nodes_path + current_root + "/alignments_scc.txt " + main_path + "results/alignments_scc.txt")
+
+	nwksMap = {}
+	for n in nodes:
+		if n[0] == "N":
+			with open(nodes_path + n + "/clusters_newick.pkl", "r") as f:
+				nwksMap[n] = pickle.load(f)
 	# unreferencing
 	# l_t = None
 	l_s = None
@@ -349,7 +372,7 @@ def main():
 							continue
 						modified = True
 
-	nwk_out = open(nodes_path + current_root + "/newicks_full.txt", "w")
+	nwk_out = open(nodes_path + current_root + "/without_inparalogs/newicks_full.txt", "w")
 	for l in locusMap:
 		counter = l[33:]
 		cid = "Cluster" + counter
