@@ -5,7 +5,7 @@ SynerClust README
 - Python-2.7.x
 - NumPy (Python package) https://www.scipy.org/scipylib/download.html
 - NetworkX (Python package) http://networkx.github.io/download.html
-- Blast+ ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/
+- Blast+ (tested with v2.6.0) ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/
 
 Already included:
 - MUSCLE http://www.drive5.com/muscle/downloads.htm
@@ -84,7 +84,13 @@ This will, among others, generate a final_clusters.txt and clusters_to_locus.txt
 
 # Help/Questions
 
-#### List of Parameters and their meaning
+### Output files
+
+
+### Running SynerClust on an extended dataset
+
+
+### List of Parameters and their meaning
 -t SPECIES_TREE, --tree SPECIES_TREE  
 &nbsp;&nbsp;&nbsp;&nbsp;Species tree relating all of the genomes to be analyzed. (Required)
 
