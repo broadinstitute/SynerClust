@@ -35,7 +35,7 @@ Annotation	Esch_coli_H378_V1/Esch_coli_H378_V1_PRODIGAL_2.annotation.gff3
 
 	
 # Running
-### Without UGE:
+### On a single machine:
 The minimal command to run SynerClust is the following:
 <pre><code>/path/to/SynerClust/bin/synerclust.py -r /path/to/data_catalog.txt -w /working/directory/ -t /path/to/newick/tree.nwk [-n number_of_cores] [--run single]</pre></code>
 
@@ -55,7 +55,7 @@ Once all jobs are finished, to have an easy to read output of the clusters, simp
 This will, among others, generate a final_clusters.txt and clusters_to_locus.txt file with the results in the "results" folder (linking to the root node).
 
 
-### With UGE:
+### With an UGE cluster:
 Initialize your environnement (if on UGE):
 <pre><code>use Python-2.7
 use UGER</pre></code>
