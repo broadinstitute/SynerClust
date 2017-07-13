@@ -35,11 +35,11 @@ Annotation	Esch_coli_H378_V1/Esch_coli_H378_V1_PRODIGAL_2.annotation.gff3
 
 	
 # Running
-### Without UGE:
+### On a single machine:
 The minimal command to run SynerClust is the following:
 <pre><code>/path/to/SynerClust/bin/synerclust.py -r /path/to/data_catalog.txt -w /working/directory/ -t /path/to/newick/tree.nwk [-n number_of_cores] [--run single]</pre></code>
 
-If you use the option "--run single" that is all you need to do!
+If you use the option "--run single" that is all you need to do! The Results will be written in the root folder but symlinks can be found in in the main "results" folder.
 
 
 If you prefer to run step by step, the next steps are:
@@ -52,10 +52,10 @@ You can then start the actual computation (in part parallelizable on a grid):
 
 Once all jobs are finished, to have an easy to read output of the clusters, simply run:
 <pre><code>/working/directory/post_process_root.sh</pre></code>
-This will, among others, generate a final_clusters.txt and clusters_to_locus.txt file with the results in the root node.
+This will, among others, generate a final_clusters.txt and clusters_to_locus.txt file with the results in the "results" folder (linking to the root node).
 
 
-### With UGE:
+### With an UGE cluster:
 Initialize your environnement (if on UGE):
 <pre><code>use Python-2.7
 use UGER</pre></code>
@@ -63,7 +63,7 @@ use UGER</pre></code>
 The minimal command to run SynerClust is the following:
 <pre><code>/path/to/SynerClust/bin/synergy.py -r /path/to/data_catalog.txt -w /working/directory/ -t /path/to/newick/tree.nwk [-n number_of_cores] [--run uger]</pre></code>
 
-If you use the option "--run uger" that is all you need to do!
+If you use the option "--run uger" that is all you need to do! The Results will be written in the root folder but symlinks can be found in in the main "results" folder.
 
 
 If you prefer to run step by step, the next steps are:
@@ -79,16 +79,29 @@ If they are more jobs than your queue allows, run:
 
 Once all jobs are finished, to have an easy to read output of the clusters, simply run the 
 <pre><code>/working/directory/post_process_root.sh</pre></code>
-This will, among others, generate a final_clusters.txt and clusters_to_locus.txt file with the results in the root node.
+This will, among others, generate a final_clusters.txt and clusters_to_locus.txt file with the results in the "results" folder (linking to the root node).
 
 
 # Help/Questions
 
 ### Output files
+clusters.txt: Contains a list of all genes grouped by clusters with annotation information. One gene per line, clusters are seperated by empty lines.
 
+final_clusters.txt: List of all the transcript IDs per cluster and count of genes and taxas. One cluster per line.
+
+clust_to_trans.txt: List of all transcripts IDs, their cluster assignation and the most commonly encountered gene name that is not "hypothetical protein". One gene per line.
+
+cluster_dist_per_genome.txt: Table of number of genes from each taxas per cluster. One cluster per line.
+
+### Keeping track of progress
+
+A file "completion.txt" is generated in the main folder of the run where you can keep track of what nodes have finished being processed.
+
+In case a node encountered an error, another file, "not_completed.txt" is generated containing the node identifier.
 
 ### Running SynerClust on an extended dataset
 
+Simply rerun SynerClust as you did on the firsrt dataset, but set the working directory to the same one as the first run.
 
 ### List of Parameters and their meaning
 -t SPECIES_TREE, --tree SPECIES_TREE  
