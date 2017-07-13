@@ -32,7 +32,7 @@ def usage():
 
 
 class Refinery(multiprocessing.Process):
-	def __init__(self, cluster_queue, result_queue, mrca, cluster_counter, lock, minSynFrac):
+	def __init__(self, cluster_queue, result_queue, mrca, cluster_counter, lock, minSynFrac, synteny):
 		multiprocessing.Process.__init__(self)
 		self.cluster_queue = cluster_queue
 		self.result_queue = result_queue
@@ -40,6 +40,7 @@ class Refinery(multiprocessing.Process):
 		self.cluster_counter = cluster_counter
 		self.lock = lock
 		self.minSynFrac = minSynFrac
+		self.synteny = synteny
 
 	def run(self):
 		genes_to_cluster = {}
@@ -54,7 +55,7 @@ class Refinery(multiprocessing.Process):
 				self.cluster_queue.task_done()
 				break
 			# compute
-			identical_index = next_task(self.mrca, genes_to_cluster, self.cluster_counter, self.lock, ok_trees, identical_orphans_to_check, identical_orphans_to_check_dict, identical_index, potentials, self.minSynFrac)
+			identical_index = next_task(self.mrca, genes_to_cluster, self.cluster_counter, self.lock, ok_trees, identical_orphans_to_check, identical_orphans_to_check_dict, identical_index, potentials, self.minSynFrac, self.synteny)
 			# compute finished
 			self.cluster_queue.task_done()
 		# print "thread finished with " + str(len(identical_orphans_to_check))
@@ -66,158 +67,159 @@ class Refine(object):
 		self.cluster = cluster
 		self.graph = graph
 
-	def __call__(self, mrca, genes_to_cluster, cluster_counter, lock, ok_trees, identical_orphans_to_check, identical_orphans_to_check_dict, identical_index, potentials, minSynFrac):
+	def __call__(self, mrca, genes_to_cluster, cluster_counter, lock, ok_trees, identical_orphans_to_check, identical_orphans_to_check_dict, identical_index, potentials, minSynFrac, synteny):
 		leaves = self.graph.nodes()
 		leaves.sort()
-		syn = {}
-		for n in leaves:  # genes
-			leaf = "_".join(n.split("_")[:-1])
-			syn[n] = [[], synteny_data[leaf][n]['count']]
-			for m in synteny_data[leaf][n]['neighbors']:
-				syn[n][0].append(gene_to_rough_cluster[m])
-		syn_matrix = numpy.empty(len(leaves) * (len(leaves) - 1) / 2)
-		i = 1
-		pos = 0
-		for m in leaves[1:]:
-			syn_m = set(syn[m][0])
-			count_m = float(syn[m][1])
-			syn_m.discard(self.cluster)
-			mSeqs = (len(syn[m][0]) - syn[m][0].count(self.cluster)) / count_m  # divide by count of leaves
-			for n in leaves[:i]:
-				syn_n = set(syn[n][0])
-				count_n = float(syn[n][1])
-				syn_n.discard(self.cluster)
-				nSeqs = (len(syn[n][0]) - syn[n][0].count(self.cluster)) / count_n  # divide by count of leaves
-				matches = 0
-				if mSeqs == 0 or nSeqs == 0:
-					syn_matrix[pos] = 1.0  # no neighbors in common if someone has no neighbors  # -= 0 ? does it change anything?
+		if synteny:
+			syn = {}
+			for n in leaves:  # genes
+				leaf = "_".join(n.split("_")[:-1])
+				syn[n] = [[], synteny_data[leaf][n]['count']]
+				for m in synteny_data[leaf][n]['neighbors']:
+					syn[n][0].append(gene_to_rough_cluster[m])
+			syn_matrix = numpy.empty(len(leaves) * (len(leaves) - 1) / 2)
+			i = 1
+			pos = 0
+			for m in leaves[1:]:
+				syn_m = set(syn[m][0])
+				count_m = float(syn[m][1])
+				syn_m.discard(self.cluster)
+				mSeqs = (len(syn[m][0]) - syn[m][0].count(self.cluster)) / count_m  # divide by count of leaves
+				for n in leaves[:i]:
+					syn_n = set(syn[n][0])
+					count_n = float(syn[n][1])
+					syn_n.discard(self.cluster)
+					nSeqs = (len(syn[n][0]) - syn[n][0].count(self.cluster)) / count_n  # divide by count of leaves
+					matches = 0
+					if mSeqs == 0 or nSeqs == 0:
+						syn_matrix[pos] = 1.0  # no neighbors in common if someone has no neighbors  # -= 0 ? does it change anything?
+						pos += 1
+						continue
+					all_neighbors = syn_m | syn_n
+					for a in all_neighbors:
+						t_m = max(syn[m][0].count(a), 0) / count_m  # divide by count so that merging a level N nodes with a leaf doesn't give a max synteny of 1/N only
+						t_n = max(syn[n][0].count(a), 0) / count_n
+						matches += min(t_m, t_n)
+					# synFrac = float(matches) / float(max(mSeqs, nSeqs))
+					synFrac = float(matches) / float(mSeqs + nSeqs - matches)
+					# synFrac = float(matches) / float(max_neighbors_count)
+					syn_matrix[pos] = 1.0 - synFrac
 					pos += 1
+				i += 1
+
+			# formatting matrix for output
+			i = 0
+			j = 1
+			syn_buff = leaves[0] + "\n" + leaves[1] + "\t"
+			for y in numpy.nditer(syn_matrix):
+				syn_buff += str(y) + "\t"
+				i += 1
+				if i >= j:
+					i = 0
+					j += 1
+					if j < len(leaves):
+						syn_buff += "\n" + leaves[j] + "\t"
+					else:
+						syn_buff += "\n"
+
+			new_graph = self.graph.copy()
+			# check synteny matrix for cells lowest synteny (below a threshold, 0.2-0.5?)
+			syntenic = []
+			it = numpy.nditer(syn_matrix, flags=['f_index'])
+			while not it.finished:
+				if it[0] <= minSynFrac:
+					position = it.index + 1  # formula works for indexes starting at 1, so need to offset
+					j = int(round(math.ceil(math.sqrt(2 * position + 0.25) - 0.5)))  # formula is for lower triangular matrix, so need to offset distance matrix columns because we start at 0
+					i = int(position - ((j - 1) * j / 2))  # no need for row offset because row 0 is empty in distance matrix
+					syntenic.append((it[0], it.index, i - 1, j))
+				it.iternext()
+			syntenic.sort(key=itemgetter(0))  # key precised so that sort is only done on first element of lists and not on other ones for potential ties
+
+			# for pair in syntenic:  # loop twice to allow pairs where best hit got pulled into another pair to be clustered on 2nd round?
+			k = 0
+			while k < len(syntenic):
+				pair = syntenic[k]
+				i = pair[2]
+				j = pair[3]
+				if not self.graph.has_edge(leaves[i], leaves[j]) or leaves[i][:32] == leaves[j][:32]:  # if (i, j) is in the graph, (j, i) is also per construction/filtering of rough clusters; reverse is true too || OR same leaf
+					k += 1
 					continue
-				all_neighbors = syn_m | syn_n
-				for a in all_neighbors:
-					t_m = max(syn[m][0].count(a), 0) / count_m  # divide by count so that merging a level N nodes with a leaf doesn't give a max synteny of 1/N only
-					t_n = max(syn[n][0].count(a), 0) / count_n
-					matches += min(t_m, t_n)
-				# synFrac = float(matches) / float(max(mSeqs, nSeqs))
-				synFrac = float(matches) / float(mSeqs + nSeqs - matches)
-				# synFrac = float(matches) / float(max_neighbors_count)
-				syn_matrix[pos] = 1.0 - synFrac
-				pos += 1
-			i += 1
-
-		# formatting matrix for output
-		i = 0
-		j = 1
-		syn_buff = leaves[0] + "\n" + leaves[1] + "\t"
-		for y in numpy.nditer(syn_matrix):
-			syn_buff += str(y) + "\t"
-			i += 1
-			if i >= j:
-				i = 0
-				j += 1
-				if j < len(leaves):
-					syn_buff += "\n" + leaves[j] + "\t"
+				# check if this cell is the only low synteny for each member of the pair
+				if len([p for p in syntenic if p[2] == i or p[3] == i or p[2] == j or p[3] == j]) == 1:
+					# if yes, check if RBH hits, or among best hits
+					if self.graph[leaves[i]][leaves[j]]['rank'] + self.graph[leaves[j]][leaves[i]]['rank'] <= 4:  # 2 = RBH, put 3 or 4 as limit?
+						# if yes, cluster
+						# merge leaves[i] and leaves[j]
+						syn_dist = ":" + str(pair[0] / 2.0)
+						# new_node = "%s_%06d" % (mrca, cluster_counter.safeIncrement())
+						lock.acquire()
+						new_node = "%s_%06d" % (mrca, cluster_counter.value)
+						cluster_counter.value += 1
+						lock.release()
+						# self.cluster_counter += 1
+						ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + str(self.graph[leaves[i]][leaves[j]]['rank']) + "," + leaves[j] + ":" + str(self.graph[leaves[j]][leaves[i]]['rank']) + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
+						nxe.merge(new_graph, self.graph, leaves[i], leaves[j], new_node)
+						genes_to_cluster[leaves[i]] = (new_node, True)
+						genes_to_cluster[leaves[j]] = (new_node, True)
+						# remove other edges pointing to those nodes
+						self.graph.remove_node(leaves[i])
+						self.graph.remove_node(leaves[j])
+				# if one of the genes has more than 1 syntenic gene, but still RBH
 				else:
-					syn_buff += "\n"
-
-		new_graph = self.graph.copy()
-		# check synteny matrix for cells lowest synteny (below a threshold, 0.2-0.5?)
-		syntenic = []
-		it = numpy.nditer(syn_matrix, flags=['f_index'])
-		while not it.finished:
-			if it[0] <= minSynFrac:
-				position = it.index + 1  # formula works for indexes starting at 1, so need to offset
-				j = int(round(math.ceil(math.sqrt(2 * position + 0.25) - 0.5)))  # formula is for lower triangular matrix, so need to offset distance matrix columns because we start at 0
-				i = int(position - ((j - 1) * j / 2))  # no need for row offset because row 0 is empty in distance matrix
-				syntenic.append((it[0], it.index, i - 1, j))
-			it.iternext()
-		syntenic.sort(key=itemgetter(0))  # key precised so that sort is only done on first element of lists and not on other ones for potential ties
-
-		# for pair in syntenic:  # loop twice to allow pairs where best hit got pulled into another pair to be clustered on 2nd round?
-		k = 0
-		while k < len(syntenic):
-			pair = syntenic[k]
-			i = pair[2]
-			j = pair[3]
-			if not self.graph.has_edge(leaves[i], leaves[j]) or leaves[i][:32] == leaves[j][:32]:  # if (i, j) is in the graph, (j, i) is also per construction/filtering of rough clusters; reverse is true too || OR same leaf
+					# if best hit for ones for which it isn't have -m close, cluster
+					# check first if best hit hasn't been clustered
+					l = k + 1
+					ties = [k]
+					s = set(pair[2:])
+					while l < len(syntenic) and pair[0] == syntenic[l][0]:  # syntenic tie
+						if syntenic[l][2] in s or syntenic[l][3] in s:
+							ties.append(l)
+						l += 1
+					ties_results = []
+					for l in ties:
+						good = 0
+						sum_of_ranks = self.graph[leaves[i]][leaves[j]]['rank'] + self.graph[leaves[j]][leaves[i]]['rank']
+						sum_of_m = self.graph[leaves[i]][leaves[j]]['m'] + self.graph[leaves[j]][leaves[i]]['m']
+						if self.graph[leaves[i]][leaves[j]]['rank'] == 1:
+							good += 1
+						elif max([f['rank'] for f in self.graph[leaves[i]].values()]) == self.graph[leaves[i]][leaves[j]]['rank']:  # best hit has been clustered, this is the best remaining hit
+							good += 1
+						elif [f for f in self.graph[leaves[i]].values() if f['rank'] == 1]:  # if best hit hasn't been clustered
+							# check if better hits are syntenic?
+							if self.graph[leaves[i]][leaves[j]]['m'] >= BEST_HIT_PROPORTION_THRESHOLD:
+								good += 1
+						if self.graph[leaves[j]][leaves[i]]['rank'] == 1:
+							good += 1
+						elif max([f['rank'] for f in self.graph[leaves[j]].values()]) == self.graph[leaves[j]][leaves[i]]['rank']:
+							good += 1
+						elif [f for f in self.graph[leaves[j]].values() if f['rank'] == 1]:  # if best hit hasn't been clustered
+							if self.graph[leaves[j]][leaves[i]]['m'] >= BEST_HIT_PROPORTION_THRESHOLD:
+								good += 1
+						ties_results.append((l, good, sum_of_ranks, sum_of_m))
+					ties_results.sort(key=lambda tup: (-tup[1], tup[2], -tup[3]))
+					if ties_results[0][1] == 2 and (len(ties_results) == 1 or (len(ties_results) > 1 and (ties_results[0][1] > ties_results[1][1] or ties_results[0][2] < ties_results[1][2] or ties_results[0][3] > ties_results[1][3]))):  # triple "or" because results are sorted, so if not better, equal
+							pair = syntenic[ties_results[0][0]]
+							i = pair[2]
+							j = pair[3]
+							if leaves[i][:32] != leaves[j][:32]:
+								# merge leaves[i] and leaves[j]
+								syn_dist = ":" + str(pair[0] / 2.0)
+								lock.acquire()
+								new_node = "%s_%06d" % (mrca, cluster_counter.value)
+								cluster_counter.value += 1
+								lock.release()
+								ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + str(self.graph[leaves[i]][leaves[j]]['rank']) + "," + leaves[j] + ":" + str(self.graph[leaves[j]][leaves[i]]['rank']) + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
+								nxe.merge(new_graph, self.graph, leaves[i], leaves[j], new_node)
+								genes_to_cluster[leaves[i]] = (new_node, True)
+								genes_to_cluster[leaves[j]] = (new_node, True)
+								# remove other edges pointing to those nodes
+								self.graph.remove_node(leaves[i])
+								self.graph.remove_node(leaves[j])
+					ties_results.reverse()
+					for tr in ties_results:
+						del syntenic[tr[0]]
+					continue
 				k += 1
-				continue
-			# check if this cell is the only low synteny for each member of the pair
-			if len([p for p in syntenic if p[2] == i or p[3] == i or p[2] == j or p[3] == j]) == 1:
-				# if yes, check if RBH hits, or among best hits
-				if self.graph[leaves[i]][leaves[j]]['rank'] + self.graph[leaves[j]][leaves[i]]['rank'] <= 4:  # 2 = RBH, put 3 or 4 as limit?
-					# if yes, cluster
-					# merge leaves[i] and leaves[j]
-					syn_dist = ":" + str(pair[0] / 2.0)
-					# new_node = "%s_%06d" % (mrca, cluster_counter.safeIncrement())
-					lock.acquire()
-					new_node = "%s_%06d" % (mrca, cluster_counter.value)
-					cluster_counter.value += 1
-					lock.release()
-					# self.cluster_counter += 1
-					ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + str(self.graph[leaves[i]][leaves[j]]['rank']) + "," + leaves[j] + ":" + str(self.graph[leaves[j]][leaves[i]]['rank']) + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
-					nxe.merge(new_graph, self.graph, leaves[i], leaves[j], new_node)
-					genes_to_cluster[leaves[i]] = (new_node, True)
-					genes_to_cluster[leaves[j]] = (new_node, True)
-					# remove other edges pointing to those nodes
-					self.graph.remove_node(leaves[i])
-					self.graph.remove_node(leaves[j])
-			# if one of the genes has more than 1 syntenic gene, but still RBH
-			else:
-				# if best hit for ones for which it isn't have -m close, cluster
-				# check first if best hit hasn't been clustered
-				l = k + 1
-				ties = [k]
-				s = set(pair[2:])
-				while l < len(syntenic) and pair[0] == syntenic[l][0]:  # syntenic tie
-					if syntenic[l][2] in s or syntenic[l][3] in s:
-						ties.append(l)
-					l += 1
-				ties_results = []
-				for l in ties:
-					good = 0
-					sum_of_ranks = self.graph[leaves[i]][leaves[j]]['rank'] + self.graph[leaves[j]][leaves[i]]['rank']
-					sum_of_m = self.graph[leaves[i]][leaves[j]]['m'] + self.graph[leaves[j]][leaves[i]]['m']
-					if self.graph[leaves[i]][leaves[j]]['rank'] == 1:
-						good += 1
-					elif max([f['rank'] for f in self.graph[leaves[i]].values()]) == self.graph[leaves[i]][leaves[j]]['rank']:  # best hit has been clustered, this is the best remaining hit
-						good += 1
-					elif [f for f in self.graph[leaves[i]].values() if f['rank'] == 1]:  # if best hit hasn't been clustered
-						# check if better hits are syntenic?
-						if self.graph[leaves[i]][leaves[j]]['m'] >= BEST_HIT_PROPORTION_THRESHOLD:
-							good += 1
-					if self.graph[leaves[j]][leaves[i]]['rank'] == 1:
-						good += 1
-					elif max([f['rank'] for f in self.graph[leaves[j]].values()]) == self.graph[leaves[j]][leaves[i]]['rank']:
-						good += 1
-					elif [f for f in self.graph[leaves[j]].values() if f['rank'] == 1]:  # if best hit hasn't been clustered
-						if self.graph[leaves[j]][leaves[i]]['m'] >= BEST_HIT_PROPORTION_THRESHOLD:
-							good += 1
-					ties_results.append((l, good, sum_of_ranks, sum_of_m))
-				ties_results.sort(key=lambda tup: (-tup[1], tup[2], -tup[3]))
-				if ties_results[0][1] == 2 and (len(ties_results) == 1 or (len(ties_results) > 1 and (ties_results[0][1] > ties_results[1][1] or ties_results[0][2] < ties_results[1][2] or ties_results[0][3] > ties_results[1][3]))):  # triple "or" because results are sorted, so if not better, equal
-						pair = syntenic[ties_results[0][0]]
-						i = pair[2]
-						j = pair[3]
-						if leaves[i][:32] != leaves[j][:32]:
-							# merge leaves[i] and leaves[j]
-							syn_dist = ":" + str(pair[0] / 2.0)
-							lock.acquire()
-							new_node = "%s_%06d" % (mrca, cluster_counter.value)
-							cluster_counter.value += 1
-							lock.release()
-							ok_trees.append((new_node, (leaves[i], leaves[j]), ("(" + leaves[i] + ":" + str(self.graph[leaves[i]][leaves[j]]['rank']) + "," + leaves[j] + ":" + str(self.graph[leaves[j]][leaves[i]]['rank']) + ")", "(" + leaves[i] + syn_dist + "," + leaves[j] + syn_dist + ")")))
-							nxe.merge(new_graph, self.graph, leaves[i], leaves[j], new_node)
-							genes_to_cluster[leaves[i]] = (new_node, True)
-							genes_to_cluster[leaves[j]] = (new_node, True)
-							# remove other edges pointing to those nodes
-							self.graph.remove_node(leaves[i])
-							self.graph.remove_node(leaves[j])
-				ties_results.reverse()
-				for tr in ties_results:
-					del syntenic[tr[0]]
-				continue
-			k += 1
 
 		# check for remaining RBH and cluster
 		changed = True
@@ -233,45 +235,49 @@ class Refine(object):
 					i += 1
 					continue
 				if len(targets) >= 1:
-					pairs = []
-					for n2 in targets:
-						ii = leaves.index(n1)
-						jj = leaves.index(n2)
-						syn = 1.0
-						if ii < jj:
-							syn = syn_matrix[(jj * (jj - 1) / 2) + ii]
-						else:
-							syn = syn_matrix[(ii * (ii - 1) / 2) + jj]
-						pairs.append([n2, syn])  # target, synteny
-					pairs.sort(key=itemgetter(1))  # sort by ascending synteny distance
-					# if pairs[0][1] < 1.0 and (len(pairs) == 1 or pairs[0][1] != pairs[1][1]):  # synteny evidance and no ex-aequo
-					if pairs[0][1] < 1.0 and (len(pairs) == 1 or pairs[1][1] - pairs[0][1] > SYNTENY_DIFFERENCE_THRESHOLD):
-						# CHECK IF THE 2ND NODE ALSO HAS THE LOWEST SYNTENY WITH THE CURRENT NODE
-						# CHECK SYNTENY MATRIX AT 2ND NODE VALUES FIRST? REVERT INDEX TO CHECK IF EDGE EXISTS AND GOOD HIT?
-						likely_pair = pairs[0][0]
-						targets2 = [n2 for n2 in self.graph[likely_pair] if self.graph[likely_pair][n2]['rank'] == 1 and self.graph[n2][likely_pair]['rank'] == 1 and likely_pair[:32] != n2[:32]]
-						if len(targets2) > 1:  # else it is the only hit so good (because reciprocity previously checked)
-							pairs2 = []
-							for n2 in targets2:
-								ii = leaves.index(likely_pair)
-								jj = leaves.index(n2)
-								syn = 1.0
-								if ii < jj:
-									syn = syn_matrix[(jj * (jj - 1) / 2) + ii]
-								else:
-									syn = syn_matrix[(ii * (ii - 1) / 2) + jj]
-								pairs2.append([n2, syn])  # target, synteny
-							pairs2.sort(key=itemgetter(1))  # sort by ascending synteny distance
-							if pairs2[0][0] == n1 and pairs2[1][1] - pairs2[0][1] > SYNTENY_DIFFERENCE_THRESHOLD:  # synteny evidance to 1st node and no ex-aequo
+					if synteny:
+						pairs = []
+						for n2 in targets:
+							ii = leaves.index(n1)
+							jj = leaves.index(n2)
+							syn = 1.0
+							if ii < jj:
+								syn = syn_matrix[(jj * (jj - 1) / 2) + ii]
+							else:
+								syn = syn_matrix[(ii * (ii - 1) / 2) + jj]
+							pairs.append([n2, syn])  # target, synteny
+						pairs.sort(key=itemgetter(1))  # sort by ascending synteny distance
+						# if pairs[0][1] < 1.0 and (len(pairs) == 1 or pairs[0][1] != pairs[1][1]):  # synteny evidance and no ex-aequo
+						if pairs[0][1] < 1.0 and (len(pairs) == 1 or pairs[1][1] - pairs[0][1] > SYNTENY_DIFFERENCE_THRESHOLD):
+							# CHECK IF THE 2ND NODE ALSO HAS THE LOWEST SYNTENY WITH THE CURRENT NODE
+							# CHECK SYNTENY MATRIX AT 2ND NODE VALUES FIRST? REVERT INDEX TO CHECK IF EDGE EXISTS AND GOOD HIT?
+							likely_pair = pairs[0][0]
+							targets2 = [n2 for n2 in self.graph[likely_pair] if self.graph[likely_pair][n2]['rank'] == 1 and self.graph[n2][likely_pair]['rank'] == 1 and likely_pair[:32] != n2[:32]]
+							if len(targets2) > 1:  # else it is the only hit so good (because reciprocity previously checked)
+								pairs2 = []
+								for n2 in targets2:
+									ii = leaves.index(likely_pair)
+									jj = leaves.index(n2)
+									syn = 1.0
+									if ii < jj:
+										syn = syn_matrix[(jj * (jj - 1) / 2) + ii]
+									else:
+										syn = syn_matrix[(ii * (ii - 1) / 2) + jj]
+									pairs2.append([n2, syn])  # target, synteny
+								pairs2.sort(key=itemgetter(1))  # sort by ascending synteny distance
+								if pairs2[0][0] == n1 and pairs2[1][1] - pairs2[0][1] > SYNTENY_DIFFERENCE_THRESHOLD:  # synteny evidance to 1st node and no ex-aequo
+									pair = pairs[0][0]
+								else:  # best node to merge from n1 side is not the best from n2 side
+									i += 1
+									continue
+							else:
 								pair = pairs[0][0]
-							else:  # best node to merge from n1 side is not the best from n2 side
-								i += 1
-								continue
-						else:
-							pair = pairs[0][0]
-					else:  # no evidance of which node is the good one to merge to
-						i += 1
-						continue
+						else:  # no evidance of which node is the good one to merge to
+							i += 1
+							continue
+					else:  # no evidance of which node is the good one to merge to because --no-synteny
+							i += 1
+							continue
 				else:
 					pair = targets[0]
 					# if graph[e[0]][e[1]]['rank'] == 1 and graph[e[1]][e[0]]['rank'] == 1:
@@ -282,15 +288,19 @@ class Refine(object):
 				# if leaves[ii][:32] == leaves[jj][:32]:  # should never happen because targets are already filtered for this
 				# 	i += 1
 				# 	continue
-				ma = max(ii, jj)
-				mi = min(ii, jj)
-				pos = (ma * (ma - 1) / 2) + mi
-				syn_dist = ":" + str(syn_matrix[pos] / 2.0)
+				if synteny:
+					ma = max(ii, jj)
+					mi = min(ii, jj)
+					pos = (ma * (ma - 1) / 2) + mi
+					syn_dist = ":" + str(syn_matrix[pos] / 2.0)
 				lock.acquire()
 				new_node = "%s_%06d" % (mrca, cluster_counter.value)
 				cluster_counter.value += 1
 				lock.release()
-				ok_trees.append((new_node, (n1, pair), ("(" + n1 + ":" + str(self.graph[n1][pair]['rank']) + "," + pair + ":" + str(self.graph[pair][n1]['rank']) + ")", "(" + n1 + syn_dist + "," + pair + syn_dist + ")")))
+				if synteny:
+					ok_trees.append((new_node, (n1, pair), ("(" + n1 + ":" + str(self.graph[n1][pair]['rank']) + "," + pair + ":" + str(self.graph[pair][n1]['rank']) + ")", "(" + n1 + syn_dist + "," + pair + syn_dist + ")")))
+				else:
+					ok_trees.append((new_node, (n1, pair), ("(" + n1 + ":" + str(self.graph[n1][pair]['rank']) + "," + pair + ":" + str(self.graph[pair][n1]['rank']) + ")", "")))
 				nxe.merge(new_graph, self.graph, n1, pair, new_node)
 				genes_to_cluster[n1] = (new_node, True)
 				genes_to_cluster[pair] = (new_node, True)
@@ -478,7 +488,7 @@ def main():
 
 	syn_similarity = 1.0 - args.minSynFrac
 
-	refiners = [Refinery(cluster_queue, result_queue, mrca, cluster_counter, lock, syn_similarity) for i in xrange(args.numThreads)]
+	refiners = [Refinery(cluster_queue, result_queue, mrca, cluster_counter, lock, syn_similarity, args.synteny) for i in xrange(args.numThreads)]
 	for w in refiners:
 		w.start()
 
