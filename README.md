@@ -61,7 +61,7 @@ Initialize your environnement (if on UGE):
 use UGER</pre></code>
 
 The minimal command to run SynerClust is the following:
-<pre><code>/path/to/SynerClust/bin/synergy.py -r /path/to/data_catalog.txt -w /working/directory/ -t /path/to/newick/tree.nwk [-n number_of_cores] [--run uger]</pre></code>
+<pre><code>/path/to/SynerClust/bin/synerclust.py -r /path/to/data_catalog.txt -w /working/directory/ -t /path/to/newick/tree.nwk [-n number_of_cores] [--run uger]</pre></code>
 
 If you use the option "--run uger" that is all you need to do! The Results will be written in the root folder but symlinks can be found in in the main "results" folder.
 
