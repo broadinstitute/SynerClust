@@ -70,6 +70,8 @@ class Refine(object):
 	def __call__(self, mrca, genes_to_cluster, cluster_counter, lock, ok_trees, identical_orphans_to_check, identical_orphans_to_check_dict, identical_index, potentials, minSynFrac, synteny):
 		leaves = self.graph.nodes()
 		leaves.sort()
+		new_graph = self.graph.copy()
+
 		if synteny:
 			syn = {}
 			for n in leaves:  # genes
@@ -122,7 +124,6 @@ class Refine(object):
 					else:
 						syn_buff += "\n"
 
-			new_graph = self.graph.copy()
 			# check synteny matrix for cells lowest synteny (below a threshold, 0.2-0.5?)
 			syntenic = []
 			it = numpy.nditer(syn_matrix, flags=['f_index'])
