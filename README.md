@@ -4,7 +4,7 @@ SynerClust README
 # Dependencies
 - Python-2.7.x
 - NumPy (Python package) https://www.scipy.org/scipylib/download.html
-- NetworkX (Python package) http://networkx.github.io/download.html
+- NetworkX (Python package) https://pypi.python.org/pypi/networkx/
 - Blast+ (tested with v2.6.0) ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/
 
 Already included:
