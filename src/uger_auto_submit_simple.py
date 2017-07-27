@@ -12,7 +12,7 @@ def main():
 	parser.add_argument("-l", dest="limit", type=int, default=800, help="Maximum number of slots that can be used (including those taken by other jobs). default = 90")
 	parser.add_argument("-f", dest="file", default="uger_list.txt", help="File containing the commands to run. default = \"uger_list.txt\"")
 	parser.add_argument("-t", dest="wait", type=int, default=300, help="Interval of time at which to check the number of available slots (in seconds). default = 300 (5 minutes)")
-	parser.add_argument("-p", dest="project", default="gscid", help="Project on which to submit for priority.")
+	parser.add_argument("-p", dest="project", default=None, help="Project on which to submit for priority.")
 	parser.add_argument("-q", dest="queue", default="short", help="Queue to submit on.")
 	parser.add_argument("-err", dest="error", default="/dev/null", help="Error output.")
 	parser.add_argument("-log", dest="log", default="/dev/null", help="Standard output.")
@@ -26,8 +26,8 @@ def main():
 #! /bin/bash
 
 #$ -cwd
-#$ -q """ + args.queue + """
-#$ -P """ + args.project + """
+#$ -q """ + args.queue + ("""
+#$ -P """ + args.project if args.project else "") + """
 
 #$ -l m_mem_free=2g
 #$ -e """ + args.error + """

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 #$ -cwd
-#$ -q short
-#$ -P gscid
+#$ -q #QUEUE
+#$ -P #PROJECT
 #$ -R yes
 
 #$ -l h_vmem=#MEMORY

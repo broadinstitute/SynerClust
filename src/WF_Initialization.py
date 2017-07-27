@@ -87,7 +87,7 @@ class Tree:
 		minPair = (minList[0], minList[1])
 		return minPair
 
-	def calculateNodeDependencies(self, working_dir):
+	def calculateNodeDependencies(self, working_dir, shortq, longq, thresq, project):
 		node_dir = working_dir + "nodes"
 		if "nodes" not in os.listdir(working_dir):
 			os.system("mkdir " + node_dir)
@@ -183,19 +183,19 @@ class Tree:
 			ready_nodes = []
 			cmd_count += 1
 		# print "c2p\n",childToParent
-		self.makeNodeFlowWorkflowControl(nodeTier, childToParent, working_dir)
+		self.makeNodeFlowWorkflowControl(nodeTier, childToParent, working_dir, shortq, longq, thresq, project, maxcpus, mincpus)
 
-	def makeNodeFlowWorkflowControl(self, nodeTier, childToParent, working_dir):
+	def makeNodeFlowWorkflowControl(self, nodeTier, childToParent, working_dir, shortq, longq, thresq, project, maxcpus, mincpus):
 		self.root = nodeTier[max(nodeTier)][0]
 		stack = []
-		queue = collections.deque([[self.root, 0, []]])  # current_node, current_id, [child1_id, child2_id]
+		queue = collections.deque([[self.root, 0, [], 1]])  # current_node, current_id, [child1_id, child2_id], level_from_root
 		count = 1
 		while len(queue) > 0:
 			current = queue.pop()
 			stack.append(current)
 			for e in self.rooted_tree.edges(current[0]):  # get children
-				queue.append([e[1], count, []])  # add child to the queue (~breadth first search)
-				current[2].append(count)  # add child to parent dependency
+				queue.append([e[1], count, [], current[3] + 1])  # add child to the queue (~breadth first search)
+				current[2].append(count)  # add child to parent dependency  unused??
 				count += 1
 		with open(working_dir + "uger_jobs.sh", "w") as uge_out:
 			with open(working_dir + "jobs.sh", "w") as out:
@@ -204,6 +204,11 @@ class Tree:
 				while len(stack) > 0:
 					current = stack.pop()
 					if current[0][0] != "L":  # not a leaf
+						kids = []
+						for e in self.rooted_tree.edges(current[0]):
+							kids.append(e[1])
+						cpus = int(max(mincpus, maxcpus / float(math.pow(2, current[3])))
+						self.makeSingleNodeFlow(working_dir, current[0], kids, shortq, longq, thresq, project, cpus)
 						header = "if [ ! -f " + working_dir + "nodes/" + str(current[0]) + "/NODE_COMPLETE ]; then "
 						uge_out.write(header)
 						out.write(header)
@@ -215,20 +220,20 @@ class Tree:
 						out.write("echo \"Node " + str(current[0]) + " computed.\"\n")
 		os.chmod(working_dir + "uger_jobs.sh", 0775)
 		os.chmod(working_dir + "jobs.sh", 0775)
-		all_proc_nodes = []
-		for n in nodeTier[1]:  # tier 1 is the first tier above the leaf nodes
-			curNode = n
-			while curNode not in all_proc_nodes:
-				kids = []
-				for e in self.rooted_tree.edges(curNode):
-					kids.append(e[1])
-				self.makeSingleNodeFlow(working_dir, curNode, kids)
-				all_proc_nodes.append(curNode)
-				if curNode not in childToParent:
-					break  # curNode is root
-				curNode = childToParent[curNode]
+		# all_proc_nodes = []
+		# for n in nodeTier[1]:  # tier 1 is the first tier above the leaf nodes
+		# 	curNode = n
+		# 	while curNode not in all_proc_nodes:
+		# 		kids = []
+		# 		for e in self.rooted_tree.edges(curNode):
+		# 			kids.append(e[1])
+		# 		self.makeSingleNodeFlow(working_dir, curNode, kids, shortq, longq, thresq, project)
+		# 		all_proc_nodes.append(curNode)
+		# 		if curNode not in childToParent:
+		# 			break  # curNode is root
+		# 		curNode = childToParent[curNode]
 
-	def makeSingleNodeFlow(self, working_dir, curNode, kids):
+	def makeSingleNodeFlow(self, working_dir, curNode, kids, shortq, longq, thresq, project):
 		my_dir = working_dir + "nodes/" + curNode + "/"
 		child1 = kids[0]
 		child2 = kids[1]
@@ -243,8 +248,14 @@ class Tree:
 
 		with open(sh_uge_file, 'r') as f:
 			s_file = f.read()
-		if int(curNode[2:9]) > 30:
-			s_file = s_file.replace('short', 'long')
+		if int(curNode[2:9]) >= thresq:
+			s_file = s_file.replace('#QUEUE', longq)
+		else:
+			s_file = s_file.replace('#QUEUE', shortq)
+		if project:
+			s_file = s_file.replace('#PROJECT', "#$ -P " + project)
+		else:
+			s_file = s_file.replace('#PROJECT', "")
 		s_file = s_file.replace('#SYNERCLUST_PATH', syn2_path)
 		s_file = s_file.replace('#WORKING_DIR', working_dir)
 		s_file = s_file.replace('#CHILD1', child1)
