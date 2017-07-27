@@ -14,7 +14,7 @@ import TreeLib
 def main():
 	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
 	logger = logging.getLogger()
-	logging.basicConfig(filename='runSynergy2.log', format=FORMAT, filemode='w', level=logging.DEBUG)
+	logging.basicConfig(filename='run_SynerClust.log', format=FORMAT, filemode='w', level=logging.DEBUG)
 	# add a new Handler to print all INFO and above messages to stdout
 	ch = logging.StreamHandler(sys.stdout)
 	ch.setLevel(logging.INFO)

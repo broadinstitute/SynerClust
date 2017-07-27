@@ -66,10 +66,7 @@ reuse -q Python-2.7
 		lines = output.split("\n")[2:-1]
 		for line in lines:
 			tabs = line.split()
-			if tabs[4] == "r" or tabs[4] == "dr":
-				njobs += int(tabs[8])
-			else:
-				njobs += int(tabs[7])
+			njobs += int(tabs[-1])
 
 		if njobs < args.limit:
 			for i in xrange(njobs, args.limit):
