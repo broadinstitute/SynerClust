@@ -181,7 +181,7 @@ def main():
 		logger.info("Finished computing jobs.\n\n")
 		# run root postprocessing
 		logger.info("Starting postprocessing root.\n")
-		cmd = shlex.split("#SYNERCLUST_PATHuger_auto_submit_simple.py -f " + args.working_dir + "post_process_root.sh -t 30 -q long -tmp " + args.working_dir + "tmp/" + args.working_dir + "tmp/" + (" -p " + args.project if args.project else ""))
+		cmd = shlex.split("#SYNERCLUST_PATHuger_auto_submit_simple.py -f " + args.working_dir + "post_process_root.sh -t 30 -q long -tmp " + args.working_dir + "tmp/" + (" -p " + args.project if args.project else ""))
 		process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		(output, error) = process.communicate()
 		if process.returncode != 0:
