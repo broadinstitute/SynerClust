@@ -207,7 +207,7 @@ class Tree:
 						kids = []
 						for e in self.rooted_tree.edges(current[0]):
 							kids.append(e[1])
-						cpus = int(max(mincpus, maxcpus / float(math.pow(2, current[3]))))
+						cpus = int(max(mincpus, maxcpus / float(2**current[3])))
 						self.makeSingleNodeFlow(working_dir, current[0], kids, shortq, longq, thresq, project, cpus)
 						header = "if [ ! -f " + working_dir + "nodes/" + str(current[0]) + "/NODE_COMPLETE ]; then "
 						uge_out.write(header)
