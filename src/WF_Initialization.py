@@ -233,7 +233,7 @@ class Tree:
 		# 			break  # curNode is root
 		# 		curNode = childToParent[curNode]
 
-	def makeSingleNodeFlow(self, working_dir, curNode, kids, shortq, longq, thresq, project):
+	def makeSingleNodeFlow(self, working_dir, curNode, kids, shortq, longq, thresq, project, cpus):
 		my_dir = working_dir + "nodes/" + curNode + "/"
 		child1 = kids[0]
 		child2 = kids[1]
@@ -262,7 +262,7 @@ class Tree:
 		s_file = s_file.replace('#CHILD2', child2)
 		s_file = s_file.replace('#NODE', curNode)
 		s_file = s_file.replace('#BLAST_EVAL', str(self.blast_eval))
-		s_file = s_file.replace('#NUM_CORES', str(self.num_cores))
+		s_file = s_file.replace('#NUM_CORES', str(cpus))
 		memory = "4g"  # 2 or 3 cores
 		if self.num_cores >= 4:
 			memory = "2g"
