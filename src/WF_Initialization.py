@@ -87,7 +87,7 @@ class Tree:
 		minPair = (minList[0], minList[1])
 		return minPair
 
-	def calculateNodeDependencies(self, working_dir, shortq, longq, thresq, project):
+	def calculateNodeDependencies(self, working_dir, shortq, longq, thresq, project, maxcpus, mincpus):
 		node_dir = working_dir + "nodes"
 		if "nodes" not in os.listdir(working_dir):
 			os.system("mkdir " + node_dir)
@@ -207,7 +207,7 @@ class Tree:
 						kids = []
 						for e in self.rooted_tree.edges(current[0]):
 							kids.append(e[1])
-						cpus = int(max(mincpus, maxcpus / float(math.pow(2, current[3])))
+						cpus = int(max(mincpus, maxcpus / float(math.pow(2, current[3]))))
 						self.makeSingleNodeFlow(working_dir, current[0], kids, shortq, longq, thresq, project, cpus)
 						header = "if [ ! -f " + working_dir + "nodes/" + str(current[0]) + "/NODE_COMPLETE ]; then "
 						uge_out.write(header)
