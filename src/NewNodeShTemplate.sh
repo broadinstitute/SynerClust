@@ -2,7 +2,7 @@
 
 #$ -cwd
 #$ -q #QUEUE
-#$ -P #PROJECT
+#PROJECT
 #$ -R yes
 
 #$ -l h_vmem=#MEMORY
