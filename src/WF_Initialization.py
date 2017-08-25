@@ -188,7 +188,7 @@ class Tree:
 	def makeNodeFlowWorkflowControl(self, nodeTier, childToParent, working_dir, shortq, longq, thresq, project, maxcpus, mincpus):
 		self.root = nodeTier[max(nodeTier)][0]
 		stack = []
-		queue = collections.deque([[self.root, 0, [], 1]])  # current_node, current_id, [child1_id, child2_id], level_from_root
+		queue = collections.deque([[self.root, 0, [], 0]])  # current_node, current_id, [child1_id, child2_id], level_from_root
 		count = 1
 		while len(queue) > 0:
 			current = queue.pop()
@@ -207,7 +207,7 @@ class Tree:
 						kids = []
 						for e in self.rooted_tree.edges(current[0]):
 							kids.append(e[1])
-						cpus = int(max(mincpus, maxcpus / float(2**(current[3] - 1))))
+						cpus = int(max(mincpus, maxcpus / float(2**current[3])))
 						self.makeSingleNodeFlow(working_dir, current[0], kids, shortq, longq, thresq, project, cpus)
 						header = "if [ ! -f " + working_dir + "nodes/" + str(current[0]) + "/NODE_COMPLETE ]; then "
 						uge_out.write(header)

@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
 
+if [ ! -f #WORKING_DIRnodes/#CHILD1/NODE_COMPLETE ]; then 
+	echo "#CHILD1 did not complete" >> not_completed
+	exit 1
+fi
+if [ ! -f #WORKING_DIRnodes/#CHILD2/NODE_COMPLETE ]; then 
+	echo "#CHILD2 did not complete" >> not_completed
+	exit 2
+fi
 #SYNERCLUST_PATHWF_RunBlast.py #WORKING_DIRnodes/ #NODE #BLAST_EVAL #NUM_CORES #CHILD1 #CHILD2
 #SYNERCLUST_PATHWF_MakeRoughClusters.py -dir #WORKING_DIRnodes/ -node #NODE -m #MIN_BEST_HIT -F #MIN_SYNTENIC_FRACTION #CHILD1 #CHILD2
 #SYNERCLUST_PATHWF_RefineClusters.py -dir #WORKING_DIRnodes/ -t #NUM_CORES -node #NODE #CHILD1 #CHILD2 #NOSYNTENY
