@@ -66,6 +66,7 @@ def makePicklesForSingleGenome(working_dir, genome, node, SYNTENIC_WINDOW):
 	pcomp = open(working_dir + "nodes/" + node + "/PICKLES_COMPLETE", 'w')
 	pcomp.write("Way to go!")
 	pcomp.close()
+	open(working_dir + "nodes/" + node + "/NODE_COMPLETE", 'a').close()
 
 
 def makeSyntenyPickle(working_dir, genome, node, neighbors, SYNTENIC_WINDOW):
