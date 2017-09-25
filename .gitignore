@@ -9,3 +9,5 @@ tmp/
 *.pyc
 install.commands
 install.sh
+tests_old/
+
