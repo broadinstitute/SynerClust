@@ -287,6 +287,9 @@ def extractAnnotation(gff3_file, seq_file, genome_name, locus, out_file, stat_fi
 			peptide = myGenome.translateCDS(myCDS)
 			length = str(len(peptide))
 
+			if (length == 0):
+				sys.exit("Empty peptide sequence, please make sure coordinates from the GFF3 file match to the FASTA file.")
+
 			# assign locus tag
 			locus_tag = numberFromIndex(locus, count)
 			if scaffold not in scaffGeneCount:
