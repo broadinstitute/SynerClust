@@ -17,9 +17,9 @@ def main():
 	parser.add_argument("-err", dest="error", default="/dev/null", help="Error output.")
 	parser.add_argument("-log", dest="log", default="/dev/null", help="Standard output.")
 	parser.add_argument("-tmp", dest="tmp", required=True, help="Folder where to write temporary submission scripts.")
-	parser.add_argument("-h", dest="hour", type=str, default="48", help="Hours for runtime limit.")
-	parser.add_argument("-m", dest="minute", type=str, default="00", help="Minutes for runtime limit.")
-	parser.add_argument("-s", dest="second", type=str, default="00", help="Seconds for runtime limit.")
+	parser.add_argument("-hh", dest="hour", type=str, default="48", help="Hours for runtime limit.")
+	parser.add_argument("-mm", dest="minute", type=str, default="00", help="Minutes for runtime limit.")
+	parser.add_argument("-ss", dest="second", type=str, default="00", help="Seconds for runtime limit.")
 
 	args = parser.parse_args()
 	DEVNULL = open(os.devnull)
