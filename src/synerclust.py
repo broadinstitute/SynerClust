@@ -161,7 +161,7 @@ def main():
 		# run genome extraction
 		if "needed_extractions.cmd.txt" in os.listdir(args.working_dir + "genomes/"):
 			logger.info("Starting annotation extraction.\n")
-			cmd = shlex.split("#SYNERCLUST_PATHuger_auto_submit_simple.py -f " + args.working_dir + "genomes/needed_extractions.cmd.txt -t 30 -tmp " + args.working_dir + "tmp/" + (" -p " + args.project if args.project else ""))
+			cmd = shlex.split("#SYNERCLUST_PATHuger_auto_submit_simple.py -f " + args.working_dir + "genomes/needed_extractions.cmd.txt -t 30 -tmp " + args.working_dir + "tmp/" + (" -p " + args.project if args.project else "") + " -err " + args.working_dir + "/logs" + " -log " + args.working_dir + "/logs" + " -h 2 -m 00 -s 00")
 			process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			(output, error) = process.communicate()
 			if process.returncode != 0:
@@ -181,7 +181,7 @@ def main():
 		logger.info("Finished computing jobs.\n\n")
 		# run root postprocessing
 		logger.info("Starting postprocessing root.\n")
-		cmd = shlex.split("#SYNERCLUST_PATHuger_auto_submit_simple.py -f " + args.working_dir + "post_process_root.sh -t 30 -q long -tmp " + args.working_dir + "tmp/" + (" -p " + args.project if args.project else ""))
+		cmd = shlex.split("#SYNERCLUST_PATHuger_auto_submit_simple.py -f " + args.working_dir + "post_process_root.sh -t 30 -q long -tmp " + args.working_dir + "tmp/" + (" -p " + args.project if args.project else "") + " -h 48 -m 00 -s 00")
 		process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		(output, error) = process.communicate()
 		if process.returncode != 0:

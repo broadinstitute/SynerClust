@@ -5,6 +5,7 @@
 #$ -P gscid
 #$ -R yes
 
+#$ -l h_rt=48:00:00
 #$ -l h_vmem=#MEMORY
 #$ -binding linear:#NUM_CORES
 #$ -pe smp #NUM_CORES

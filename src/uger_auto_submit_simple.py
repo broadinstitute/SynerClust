@@ -17,10 +17,19 @@ def main():
 	parser.add_argument("-err", dest="error", default="/dev/null", help="Error output.")
 	parser.add_argument("-log", dest="log", default="/dev/null", help="Standard output.")
 	parser.add_argument("-tmp", dest="tmp", required=True, help="Folder where to write temporary submission scripts.")
+	parser.add_argument("-h", dest="hour", type=str, default="48", help="Hours for runtime limit.")
+	parser.add_argument("-m", dest="minute", type=str, default="00", help="Minutes for runtime limit.")
+	parser.add_argument("-s", dest="second", type=str, default="00", help="Seconds for runtime limit.")
 
 	args = parser.parse_args()
 	DEVNULL = open(os.devnull)
 	timestamp = str(int(time.time()))
+
+	if args.error != "/dev/null":
+		args.error += "/#NODE.err"
+
+	if args.log != "/dev/null":
+		args.log += "/#NODE.log"
 
 	script_base = """
 #! /bin/bash
@@ -29,6 +38,7 @@ def main():
 #$ -q """ + args.queue + ("""
 #$ -P """ + args.project if args.project else "") + """
 
+#$ -l h_rt=""" + args.hour + ":" + args.hour + ":" + args.second + """
 #$ -l m_mem_free=2g
 #$ -e """ + args.error + """
 #$ -o """ + args.log + """
@@ -49,7 +59,7 @@ reuse -q Python-2.7
 	for i in xrange(len(commands)):
 		if commands[i][0] != "#" and commands[i]:
 			with open(args.tmp + timestamp + str(i), "w") as f:
-				f.write(script_base + commands[i])
+				f.write(script_base.replace("#NODE", timestamp + str(i)) + commands[i])
 			new_commands.append("qsub -N j" + timestamp + str(i) + " " + args.tmp + timestamp + str(i))
 
 	current = 0
