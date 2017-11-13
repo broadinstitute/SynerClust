@@ -34,7 +34,7 @@ def main():
 	script_base = """
 #! /bin/bash
 
-#$ -cwd""" + args.queue + ("""
+#$ -cwd""" + ("""
 #$ -P """ + args.project if args.project else "") + """
 #$ -l h_rt=""" + args.hour + ":" + args.hour + ":" + args.second + """
 
