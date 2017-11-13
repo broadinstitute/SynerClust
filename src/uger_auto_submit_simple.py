@@ -34,11 +34,10 @@ def main():
 	script_base = """
 #! /bin/bash
 
-#$ -cwd
-#$ -q """ + args.queue + ("""
+#$ -cwd""" + args.queue + ("""
 #$ -P """ + args.project if args.project else "") + """
-
 #$ -l h_rt=""" + args.hour + ":" + args.hour + ":" + args.second + """
+
 #$ -l m_mem_free=2g
 #$ -e """ + args.error + """
 #$ -o """ + args.log + """
