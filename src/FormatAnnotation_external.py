@@ -233,11 +233,13 @@ def extractAnnotation(gff3_file, seq_file, genome_name, locus, out_file, stat_fi
 				# primary_done = False
 				for d in data:
 					d = d.split(",")[0]
-					if d.lower().find("ID=") == 0:
+					if d.lower().find("id=") == 0:
 						curID = d.split("=")[1]
-					if d.lower().find("Dbxref=") == 0:  # added for NCBI's genbank in gff3 format
+					if d.lower().find("dbxref=") == 0:  # added for NCBI's genbank in gff3 format
 						curID = d.split(":")[1]
-					if d.lower().find("Name=") == 0:
+					if d.lower().find("alias") == 0:
+						alias = d.split("=")[1]
+					if d.lower().find("name=") == 0:
 						name = d.split("=")[1]
 					if d.lower().find("locus_tag=") == 0:
 						name = d.split("=")[1]
@@ -264,9 +266,9 @@ def extractAnnotation(gff3_file, seq_file, genome_name, locus, out_file, stat_fi
 				# 	primary_done = True
 				# if not primary_done:
 				for d in line[8].split(";"):
-					if d.lower().find("ID=") == 0:
+					if d.lower().find("id=") == 0:
 						mrna_id_tmp = d.split("=")[1]
-					if d.lower().find("Dbxref=") == 0:
+					if d.lower().find("dbxref=") == 0:
 						mrna_id_tmp = d.split(":")[1]
 					# 	if d.find("VectorBase:") == 0:  # import that in first position for this one as it can also be in the Dbxref field
 					# 		if d[-3:] == "-RA":
