@@ -51,10 +51,10 @@ class RepoParse:
 				dat = l.split()
 				if len(dat) < 2:
 					continue
-				if dat[0].find("Genome") > -1:
+				if dat[0].lower().find("genome") > -1:
 					curGenome["Peptide"] = "null"
 					curGenome["Genome"] = dat[1]  # need to use the hardnamed key in case "Genome" found in for example "Genomes"
-				elif dat[0].find("Annotation") > -1:
+				elif dat[0].lower().find("annotation") > -1:
 					if not os.path.isabs(dat[1]):  # if not an absolute path
 						# if os.path.isabs(dat[1]): # if not an absolute path
 						# if not dat[1][0] == "/": # if not an absolute path
@@ -88,7 +88,7 @@ class RepoParse:
 					curGenome["Annotation"] = dat[1]
 					if "Sequence" not in curGenome:  # in case the Sequence is provided before the Annotation
 						curGenome["Sequence"] = seq
-				elif dat[0].find("Sequence") > -1:
+				elif dat[0].lower().find("sequence") > -1:
 					if not os.path.isabs(dat[1]):  # if not an absolute path
 						# if not dat[1][0] == "/": # if not an absolute path
 						if os.path.isfile(repo_path + dat[1]):
@@ -111,7 +111,7 @@ class RepoParse:
 						if not os.path.isfile(dat[1]):
 							sys.exit("Specified sequence file not found : %s" % (dat[1]))
 					curGenome["Sequence"] = dat[1]
-				elif dat[0].find("Peptide") > -1:
+				elif dat[0].lower().find("peptide") > -1:
 					if not os.path.isabs(dat[1]):
 						if os.path.isfile(repo_path + dat[1]):
 							dat[1] = repo_path + dat[1]

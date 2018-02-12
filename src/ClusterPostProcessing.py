@@ -204,8 +204,8 @@ def main():
 		prefix_count = Counter(genomes)
 		prefix_count_inparalogs = Counter(genomes_inparalogs)
 
-		final_clusters_out.write(cid + " (taxa: " + str(len(prefix_count)) + ", genes: " + str(len(locusMap[cluster])) + ")\t" + clust_to_trans_buffer[:-1] + "\n")
-		final_clusters_inparalogs_out.write(cid + " (taxa: " + str(len(prefix_count_inparalogs)) + ", genes: " + str(len(cluster_to_genes_inparalogs[cluster])) + ")\t" + clust_to_trans_buffer + clust_to_trans_inparalogs_additional_buffer[:-1] + "\n")
+		final_clusters_out.write(cid + " (taxa: " + str(len(prefix_count)) + ", genes: " + str(len(locusMap[cluster])) + ")\t" + final_clusters_buffer[:-1] + "\n")
+		final_clusters_inparalogs_out.write(cid + " (taxa: " + str(len(prefix_count_inparalogs)) + ", genes: " + str(len(cluster_to_genes_inparalogs[cluster])) + ")\t" + final_clusters_buffer + final_clusters_inparalogs_additional_buffer[:-1] + "\n")
 
 		distrib_buffer = ""
 		if names == []:
