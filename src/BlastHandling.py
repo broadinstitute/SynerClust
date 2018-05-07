@@ -39,14 +39,14 @@ class BlastParse:
 		BlastParse.translation_table = translation_table
 
 	@staticmethod
-	def getBestHits(q_hits, min_best_hit):
+	def getBestHits(q_hits, min_best_hit, min_percent_identity, min_match_coverage):
 		bestAdjPID = 0.0
 		lastAdjPID = 0.0
 		best_evalue = 1.0
 		current_rank = 1
 		q_best = []
 		for ts in q_hits:
-			if ts.pID < 0.5 or ts.length < 0.5 * ts.qLength:
+			if ts.pID < min_percent_identity or ts.length < min_match_coverage * ts.qLength:
 				continue
 			if ts.length == ts.qLength and ts.length == int(ts.target.split(";")[1]) and ts.pID == 1.0:  # identical
 				q_best.append((ts, 1, 1.0, 1))
@@ -81,11 +81,11 @@ class BlastParse:
 	# hits are scored by cumulative percent identity
 	# synData is unused
 	@staticmethod
-	def scoreHits(hits, bestReciprocalHits, min_best_hit, minSynFrac):
+	def scoreHits(hits, bestReciprocalHits, min_best_hit, minSynFrac, min_percent_identity, min_match_coverage):
 		for q in hits:
 			q_hits = [hits[q][t] for t in hits[q]]
 			q_hits.sort(key=operator.attrgetter('bitScore', 'evalue', 'adjPID', 'target'), reverse=True)
-			q_best = BlastParse.getBestHits(q_hits, min_best_hit)
+			q_best = BlastParse.getBestHits(q_hits, min_best_hit, min_percent_identity, min_match_coverage)
 
 			q_best = sorted(q_best, key=lambda tup: tup[1])
 			for hit in q_best:

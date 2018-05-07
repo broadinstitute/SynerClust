@@ -16,6 +16,8 @@ def main():
 	parser.add_argument('-node', dest="node", required=True, help="Current node name. (Required)")
 	parser.add_argument('-m', '--min_best_hit', type=float, dest="min_best_hit", required=True, help="Minimal % of match length for Blastp hits compared to best one.")
 	parser.add_argument('-F', '--min_syntenic_fraction', type=float, dest="minSynFrac", required=True, help="Minimal syntenic fraction.")
+	parser.add_argument('-i', '--min-percent-identity', type=float, dest="min_percent_identity", default=0.5, help="Minimal fraction of identity filtering in the protein Blast+ results. (default = 0.5)")
+	parser.add_argument('-c', '--min-match-coverage', type=float, dest="min_match_coverage", default=0.5, help="Minimal fraction of the query length that the protein Blast+ match needs to cover. (default = 0.5)")
 	parser.add_argument('-diff', '--max_size_diff', type=float, default=3.0, dest="max_size_diff", required=False, help="Maximal ratio difference in size between query and target sequence for Blast.")
 	parser.add_argument('children', nargs=2, help="Children nodes. (Required)")
 	args = parser.parse_args()
@@ -54,7 +56,7 @@ def main():
 	for blast_out in blast_outs:
 		hits = BlastHandling.BlastParse.readBlastM8FromFile(blast_out)
 		logger.debug("Read Blast")
-		bestReciprocalHits = bp.scoreHits(hits, bestReciprocalHits, args.min_best_hit, args.minSynFrac)
+		bestReciprocalHits = bp.scoreHits(hits, bestReciprocalHits, args.min_best_hit, args.minSynFrac, args.min_percent_identity, args.min_match_coverage)
 		hits = None
 
 	logger.debug("Scored Hits")

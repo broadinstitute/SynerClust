@@ -9,7 +9,7 @@ import collections
 class Tree:
 	logger = logging.getLogger("Tree")
 
-	def __init__(self, tree_obj, blast_eval, num_cores, min_best_hit, syn_dist, minSynFrac, mutrate, synteny):
+	def __init__(self, tree_obj, blast_eval, num_cores, min_best_hit, min_percent_identity, min_match_coverage, syn_dist, minSynFrac, mutrate, synteny):
 		self.tree_obj = tree_obj
 		self.genomeToLocusFile = tree_obj.genomeToLocusFile
 		self.genomeToLocus = tree_obj.genomeToLocus
@@ -22,6 +22,8 @@ class Tree:
 		self.blast_eval = blast_eval
 		self.num_cores = num_cores
 		self.min_best_hit = min_best_hit
+		self.min_percent_identity = min_percent_identity
+		self.min_match_coverage = min_match_coverage
 		self.syn_dist = int(syn_dist)
 		self.min_syn_frac = minSynFrac
 		self.mutrate = mutrate
@@ -271,6 +273,8 @@ class Tree:
 		s_file = s_file.replace('#MEMORY', memory)
 		s_file = s_file.replace('#MUTRATE', str(self.mutrate))
 		s_file = s_file.replace('#MIN_BEST_HIT', str(self.min_best_hit))
+		s_file = s_file.replace('#MIN_MATCH_COVERAGE', str(self.min_match_coverage))
+		s_file = s_file.replace('#MIN_PERCENT_IDENTITY', str(self.min_percent_identity))
 		s_file = s_file.replace('#MIN_SYNTENIC_FRACTION', str(self.min_syn_frac))
 		s_file = s_file.replace('#WORKING_DIR', working_dir)
 		if self.synteny:
@@ -292,6 +296,8 @@ class Tree:
 		s_file = s_file.replace('#NUM_CORES', str(self.num_cores))
 		s_file = s_file.replace('#MUTRATE', str(self.mutrate))
 		s_file = s_file.replace('#MIN_BEST_HIT', str(self.min_best_hit))
+		s_file = s_file.replace('#MIN_MATCH_COVERAGE', str(self.min_match_coverage))
+		s_file = s_file.replace('#MIN_PERCENT_IDENTITY', str(self.min_percent_identity))
 		s_file = s_file.replace('#MIN_SYNTENIC_FRACTION', str(self.min_syn_frac))
 		s_file = s_file.replace('#WORKING_DIR', working_dir)
 		if self.synteny:
