@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import sys
 import os
 import cPickle as pickle
@@ -60,12 +61,21 @@ class Blast(object):
 
 
 def main(argv):
-	node_dir = argv[0]
-	node = argv[1]
-	children = argv[4:]
-	evalue = argv[2]
-	cores = int(argv[3])
-	my_dir = node_dir + node + "/"
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-dir', dest="node_dir", required=True, help="Path to the \"nodes\" folder. (Required)")
+	parser.add_argument('-node', dest="node", required=True, help="Current node name. (Required)")
+	parser.add_argument('-t', type=int, dest="numThreads", default=4, help="Number of threads to use. (default = 4)")
+	parser.add_argument('-B', '--blast_eval', type=float, dest="blast_eval", default=#BLAST_EVAL_DEFAULT, help="Minimal e-value for Blastp hits. (default = #BLAST_EVAL_DEFAULT)")
+	parser.add_argument('-c', '--min-match-coverage', type=float, dest="min_match_coverage", default=0.5, help="Minimal fraction of the query length that the protein Blast+ match needs to cover. (default = 0.5)")
+	parser.add_argument('children', nargs=2, help="Children nodes. (Required)")
+	args = parser.parse_args()
+
+	# node_dir = argv[0]
+	# node = argv[1]
+	# children = argv[4:]
+	# evalue = argv[2]
+	# cores = int(argv[3])
+	my_dir = args.node_dir + args.node + "/"
 
 	FORMAT = "%(asctime)-15s %(levelname)s %(module)s.%(name)s.%(funcName)s at %(lineno)d :\n\t%(message)s\n"
 	LOGGER = logging.getLogger()
@@ -81,7 +91,7 @@ def main(argv):
 		blast_queue = multiprocessing.JoinableQueue()
 		results_queue = multiprocessing.Queue()
 
-		blasters = [Blaster(blast_queue, results_queue, LOGGER) for i in xrange(cores)]
+		blasters = [Blaster(blast_queue, results_queue, LOGGER) for i in xrange(args.numThreads)]
 		for b in blasters:
 			b.start()
 
@@ -91,8 +101,8 @@ def main(argv):
 		my_head = my_dir + "blast_headers.txt"
 		# m8 = my_dir + "blast.m8"
 		m8s = []
-		for c in children:
-			cpath = node_dir + c + "/"
+		for c in args.children:
+			cpath = args.node_dir + c + "/"
 			if "NODE_COMPLETE" not in os.listdir(cpath) and "PICKLES_COMPLETE" not in os.listdir(cpath):
 				sys.exit("Error: Missing input for children " + c)
 			combined_orphans_header = cpath + c + ".combined_orphans_headers.txt"
@@ -116,7 +126,7 @@ def main(argv):
 			if output[1] is not None:
 				sys.exit("error")
 			line_count = float(output[0].split()[0])
-			chunk_size = int(math.ceil(line_count / cores))
+			chunk_size = int(math.ceil(line_count / args.numThreads))
 			if chunk_size % 2 != 0:
 				chunk_size += 1
 			if platform.system() == "Linux":
@@ -143,26 +153,26 @@ def main(argv):
 
 			if len(strains) == 1:
 				self_blast_out = my_dir + c + "_self.blast.m8"
-				for i in xrange(cores):
-					blast_queue.put(Blast(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", evalue, "-qcov_hsp_perc", "50", "-num_threads", "1", "-db", c_fasta, "-query", c_fasta + "." + "%04d" % (i), "-out", self_blast_out + "." + "%04d" % (i)]))
+				for i in xrange(args.numThreads):
+					blast_queue.put(Blast(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", args.evalue, "-qcov_hsp_perc", int(args.min_match_coverage * 100), "-num_threads", "1", "-db", c_fasta, "-query", c_fasta + "." + "%04d" % (i), "-out", self_blast_out + "." + "%04d" % (i)]))
 				combine_queue.append("cat " + self_blast_out + ".* >" + self_blast_out)
 
 		cat_head_cmd = "cat " + heads[0] + " " + heads[1] + " > " + my_head
 		LOGGER.info(cat_head_cmd)
 		os.system(cat_head_cmd)
 
-		for i in xrange(cores):
-			blast_queue.put(Blast(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", evalue, "-qcov_hsp_perc", "50", "-num_threads", "1", "-db", fastas[0], "-query", fastas[1] + "." + "%04d" % (i), "-out", m8s[1] + "." + "%04d" % (i)]))
-			blast_queue.put(Blast(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", evalue, "-qcov_hsp_perc", "50", "-num_threads", "1", "-db", fastas[1], "-query", fastas[0] + "." + "%04d" % (i), "-out", m8s[0] + "." + "%04d" % (i)]))
+		for i in xrange(args.numThreads):
+			blast_queue.put(Blast(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", args.evalue, "-qcov_hsp_perc", int(args.min_match_coverage * 100), "-num_threads", "1", "-db", fastas[0], "-query", fastas[1] + "." + "%04d" % (i), "-out", m8s[1] + "." + "%04d" % (i)]))
+			blast_queue.put(Blast(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", args.evalue, "-qcov_hsp_perc", int(args.min_match_coverage * 100), "-num_threads", "1", "-db", fastas[1], "-query", fastas[0] + "." + "%04d" % (i), "-out", m8s[0] + "." + "%04d" % (i)]))
 		combine_queue.append("cat " + m8s[1] + ".* > " + m8s[1])
 		combine_queue.append("cat " + m8s[0] + ".* > " + m8s[0])
 
-		for i in xrange(cores):
+		for i in xrange(args.numThreads):
 			blast_queue.put(None)
 
 		blast_queue.join()
 
-		for i in xrange(cores):
+		for i in xrange(args.numThreads):
 			if results_queue.get():
 				exit("\n\nError while running BLAST+. Please make sure that the path is correct.\n\n")
 
