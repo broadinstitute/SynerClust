@@ -53,6 +53,7 @@ class Blast(object):
 		try:
 			process = subprocess.Popen(self.cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			(out, err) = process.communicate()
+			LOGGER.debug("\n\tBlast+ stdout:\n" + out + "\n\tBlast+ stderr:\n" + err)
 		except OSError:
 			return True
 		return False
@@ -167,6 +168,9 @@ def main(argv):
 
 		for combine in combine_queue:
 			os.system(combine)
+
+		if not os.stat(m8s[0]).st_size or not os.stat(m8s[1]).st_size:
+			exit("Error, at least one of the Blast+ result files is empty. Please make sure your install is working.")
 
 		# my_m8s = my_dir + "*m8"
 		# os.system("cat " + my_m8s + " > " + m8)
