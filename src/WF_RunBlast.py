@@ -154,7 +154,7 @@ def main(argv):
 			if len(strains) == 1:
 				self_blast_out = my_dir + c + "_self.blast.m8"
 				for i in xrange(args.numThreads):
-					blast_queue.put(Blast(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", args.evalue, "-qcov_hsp_perc", int(args.min_match_coverage * 100), "-num_threads", "1", "-db", c_fasta, "-query", c_fasta + "." + "%04d" % (i), "-out", self_blast_out + "." + "%04d" % (i)]))
+					blast_queue.put(Blast(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", args.blast_eval, "-qcov_hsp_perc", int(args.min_match_coverage * 100), "-num_threads", "1", "-db", c_fasta, "-query", c_fasta + "." + "%04d" % (i), "-out", self_blast_out + "." + "%04d" % (i)]))
 				combine_queue.append("cat " + self_blast_out + ".* >" + self_blast_out)
 
 		cat_head_cmd = "cat " + heads[0] + " " + heads[1] + " > " + my_head
@@ -162,8 +162,8 @@ def main(argv):
 		os.system(cat_head_cmd)
 
 		for i in xrange(args.numThreads):
-			blast_queue.put(Blast(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", args.evalue, "-qcov_hsp_perc", int(args.min_match_coverage * 100), "-num_threads", "1", "-db", fastas[0], "-query", fastas[1] + "." + "%04d" % (i), "-out", m8s[1] + "." + "%04d" % (i)]))
-			blast_queue.put(Blast(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", args.evalue, "-qcov_hsp_perc", int(args.min_match_coverage * 100), "-num_threads", "1", "-db", fastas[1], "-query", fastas[0] + "." + "%04d" % (i), "-out", m8s[0] + "." + "%04d" % (i)]))
+			blast_queue.put(Blast(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", args.blast_eval, "-qcov_hsp_perc", int(args.min_match_coverage * 100), "-num_threads", "1", "-db", fastas[0], "-query", fastas[1] + "." + "%04d" % (i), "-out", m8s[1] + "." + "%04d" % (i)]))
+			blast_queue.put(Blast(["#BLAST_PATHblastp", "-outfmt", "6", "-evalue", args.blast_eval, "-qcov_hsp_perc", int(args.min_match_coverage * 100), "-num_threads", "1", "-db", fastas[1], "-query", fastas[0] + "." + "%04d" % (i), "-out", m8s[0] + "." + "%04d" % (i)]))
 		combine_queue.append("cat " + m8s[1] + ".* > " + m8s[1])
 		combine_queue.append("cat " + m8s[0] + ".* > " + m8s[0])
 
