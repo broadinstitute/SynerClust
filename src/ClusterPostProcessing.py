@@ -190,7 +190,7 @@ def main():
 		clusters_out.write("\n")
 		clusters_inparalogs_out.write("\n")
 
-		if args.alignment == "scc" and len(cluster_to_genes_inparalogs[cluster]) == num_genomes:
+		if args.alignment == "scc" and len(cluster_to_genes_inparalogs[cluster]) == num_genomes and len(genomes) == num_genomes:
 			ali = get_alignment(stdin_data)
 			alignment_scc_out.write(cid + "\n" + ali + "\n")
 			if args.alignment == "all":
