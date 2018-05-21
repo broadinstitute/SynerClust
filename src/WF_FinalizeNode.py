@@ -218,7 +218,8 @@ if __name__ == "__main__":
 		pickleSeqs = pickle.load(sdat)
 
 	consensus_pep = args.node_dir + args.node + ".pep"
-	os.system("rm " + consensus_pep)  # since the file is opened in append mode every time, we need to delete anything from a previous run
+	if os.listdir.isfile(consensus_pep):
+		os.remove(consensus_pep)
 
 	cons_out = open(consensus_pep, "a")
 	with open(args.node_dir + "pre_consensus_data.pkl", "r") as f:
