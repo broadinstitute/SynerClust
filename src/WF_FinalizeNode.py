@@ -218,7 +218,7 @@ if __name__ == "__main__":
 		pickleSeqs = pickle.load(sdat)
 
 	consensus_pep = args.node_dir + args.node + ".pep"
-	if os.file.isfile(consensus_pep):
+	if os.path.isfile(consensus_pep):
 		os.remove(consensus_pep)
 
 	cons_out = open(consensus_pep, "a")
