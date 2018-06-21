@@ -344,15 +344,16 @@ class Refine(object):
 						if new_orphan2 in potentials[new_orphan]:
 							potentials[new_orphan].append(new_orphan2)
 				ok_trees.append((new_orphan, (node,), (node, node)))  # (node,) comma is required so its a tuple that can be looped on and not on the string itself
-				# find all identical orphans to the current one, which should be the full set for this sequence since they would all be linked to each other
-				identicals = [(f, genes_to_cluster[f][0]) for f in new_graph[node] if mrca not in f and new_graph[node][f]['identity'] == 1 and node in new_graph[f] and new_graph[f][node]['identity'] == 1]
-				if identicals:
-					identicals.append((node, new_orphan))
-					if identicals[0][1] not in identical_orphans_to_check_dict:  # else this set has already been found by another member of the set
-						identical_orphans_to_check.append(identicals)
-						for identical in identicals:  # identical = tuple(child_id, parent_id)
-							identical_orphans_to_check_dict[identical[1]] = identical_index
-						identical_index += 1
+
+			# find all identical nodes (even mrca nodes) to the current one, which should be the full set for this sequence since they would all be linked to each other
+			identicals = [(f, genes_to_cluster[f][0]) for f in new_graph[node] and new_graph[node][f]['identity'] == 1 and node in new_graph[f] and new_graph[f][node]['identity'] == 1]
+			if identicals:
+				identicals.append((node, genes_to_cluster[node][0]))
+				if identicals[0][1] not in identical_orphans_to_check_dict:  # else this set has already been found by another member of the set
+					identical_orphans_to_check.append(identicals)
+					for identical in identicals:  # identical = tuple(child_id, parent_id)
+						identical_orphans_to_check_dict[identical[1]] = identical_index
+					identical_index += 1
 		return identical_index
 
 
@@ -614,7 +615,7 @@ def main():
 
 				orphan_index = None
 				if clusterID in identical_orphans_to_check_dict:
-					if identical_orphans_to_check_dict[clusterID] not in identical_orphans_processed_indexes:
+					if identical_orphans_to_check_dict[clusterID] not in identical_orphans_processed_indexes:  # another member of the identicals has already been processed
 						orphan_index = identical_orphans_to_check_dict[clusterID]
 						# print "reading orphan index " + str(orphan_index) + " out of max index " + str(len(identical_orphans_to_check) - 1) + " at process " + str(nt)
 						unique = True
@@ -622,8 +623,8 @@ def main():
 						for identical_orphan_tuple in identical_orphans_to_check[orphan_index]:
 							child = "_".join(identical_orphan_tuple[0].split("_")[:-1])
 							if children_cons[child][identical_orphan_tuple[0]].count(">") > 1:	 # identical orphan is tuple (child_node, parent_node)
-								unique = False
-								del combined_orphans_list
+								unique = False  # there are more than 1 representative sequences for this node, so we can't combine them based on a single being identical
+								del combined_orphans_list  # if not removed, risks case 1<-->1/2<-->2  ==>  1<-->2
 								break
 							else:
 								combined_orphans_list.append(identical_orphan_tuple[1])

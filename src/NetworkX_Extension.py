@@ -46,10 +46,11 @@ def all_pairs_path_length(G, weight=['weight']):
 
 def merge(graph, old_graph, left, right, middle):
 	graph.add_node(middle)
+	identical = min(old_graph[left][right]['identity'], old_graph[right][left]['identity'])
 	# commons = old_graph[left].keys() and old_graph[right].keys()
 	commons = [l for l in old_graph[left].keys() if l in old_graph[right].keys()]
 	for common in commons:
-		graph.add_edge(common, middle, rank=max(old_graph[common][left]['rank'], old_graph[common][right]['rank']))
+		graph.add_edge(common, middle, rank=max(old_graph[common][left]['rank'], old_graph[common][right]['rank']), identity=min(old_graph[common][left]['identity'], identical))  # could also compare old_graph[common][right]['identity'], but by transitivity, if current min() == 1 then this does too. We don't really care about the min, but whether it is identical or not
 	for target in old_graph[left]:
 		if target not in commons and target != right:
 			graph.add_edge(target, middle, rank=old_graph[target][left]['rank'], identity=old_graph[target][left]['identity'])
