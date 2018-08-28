@@ -235,7 +235,7 @@ class Refine(object):
 				if len(targets) == 0:
 					i += 1
 					continue
-				if len(targets) >= 1:
+				if len(targets) > 1:
 					if synteny:
 						pairs = []
 						for n2 in targets:
