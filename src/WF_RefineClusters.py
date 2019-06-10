@@ -225,12 +225,17 @@ class Refine(object):
 		# check for remaining RBH and cluster
 		changed = True
 		while changed:
+			print "working with cluster counter at " + str(cluster_counter.value)
 			changed = False
 			i = 0
 			nodes_left = [n for n in self.graph.nodes() if self.graph[n]]  # nodes left that still have edges connecting them to other nodes
-			while i < len(nodes_left):
+			while True:
+				if i >= len(nodes_left):
+					break
+				print "i = " + str(i) + " len(nodes_left) = " + str(len(nodes_left))
 				n1 = nodes_left[i]
 				pair = None
+				identical_genes = []
 				targets = [n2 for n2 in self.graph[n1] if self.graph[n1][n2]['rank'] == 1 and self.graph[n2][n1]['rank'] == 1 and n1[:32] != n2[:32]]  # RBH, and don't merge self-hits from leaves
 				if len(targets) == 0:
 					i += 1
@@ -274,44 +279,82 @@ class Refine(object):
 							else:
 								pair = pairs[0][0]
 						else:  # no evidance of which node is the good one to merge to
-							i += 1
-							continue
+							# check if perfectly identical in sequence and have perfect synteny conservation
+							for k in xrange(len(pairs)):
+								if pairs[k][1] == 0.0 and self.graph[n1][k]['identical'] == 1 and self.graph[k][n1]['identical'] == 1:
+									identical_genes.append(pairs[k][0])
+							if len(identical_genes) == 0:
+								i += 1
+								continue
 					else:  # no evidance of which node is the good one to merge to because --no-synteny
+						# check if perfectly identical, if so combine because there won't be any chance to tell them apart later on anyway
+						identical_genes = [n2 for n2 in self.graph[n1] if self.graph[n1][n2]['identity'] == 1 and self.graph[n2][n1]['identity'] == 1]
+						if len(identical_genes) > 0:
+							identical_genes.append(n1)
+						else:
 							i += 1
 							continue
 				else:
 					pair = targets[0]
 					# if graph[e[0]][e[1]]['rank'] == 1 and graph[e[1]][e[0]]['rank'] == 1:
 					# MERGE e[0] and e[1]
+
 				changed = True
-				ii = leaves.index(n1)
-				jj = leaves.index(pair)
-				# if leaves[ii][:32] == leaves[jj][:32]:  # should never happen because targets are already filtered for this
-				# 	i += 1
-				# 	continue
-				if synteny:
-					ma = max(ii, jj)
-					mi = min(ii, jj)
-					pos = (ma * (ma - 1) / 2) + mi
-					syn_dist = ":" + str(syn_matrix[pos] / 2.0)
-				lock.acquire()
-				new_node = "%s_%06d" % (mrca, cluster_counter.value)
-				cluster_counter.value += 1
-				lock.release()
-				if synteny:
-					ok_trees.append((new_node, (n1, pair), ("(" + n1 + ":" + str(self.graph[n1][pair]['rank']) + "," + pair + ":" + str(self.graph[pair][n1]['rank']) + ")", "(" + n1 + syn_dist + "," + pair + syn_dist + ")")))
+				if len(identical_genes) > 0:
+					"print cluster of identicals with length " + str(len(identical_genes))
+					lock.acquire()
+					new_node = "%s_%06d" % (mrca, cluster_counter.value)
+					cluster_counter.value += 1
+					lock.release()
+					if synteny:
+						ok_trees.append((new_node, identical_genes, ("(" + ":1,".join([n for n in identical_genes]) + ")"), ("(" + ":1,".join([n for n in identical_genes]) + ")")))
+					else:
+						ok_trees.append((new_node, identical_genes, ("(" + ":1,".join([n for n in identical_genes]) + ")", "")))
+
+					# merge
+					nxe.merge_lists_identicals(new_graph, self.graph, identical_genes, new_node)
+					for n in identical_genes:
+						self.graph.remove_node(n)
+					# update genes_to_cluster
+					sub_i = -1  # since we are not increasing i from the current position, we have to decrease by one less
+					for n in identical_genes:
+						genes_to_cluster[n] = (new_node, True)
+						# remove nodes from nodes_left
+						if nodes_left.index(n) <= i:
+							sub_i += 1
+					for n in identical_genes:
+						nodes_left.remove(n)
+					i -= sub_i
+
 				else:
-					ok_trees.append((new_node, (n1, pair), ("(" + n1 + ":" + str(self.graph[n1][pair]['rank']) + "," + pair + ":" + str(self.graph[pair][n1]['rank']) + ")", "")))
-				nxe.merge(new_graph, self.graph, n1, pair, new_node)
-				genes_to_cluster[n1] = (new_node, True)
-				genes_to_cluster[pair] = (new_node, True)
-				# remove other edges pointing to those nodes
-				self.graph.remove_node(n1)
-				self.graph.remove_node(pair)
-				if nodes_left.index(pair) < i:
-					i -= 1
-				nodes_left.remove(n1)
-				nodes_left.remove(pair)
+					ii = leaves.index(n1)
+					jj = leaves.index(pair)
+					# if leaves[ii][:32] == leaves[jj][:32]:  # should never happen because targets are already filtered for this
+					# 	i += 1
+					# 	continue
+					if synteny:
+						ma = max(ii, jj)
+						mi = min(ii, jj)
+						pos = (ma * (ma - 1) / 2) + mi
+						syn_dist = ":" + str(syn_matrix[pos] / 2.0)
+					lock.acquire()
+					new_node = "%s_%06d" % (mrca, cluster_counter.value)
+					cluster_counter.value += 1
+					lock.release()
+					if synteny:
+						ok_trees.append((new_node, (n1, pair), ("(" + n1 + ":" + str(self.graph[n1][pair]['rank']) + "," + pair + ":" + str(self.graph[pair][n1]['rank']) + ")", "(" + n1 + syn_dist + "," + pair + syn_dist + ")")))
+					else:
+						ok_trees.append((new_node, (n1, pair), ("(" + n1 + ":" + str(self.graph[n1][pair]['rank']) + "," + pair + ":" + str(self.graph[pair][n1]['rank']) + ")", "")))
+					nxe.merge(new_graph, self.graph, n1, pair, new_node)
+					genes_to_cluster[n1] = (new_node, True)
+					genes_to_cluster[pair] = (new_node, True)
+					# remove other edges pointing to those nodes
+					self.graph.remove_node(n1)
+					self.graph.remove_node(pair)
+					if nodes_left.index(pair) < i:
+						i -= 1
+					nodes_left.remove(n1)
+					nodes_left.remove(pair)
 
 		# check remaining, is there any match in between them directly, any synteny?
 		# remaining = all nodes in graph, check what are their edges in new_graph = potential inparalogs

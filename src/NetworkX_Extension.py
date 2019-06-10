@@ -58,3 +58,24 @@ def merge(graph, old_graph, left, right, middle):
 			graph.add_edge(target, middle, rank=old_graph[target][right]['rank'], identity=old_graph[target][right]['identity'])
 	graph.remove_node(left)
 	graph.remove_node(right)
+
+
+# def merge_lists_identicals(graph, old_graph, left, right, middle):
+def merge_lists_identicals(graph, old_graph, nodes, middle):
+	graph.add_node(middle)
+	commons = set()
+	for node in nodes:
+		tmp_commons = [l for l in old_graph[node].keys()]
+		commons.update(tmp_commons)
+
+	for common in commons:
+		max_rank = max([old_graph[common][node]['rank'] for node in nodes if node in old_graph[common]])
+		graph.add_edge(common, middle, rank=max_rank)
+
+	for node in nodes:
+		for target in old_graph[node]:
+			if target not in commons and target not in nodes and middle not in graph[middle]:
+				graph.add_edge(target, middle, rank=old_graph[target][node]['rank'], identity=old_graph[target][node]['identity'])
+
+	for node in nodes:
+		graph.remove_node(node)

@@ -54,7 +54,7 @@ def main():
 
 	bestReciprocalHits = bp.prepareDiGraph(n_head)
 	for blast_out in blast_outs:
-		hits = BlastHandling.BlastParse.readBlastM8FromFile(blast_out)
+		hits = BlastHandling.BlastParse.readBlastM8FromFile(blast_out, args.min_percent_identity, args.min_match_coverage)
 		logger.debug("Read Blast")
 		bestReciprocalHits = bp.scoreHits(hits, bestReciprocalHits, args.min_best_hit, args.minSynFrac, args.min_percent_identity, args.min_match_coverage)
 		hits = None

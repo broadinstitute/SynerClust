@@ -151,7 +151,7 @@ class BlastParse:
 		return 0
 
 	@staticmethod
-	def readBlastM8FromFile(f):
+	def readBlastM8FromFile(f, min_percent_identity, min_match_coverage):
 		hits = {}
 		with open(f, "r") as data:
 			for m in data:
@@ -165,7 +165,8 @@ class BlastParse:
 					continue
 				Q = q.split(";")[0]
 				T = t.split(";")[0]
-				if float(line[2]) < 50.0 or float(line[3]) < 0.5 * int(q.split(";")[1]):  # filter less than 50% identity and less than 50% of sequence length matches
+				# if float(line[2]) < 50.0 or float(line[3]) < 0.5 * int(q.split(";")[1]):  # filter less than 50% identity and less than 50% of sequence length matches
+				if float(line[2]) < min_percent_identity or float(line[3]) < min_match_coverage * int(q.split(";")[1]):
 					continue
 				elif int(q.split(";")[1]) > BlastParse.max_size_diff * int(t.split(";")[1]) or int(t.split(";")[1]) > BlastParse.max_size_diff * int(q.split(";")[1]):  # size difference too big
 					continue
