@@ -357,7 +357,7 @@ def main():
 		for k in nwksMap[current_root].keys():
 			if k != "children":
 				for s in query.findall(nwksMap[current_root][k][0]):
-					if len(s) == 39:
+					if len(s) == 39 and s[:32] in nodes:
 						if s[0] == "N":
 							if nwksMap[s[:32]][s][0].count(",") > 0:  # first line is tree with homology distances, second is with synteny distances
 								nwksMap[current_root][k][0] = nwksMap[current_root][k][0].replace(s, "(" + nwksMap[s[:32]][s][0] + ")")
