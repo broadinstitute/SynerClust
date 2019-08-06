@@ -7,8 +7,8 @@ RUN pip install networkx==1.11
 RUN git clone https://github.com/SynerClust/SynerClust.git
 RUN cd SynerClust && python INSTALL.py
 
-ENV SYNERCLUST_VERSION="1.0.0"
-ENV SYNERCLUST_CO="d2deb6f0a53e2ace45550b0a19e2021cedaa53b5"
+ENV SYNERCLUST_VERSION="1.1.1"
+ENV SYNERCLUST_CO="df81e086b1235e8b07a648137ec4085fe2b4a1a8"
 
 ENV SYNERCLUST_HOME /SynerClust/bin
 ENV PATH=${SYNERCLUST_HOME}:${PATH}
