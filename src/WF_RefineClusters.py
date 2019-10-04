@@ -281,7 +281,7 @@ class Refine(object):
 						else:  # no evidance of which node is the good one to merge to
 							# check if perfectly identical in sequence and have perfect synteny conservation
 							for k in xrange(len(pairs)):
-								if pairs[k][1] == 0.0 and self.graph[n1][k]['identical'] == 1 and self.graph[k][n1]['identical'] == 1:
+								if pairs[k][1] == 0.0 and self.graph[n1][pairs[k][0]]['identity'] == 1 and self.graph[pairs[k][0]][n1]['identity'] == 1:
 									identical_genes.append(pairs[k][0])
 							if len(identical_genes) == 0:
 								i += 1
